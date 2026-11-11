@@ -51,7 +51,8 @@ def test_swing_point_endpoints_apex_and_lift():
 def test_parameter_mapping_covers_the_controller_parameters():
     sp = SG.StableParams.from_controller_params(C.DEFAULT_PARAMS)
     used_by_controller = {"stable_trot_period", "stable_trot_duty", "stable_walk_period", "stable_walk_duty",
-                          "stable_walk_sway_x", "stable_heading_hold_gain", "stable_heading_hold_max"}
+                          "stable_walk_sway_x", "stable_heading_hold_gain", "stable_heading_hold_max",
+                          "stable_terrain_pitch_window"}
     used_by_controller |= {"stable_obstacle_" + k for k in ("trot_period", "trot_duty", "height", "ahead", "hold")}
     used_by_controller |= {f"stable_{g}_max_{a}" for g in ("trot", "walk") for a in ("vx", "vy", "wz")}
     stable_keys = {k for k in C.DEFAULT_PARAMS if k.startswith("stable_")}

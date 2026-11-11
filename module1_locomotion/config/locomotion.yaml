@@ -261,6 +261,8 @@ locomotion_controller:
     stable_obstacle_height: 0.04   # [m] bump above the local terrain line (a ramp / stair flight is a line)
     stable_obstacle_ahead: 0.55    # [m] body x up to which the map is checked (from behind the hind feet)
     stable_obstacle_hold: 1.0      # [s] slow pace kept this long after the last bump
+    stable_terrain_pitch_window: 0.12  # [m] terrain pitch from the low 20 % of the map within +- this along the
+                                   #   heading around each foothold (a lying pipe is not a ramp); 0 = point height
     stable_land_tau: 0.05          # [s] stance foot height after touch-down -> ground target
     stable_stance_max_error: 0.015 # [m] stance force limit: target - measured foot (horizontal), ~70 N with the
                                    #     4.5 kN/m servo; without it the open-loop sweep slid the feet (teleop 0/3)

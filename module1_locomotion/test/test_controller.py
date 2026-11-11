@@ -2072,3 +2072,39 @@ def test_stable_trot_slows_down_at_a_bump_but_not_on_a_ramp():
     off.mode = "WALK"
     off._update_stable_pace(0.1, st, pipe)
     assert off.gait_stable.gaits["trot"].period == pytest.approx(0.4)
+
+
+def test_stable_terrain_pitch_ignores_a_pipe_under_a_foothold():
+    """stable_terrain_pitch_window: the support height of each nominal foothold is
+    a low quantile of the map along the heading around it - a 0.08 m pipe under
+    both front foothold points is not a 10 deg ramp (the body pitched nose-up over
+    C-OBS5 and a front foot hung in the air), a real ramp still pitches the body."""
+    st = C.RobotState()
+    st.pos = np.array([0.0, 0.0, 0.34])
+    st.rpy = np.zeros(3)
+    on = C.LocomotionController({"use_mpc_thread": False, "locomotion_mode": "stable",
+                                 "stable_terrain_pitch_window": 0.12})
+    off = C.LocomotionController({"use_mpc_thread": False, "locomotion_mode": "stable",
+                                  "stable_terrain_pitch_window": 0.0})
+    xf = float(np.mean(on._nominal_world_xy(st)[:2, 0]))                 # front foothold x
+    pipe = FakeMap(lambda x, y: np.where(np.abs(np.asarray(x, dtype=float) - xf) < 0.04, 0.08, 0.0))
+    ramp = FakeMap(lambda x, y: -0.2 * np.asarray(x, dtype=float))        # downhill towards +x
+    for ctrl in (on, off):
+        ctrl.ground_z = 0.0
+        ctrl._terrain_now = ctrl._query_terrain(pipe, st)
+    assert off._support_heights(pipe, st, 0.0) is None
+    low = on._support_heights(pipe, st, 0.12)
+    assert np.allclose(low, 0.0, atol=1e-9)
+    p_off = off._terrain_pitch(off._terrain_now[1:], off.foot_w)
+    p_on = on._terrain_pitch(low, on.foot_w)
+    assert p_off < -math.radians(8.0) and abs(p_on) < 1e-9
+    # a ramp: front and rear shift alike, the pitch follows the slope as before
+    for ctrl in (on, off):
+        ctrl.ground_z = 0.0
+    ramp_on = on._terrain_pitch(on._support_heights(ramp, st, 0.12), on.foot_w)
+    ramp_off = off._terrain_pitch(off._query_terrain(ramp, st)[1:], off.foot_w)
+    assert ramp_on == pytest.approx(ramp_off, abs=1e-6) and ramp_on > math.radians(10.0)
+    # unknown map: NaN rows (filled with the ground estimate by _terrain_pitch)
+    unknown = FakeMap(lambda x, y: np.full(np.shape(x), np.nan))
+    assert np.all(np.isnan(on._support_heights(unknown, st, 0.12)))
+    assert C.DEFAULT_PARAMS["stable_terrain_pitch_window"] >= 0.0

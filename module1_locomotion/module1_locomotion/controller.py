@@ -264,6 +264,11 @@ DEFAULT_PARAMS: Dict[str, Any] = {
     "stable_obstacle_height": 0.04,      # [m] bump above the local terrain line under / ahead of the legs
     "stable_obstacle_ahead": 0.55,       # [m] body x up to which the map is checked (rear: the hind feet)
     "stable_obstacle_hold": 1.0,         # [s] the slow pace is kept this long after the last bump
+    # terrain-following body pitch of the stable mode: support height of each nominal foothold = low
+    # quantile of the map over +- this along the heading (0 = the map height AT the foothold).  A lying
+    # pipe under a front foothold point read as a 10 deg ramp: the body pitched nose-up over the C-OBS5
+    # pipe, a front foot hung in the air in its stance and the robot rolled over (Gazebo mission check)
+    "stable_terrain_pitch_window": 0.12,  # [m]
     "stable_land_tau": 0.05,
     "stable_stance_max_error": 0.015,
     "stable_swing_attitude_blend": 0.0,
@@ -1403,7 +1408,8 @@ class LocomotionController:
         if abs(z_map - stance_feet_z) >= 0.35:
             return None, None, None, None
         self._update_ground(dt, z_map)
-        self.terrain_pitch = self._terrain_pitch(terr, self.foot_w)
+        low = self._support_heights(emap, st, float(self.p["stable_terrain_pitch_window"]))
+        self.terrain_pitch = self._terrain_pitch(terr if low is None else low, self.foot_w)
         z_ref = self.ground_z
         h = float(self.p["body_height"])
         yaw = float(st.rpy[2])
@@ -1732,6 +1738,28 @@ class LocomotionController:
         c, s = math.cos(st.rpy[2]), math.sin(st.rpy[2])
         nb = self.nominal_feet_b[:, :2]
         return np.stack([st.pos[0] + c * nb[:, 0] - s * nb[:, 1], st.pos[1] + s * nb[:, 0] + c * nb[:, 1]], axis=1)
+
+    def _support_heights(self, emap, st: RobotState, window: float) -> Optional[np.ndarray]:
+        """Bump-insensitive support heights (4,) of the nominal footholds: the
+        20 % quantile of the map along the heading over +- ``window`` (0.04 m
+        steps) around each foothold - a narrow bump (lying pipe, rubble) under
+        the point is ignored, a ramp / stair flight shifts front and rear
+        alike.  NaN where fewer than 2 samples are known; None when off."""
+        if emap is None or window <= 0.0:
+            return None
+        nom = self._nominal_world_xy(st)
+        c, s = math.cos(float(st.rpy[2])), math.sin(float(st.rpy[2]))
+        offs = np.arange(-window, window + 1e-9, 0.04)
+        xs = nom[:, 0:1] + c * offs[None, :]
+        ys = nom[:, 1:2] + s * offs[None, :]
+        h = terrain_heights(emap.height_at, xs, ys)
+        h = np.where(np.isfinite(h) & (np.abs(h - self.ground_z) < 0.35), h, np.nan)
+        out = np.full(4, np.nan)
+        for k in range(4):
+            row = h[k][np.isfinite(h[k])]
+            if row.size >= 2:
+                out[k] = float(np.percentile(row, 20.0))
+        return out
 
     def _terrain_pitch(self, terr: np.ndarray, feet_w: np.ndarray) -> float:
         """Body pitch that follows the terrain (front vs rear support height).
