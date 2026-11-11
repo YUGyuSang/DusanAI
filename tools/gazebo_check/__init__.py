@@ -13,8 +13,12 @@
 * :mod:`gazebo_check.scenarios` - scenarios (a) .. (s) with pass criteria, keyboard operator;
                                   MISSION_SCENARIOS (r) .. (z): the real MissionLogic in the loop
                                   (MissionOperator) with novel boxes that are not in the nav map;
+* :mod:`gazebo_check.mission_stack` - every node of the demo mission ROS free (mission manager,
+                                  patrol planner, gas dispersion + seeker, battery, comm, RTH,
+                                  cmd_vel mux) and the harness operator that ticks them;
 * :mod:`gazebo_check.plots`     - docs/images/gazebo_*.png.
 
-CLI: tools/gazebo_check.py (a .. s), tools/obstacle_check.py (mission scenarios r .. z).
+CLI: tools/gazebo_check.py (a .. s), tools/obstacle_check.py (mission scenarios r .. z),
+tools/fall_check.py (fall recovery), tools/mission_check.py (the whole demo mission).
 Nothing in module1_locomotion imports gz.
 """

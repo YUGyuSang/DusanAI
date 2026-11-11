@@ -174,6 +174,8 @@ class SimTimeMPCWorker:
 class HarnessConfig:
     terrain: str = "flat"
     spawn: Tuple[float, float, float, float] = (0.0, 0.0, 0.56, 0.0)
+    spawn_rp: Tuple[float, float] = (0.0, 0.0)        # spawn roll / pitch [rad] (lying robot); the gz IMU
+    #                                                   orientation is relative to the spawn attitude
     params: Dict = field(default_factory=dict)        # controller / node parameter overrides
     latency: float = 0.01                             # [s] command delay tick -> cmd_pos publication
     mpc_latency: object = "measured"                  # "measured" (rtf x wall solve time) | float [s]
@@ -189,6 +191,8 @@ class HarnessConfig:
     extra_objects: Tuple = ()                         # novel static boxes in the world, not in the nav map
     perception_depth: bool = False                    # depth camera + mapper also when the controller map is
     #                                                   blind / truth (the obstacle layer always gets depth)
+    lite_log: bool = False                            # skip the per-joint logs (q, dq, targets, torque, body
+    #                                                   command): long missions
     out_dir: str = ""
     verbose: bool = False
 
@@ -208,7 +212,7 @@ class GzHarness:
         out = cfg.out_dir or os.path.join(os.path.dirname(os.path.abspath(__file__)), "_build")
         tag = f"_{os.getpid()}_{id(self) & 0xffff:x}"
         self.world_path, self.urdf_path = W.build(out, cfg.terrain, cfg.spawn, cfg.servo, cfg.foot_mu, tag=tag,
-                                                  extra=cfg.extra_objects)
+                                                  extra=cfg.extra_objects, spawn_rp=cfg.spawn_rp)
         import xml.etree.ElementTree as ET
         self.servo = W.servo_params(ET.parse(self.urdf_path).getroot())
         # ground truth terrain (map stand-in, fall metric) and the optional depth camera / mapper
@@ -259,7 +263,8 @@ class GzHarness:
         self.ctrl_every = max(1, int(round(1.0 / (rate * GZ_DT))))
         self.cmd_fn: Callable[[float], Tuple[float, float, float]] = lambda t: (0.0, 0.0, 0.0)
         self.commands: List[Tuple[float, str]] = []
-        self.wrenches: List[Tuple[float, float, Tuple[float, float, float]]] = []   # (t0, t1, world force)
+        # (t0, t1, world force[, application point in the base link frame, default its origin])
+        self.wrenches: List[Tuple] = []
         self._cmd_done = set()
         self._queue: deque = deque()             # (due time, q)
         self._first_data_t = None
@@ -271,7 +276,7 @@ class GzHarness:
         self.log: Dict[str, list] = {k: [] for k in (
             "t", "pos", "rpy", "vel", "omega", "mode", "gait", "q", "dq", "q_target", "tau", "contacts",
             "cmd", "cmd_f", "feet", "mpc_ms", "rec_state", "fall_metric", "body_cmd", "ik_ok", "ground",
-            "terrain_class")}
+            "terrain_class", "gait_phase")}
         # ------------------------------------------------ gz server
         self.fixture = TestFixture(self.world_path)
         self.fixture.on_pre_update(self._pre)
@@ -398,9 +403,14 @@ class GzHarness:
         return float(self.height_fn(float(x), float(y)))
 
     def _apply_wrench(self, ecm, t: float) -> None:
-        for (t0, t1, f) in self.wrenches:
+        V = self.gz.math.Vector3d
+        for w in self.wrenches:
+            t0, t1, f = w[0], w[1], w[2]
             if t0 <= t < t1 and self._link is not None:
-                self._link.add_world_force(ecm, self.gz.math.Vector3d(*f))
+                if len(w) > 3 and w[3] is not None:
+                    self._link.add_world_force(ecm, V(*f), V(*w[3]))
+                else:
+                    self._link.add_world_force(ecm, V(*f))
 
     # ------------------------------------------------------------------ pre-update (server thread)
     def _pre(self, info, ecm) -> None:
@@ -539,16 +549,18 @@ class GzHarness:
         L["omega"].append(om)
         L["mode"].append(dbg["mode"])
         L["gait"].append(dbg["gait"])
-        L["q"].append(st.q.copy())
-        L["dq"].append(st.dq.copy())
-        L["q_target"].append(np.asarray(q, dtype=float).copy())
-        # servo torque estimate: the PID force of the plugin at the last applied target
-        tgt = self.q_sent if self.q_sent is not None else q
-        kp = np.array([self.servo[j]["p_gain"] for j in JOINTS])
-        kd = np.array([self.servo[j]["d_gain"] for j in JOINTS])
-        cmax = np.array([self.servo[j]["cmd_max"] for j in JOINTS])
-        tau = np.clip(kp * (tgt - st.q) - kd * st.dq, -cmax, cmax)
-        L["tau"].append(tau)
+        L["gait_phase"].append(float(dbg.get("phase", math.nan)))
+        if not self.cfg.lite_log:
+            L["q"].append(st.q.copy())
+            L["dq"].append(st.dq.copy())
+            L["q_target"].append(np.asarray(q, dtype=float).copy())
+            # servo torque estimate: the PID force of the plugin at the last applied target
+            tgt = self.q_sent if self.q_sent is not None else q
+            kp = np.array([self.servo[j]["p_gain"] for j in JOINTS])
+            kd = np.array([self.servo[j]["d_gain"] for j in JOINTS])
+            cmax = np.array([self.servo[j]["cmd_max"] for j in JOINTS])
+            tau = np.clip(kp * (tgt - st.q) - kd * st.dq, -cmax, cmax)
+            L["tau"].append(tau)
         L["contacts"].append(np.array(dbg["contacts"], dtype=bool))
         L["cmd"].append(np.array(cmd))
         L["cmd_f"].append(np.array(dbg["cmd"]))
@@ -560,8 +572,9 @@ class GzHarness:
         L["ground"].append(ground)
         L["terrain_class"].append(str(self.terrain_info.get("class", "")) if self.terrain_info else "")
         L["fall_metric"].append(bool(max(abs(rpy[0]), abs(rpy[1])) > math.radians(55.0) or pos[2] - ground < 0.12))
-        bc = self.ctrl.body_ik
-        L["body_cmd"].append(np.r_[bc[0], bc[1]] if bc is not None else np.full(6, np.nan))
+        if not self.cfg.lite_log:
+            bc = self.ctrl.body_ik
+            L["body_cmd"].append(np.r_[bc[0], bc[1]] if bc is not None else np.full(6, np.nan))
         L["ik_ok"].append(bool(dbg["ik_reachable"]))
 
     # ------------------------------------------------------------------ run

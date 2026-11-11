@@ -92,6 +92,18 @@ DusanAI/
   Costs are finite: where no free detour exists (C-OBS4 plate, C-OBS5 pipe across the corridor)
   the path still crosses; C-OBS1 (north end) and C-OBS3 (rubble y -1.3..0.5, 1.26 m passage
   along the north wall) are passed around.
+* Lying-pipe crossings: `dusan_common/debris_crossing.py` (mission_manager, `crossing_*` in
+  mission.yaml). Every crossing of a pipe inside its span on a planned patrol / self-RTH path is
+  replaced by a straight segment square to the pipe (0.9 m before to 0.8 m after the pipe axis,
+  tilted up to 0.35 rad when walls block it, checked on the nav map); while following, the robot
+  turns in place onto that heading before its feet reach the pipe (0.6 + 0.3 m before the axis),
+  then crosses at a steady 0.25 m/s with no sideways command and yaw rate 0 (module1's heading
+  hold) until 0.6 m past it; next to a pipe it does not cross (an end) speed / yaw rate are scaled
+  down along the same curve (<= 0.25 m/s, <= 0.35 rad/s).
+* Seeker map: `terrain_cost.debris_blocked_grid` marks the layout debris of the seeker parameter
+  `debris_blocked_kinds` (default `rubble,pipe`, + 0.10 m) occupied in source_seeker's nav grid,
+  except an item whose blocking would cut the free space apart at the seeker's robot radius
+  (C-OBS1, C-OBS5, F-OBS3 stay free); the cost-layer planners keep the debris crossable.
 * Gauge dial: `dusan_common.gauge_design` (min at 225°, max at −45°, clockwise 270°, red band =
   last 15 %).
 * Cameras: Gazebo convention (looks along +X of its link). `dusan_common.camera.PinholeCamera`.
@@ -299,9 +311,11 @@ re-plans stay in its own counters). No new topic exists for novel obstacles: the
   The stable mode is not affected by these keys. Default `locomotion_mode` stays `stable`: the MPC mode
   needs a solve delay ≤ ~30 ms on the 11.8° ramp with the depth map (module1 README §4.8).
 * `fall_recovery.py`: state machine NORMAL → FALL_DETECTED (|roll| or |pitch| > 55° or body
-  height < 0.12 m for 0.3 s) → DAMP → TUCK → SELF_RIGHT (roll back using the legs on the
-  ground side) → PREPARE (belly, feet under hips) → STAND_UP (interpolated) → NORMAL; 3
-  attempts then optional assisted reset (`reset_pose` via gz CLI, counted separately); FAILED is not terminal: an
+  height < 0.12 m for 0.3 s) → DAMP → TUCK → [ROCK: back roll onto a side when lying on the back,
+  the other direction after a timed-out roll] → SELF_RIGHT (roll back using the legs on the
+  ground side) → PREPARE (belly: knees folded first, then feet under hips) → STAND_UP (interpolated) → NORMAL;
+  physical only by default: 3 attempts, then FAILED (`assisted_reset: true` = optional gz set_pose
+  teleport, counted separately); FAILED is not terminal: an
   upright robot (0.3 s) counts as recovered and stands up, otherwise the 3 attempts restart after
   `recovery_retry_time` (5 s, event `recovery_retry`; 0 or `auto_recover: false` = stay FAILED); the upright height
   check uses max(map-based, foot-kinematics) height (the map under the body can be wrong right after a fall).

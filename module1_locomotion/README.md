@@ -50,6 +50,8 @@ Spot형 4족 로봇 `spot`(15 kg, 다리 0.2256 m + 0.2997 m)의 기구학, 보�
 | `../tools/physics_check.py` (+ `../tools/physics/`) | MuJoCo 물리 검증 (개발 전용, §4.2) -> `docs/results/physics_check.json`, `docs/images/physics_*.png` |
 | `../tools/tune_locomotion.py` | MPC·보행 파라미터 자동 탐색 (개발 전용, §4.4) -> `docs/results/tuning.json`, `docs/images/tuning_*.png` |
 | `../tools/gazebo_check.py` (+ `../tools/gazebo_check/`) | 실제 gz-sim + DART 헤드리스 검증, 두 보행 모드 비교, 실제 plant 월드 검증, MPC 최종 검증 (개발 전용, §4.5–4.8) -> `docs/results/gazebo_check.json`, `docs/images/gazebo_*.png` |
+| `../tools/fall_check.py` | 같은 Gazebo 하네스에서 넘어짐 → 물리 자가 복구 검증(옆·등·밀기·벽·경사로·미션 중 넘어짐, 개발 전용, §4.9) -> `docs/results/fall_check.json` |
+| `../tools/mission_check.py` | 같은 하네스에서 데모 미션 전체(도크 → 계기판 8개 → 가스 탐색 → 귀환·도킹), 넘어짐·멈춤 위치 분석(개발 전용, §4.10) -> `--out` 파일 |
 
 ---------------------------------------------------------------------------
 
@@ -149,14 +151,15 @@ torque_ratio, torque_horizon_max[12]`(첫 1초 동안 관절별 예측 최대 |t
 | 스윙 | `step_height` 0.08 (crawl 0.10), `swing_clearance` 0.04, `swing_max_lift` 0.25, `swing_lift_fraction` 0.2, `swing_retarget_until` 0.8 (trot; crawl `crawl_retarget_until` 0 = 재타겟 없음), `max_retarget_step` 0.06, `touchdown_measured_xy` |
 | 몸체 | `body_lead_time` 0.02 s, `body_target_mode` integrated(또는 prediction), `max_body_lead` 0.06 m(측방은 `max_body_lead_lateral` 0.015 m), `max_yaw_lead` 0.05 rad (crawl은 `crawl_max_body_lead` 0.10 m / `crawl_max_body_lead_lateral` 0.03 m / `crawl_max_yaw_lead` 0.20 rad, §4.5), `mpc_lateral_ref_blend` 0.5(§4.8), `kp_attitude` 0.0(2026-10-26, 이전 0.5, §4.8), `kd_attitude` 0.0, `max_attitude_correction` 0.15 rad, `ki_height` 0.5, `max_height_integral` 0.03, `max_body_pitch` 0.30, `terrain_pitch_gain` 1.0, `ground_filter_tau` 0.2, `stand_filter_tau` 0.3, `max_joint_speed` 12 rad/s |
 | 서보 | `torque_feedforward` 0.0(꺼짐. MPC 지지 토크 중 `tau / servo_kp`로 위치 목표에 더하는 비율), `servo_kp` 450 N m/rad(= `spot.urdf.xacro`의 `servo_p_gain`) |
-| 지형 | `use_foothold_planner` true, `foothold_search_radius` 0.10 |
+| 지형 | `use_foothold_planner` true, `foothold_search_radius` 0.10, `foothold_keep_unseen` true(stable: 착지 셀이 맵에 없으면 공칭 착지점 유지, §3.9) |
 | 포화 | `torque_scale_threshold` 0.85, `torque_recover_threshold` 0.70, `speed_scale_min` 0.3, `speed_scale_down` 0.9, `speed_scale_up` 0.02 |
-| 넘어짐 | `auto_recover`, `fall_angle_deg` 55, `fall_height` 0.12, `fall_detect_time` 0.3, `max_recovery_attempts` 3, `assisted_reset` true, `reset_height_offset` 0.5, `reset_settle_time` 1.0, `reset_confirm_timeout` 8.0, `recovery_retry_time` 5.0 |
+| 넘어짐 | `auto_recover`, `fall_angle_deg` 55, `fall_height` 0.12, `fall_detect_time` 0.3, `fall_lean_deg` 30 / `fall_lean_time` 2.0 s(벽에 기대 선 자세), `max_recovery_attempts` 3, `assisted_reset` false(true면 3회 실패 뒤 gz set_pose 순간이동), `reset_height_offset` 0.5, `reset_settle_time` 1.0, `reset_confirm_timeout` 8.0, `recovery_retry_time` 5.0 |
 | gz | `enable_gz_tools`, `gz_timeout` 3 s, `push_force_x/y` 0 / 150 N, `push_duration` 0.2 s, `grf_arrow_scale` 0.004 m/N |
 | MPC | `mpc_mass` 15, `mpc_mu` 0.5, `mpc_f_min` 0, `mpc_f_max` 250 N, `mpc_q_weights` [30 30 10 4 4 60 0.5 0.5 0.5 2 2 1], `mpc_r_weight` 2e-4, `mpc_time_weighting`, `mpc_tail_decay` 0, `mpc_capture_gain` 0.6, `mpc_feedback_tau` 0.5 s, `mpc_max_foot_dx/dy` 0.16 / 0.14, `mpc_terrain_horizon` 1.2 s, `mpc_sway_gain` 0.5, `mpc_sway_smooth` 0.5 s, `mpc_sway_ramp` 0.6 s, `mpc_anchor_window` 0(= 보행 주기), `mpc_terrain_robust` true(중앙값 + Theil-Sen 지형 기준, §3.4), `mpc_qp_max_iter` 250, `mpc_qp_eps` 1e-3, `mpc_qp_time_limit` 0.04 s |
 | MPC 지지·회전 (§4.8) | `mpc_stance_max_error` 0.02 m, `mpc_stance_rel_error` 0.02 m, `mpc_heading_hold_gain` 1.0 1/s / `mpc_heading_hold_max` 0.2 rad/s, `mpc_land_tau` 0.05 s, `mpc_contact_lift` 0.02 m, `mpc_contact_map_tol` 0.04 m, `swing_guard_clearance` 0.02 m, `swing_guard_radius` 0.06 m, `retarget_check_radius` 0.05 m, `retarget_jump_until` 0.3, `mpc_turn_pivot_x` −0.15 m(0 = 원점 회전), `mpc_turn_pivot_fade` 0.10 m/s. 모두 MPC 모드에서만 씀. `mpc_stance_*`, `mpc_heading_hold_gain`, `mpc_land_tau`, `mpc_contact_lift`, `swing_guard_clearance`는 0이면 꺼짐 |
 | 미끄러운 바닥 (§3.8) | 감지: `slip_detection` true, `slip_speed_threshold` 0.08 m/s, `slip_window` 0.06 s, `slip_settle_time` 0.03 s, `slip_min_legs` 2, `slip_max_force_ratio` 0.4, `slip_confirm_time` 0.10 s, `slip_decay` 0.5, `slip_release_time` 2.0 s + `slip_release_distance` 3.0 m, `slip_max_tilt_deg` 15; 추정: `slip_mu_min` 0.15, `slip_mu_margin` 1.0, `slip_mu_drop` 0.6, `slip_recover_tau` 8 s, `slip_min_normal_force` 20 N; 슬립 모드: `use_terrain_friction` true, `slip_gait` keep, `slip_max_vx/vy/wz` 0.2 / 0.1 / 0.4, `slip_accel_scale` 0.5, `slip_torque_feedforward` 1.0, `slip_ff_ramp_time` 0.5 s, `slip_max_body_lead` 0.015 m, `slip_resync_feet` true, `slip_stance_width_offset` 0 |
-| stable 보행 (§3.9) | `stable_trot_period` 0.40 / `stable_trot_duty` 0.60, `stable_walk_period` 1.20 / `stable_walk_duty` 0.80, 한계 trot 0.5 / 0.25 / 0.8, walk 0.2 / 0.1 / 0.4, `stable_step_height` 0.07 (walk 0.08), `stable_stance_depth` 0.005, `stable_retarget_until` 0.8, `stable_max_retarget_step` 0.015 m(맵·foothold planner가 있을 때만), `stable_max_step_x/y` 0.12 / 0.08 |
+| stable 보행 (§3.9) | `stable_trot_period` 0.40 / `stable_trot_duty` 0.60, `stable_walk_period` 1.20 / `stable_walk_duty` 0.80, 한계 trot 0.5 / 0.25 / 0.8, walk 0.2 / 0.1 / 0.4, `stable_step_height` 0.07 (walk 0.08), `stable_stance_depth` 0.005, `stable_retarget_until` 0.8, `stable_max_retarget_step` 0.015 m(맵·foothold planner가 있을 때만), `stable_retarget_jump` 0.05 m / `stable_retarget_jump_until` 0.25, `stable_max_step_x/y` 0.12 / 0.08 |
+| stable 장애물 보행 (§3.9) | `stable_obstacle_trot_period` 0.5 s / `stable_obstacle_trot_duty` 0.6(0 = 끔), `stable_obstacle_height` 0.04 m, `stable_obstacle_ahead` 0.55 m, `stable_obstacle_hold` 1.0 s, `stable_obstacle_early_x` true |
 | stable 안정화 | `stable_stance_max_error` 0.015 m(지지력 제한), `stable_raibert_gain` 0.1 s(`stable_max_feedback` 0.05 m), `stable_kp_level` 0.3 / `stable_ki_level` 1.0 / `stable_max_level` 0.15 rad, `stable_ki_height` 1.0 / `stable_max_height_corr` 0.03 m, `stable_gravity_ff` 1.0, `stable_load_ramp` 0.03 s, `stable_load_tau` 0.1 s, `stable_land_tau` 0.05 s, `stable_swing_attitude_blend` 0, `stable_walk_sway` 0.4 (`stable_walk_sway_x` 0, `stable_walk_sway_smooth` 0.5 s), `stable_stand_center_tau` 0.5 s, `stable_heading_hold_gain` 1.0 / `stable_heading_hold_max` 0.2 rad/s |
 | 토픽 | `odom_topic`, `imu_topic`, `joint_states_topic`, `cmd_vel_topic`, `command_topic`, `terrain_info_topic`, `elevation_topic`, `world_frame` |
 
@@ -377,42 +380,53 @@ effort 45 / 45 / 60 N m로 제한. `spot.urdf.xacro`, DESIGN_SPEC §3). MPC 힘 
 ### 3.6 넘어짐 복구 (`fall_recovery.py`)
 
 ```
-NORMAL --(|roll| 또는 |pitch| > 55 deg 또는 높이 < 0.12 m가 0.3 s 지속, 해제 문턱 50 deg / 0.14 m)--> FALL_DETECTED
+NORMAL --(|roll| 또는 |pitch| > 55 deg 또는 높이 < 0.12 m가 0.3 s 지속, 해제 문턱 50 deg / 0.14 m;
+          또는 |roll| 또는 |pitch| > 30 deg가 2 s 지속 = 벽 등에 기대 섬)--> FALL_DETECTED
 FALL_DETECTED -> DAMP -> TUCK -> [|roll| > 120 deg이면 ROCK] -> SELF_RIGHT -> PREPARE -> STAND_UP -> VERIFY -> NORMAL
-실패 -> 다음 시도 (DAMP) ... 3회 시도 후 -> recovery_failed -> ASSISTED_RESET (gz set_pose) 또는 FAILED
+SELF_RIGHT --(배 대신 등 쪽으로 넘어감)--> ROCK (다음 시도로 셈, DAMP / TUCK 생략)
+실패 -> 다음 시도 (DAMP) ... 3회 시도 후 -> recovery_failed -> FAILED
+                                         (assisted_reset: true일 때만 ASSISTED_RESET = gz set_pose 순간이동)
 FAILED --(다리로 서 있음이 0.3 s 확인)--> NORMAL (컨트롤러가 측정 자세에서 일어섬)
-       --(recovery_retry_time 5 s 뒤)--> recovery_retry -> DAMP (3회 시도를 새로 시작)
+       --(recovery_retry_time 5 s 뒤)--> recovery_retry -> DAMP (3회 시도를 새로 시작, 일어설 때까지 반복)
 ```
+
+기본값은 순간이동 없이 로봇이 자기 다리로 일어나는 **물리 복구**입니다(`assisted_reset: false`). 3회 시도가 모두
+실패해도 포기하지 않고 `recovery_retry_time`(5 s)을 쉰 뒤 처음부터 다시 시도합니다. 일어서면 STAND로 돌아가고,
+미션 관리자는 현재 위치에서 경로를 다시 계획해 이어 갑니다. FAILED에 계속 머무는 것은 `auto_recover: false`일
+때뿐입니다(수동 `recover`).
 
 | 단계 | 관절 (hip_x, hip_y, knee) | 이유 |
 |---|---|---|
 | DAMP | 측정 관절을 따름(\|omega\| < 1 rad/s가 될 때까지 0.5-2 s) | 충격에 맞서지 않음 |
 | TUCK (0.8 s) | 모든 다리 (0, 1.25, -2.70): 발이 hip 아래 0.11 m / 앞 0.08 m | 자유롭게 구르는 작은 몸체 |
-| ROCK (등을 대고 있을 때) | hip_x +-0.7을 같은 위상으로, 진폭을 키우며, 다리를 편 채 | 옆으로 기울임 |
-| SELF_RIGHT | 지면 쪽 다리: 앞 (-0.25 -> 0.6, -1.5, -1.5), 뒤 (-0.25 -> 0.6, 2.4, -0.6). 위쪽 다리는 접음 | 옆으로 누우면 다리 평면이 수평입니다. 지면 쪽 발을 로봇 윗면 쪽으로 휘두르며 지면 쪽으로 벌리면, 지면 반력이 CoM의 윗면 쪽에 작용해 몸체를 배 쪽으로 굴립니다 |
-| PREPARE (1 s) | (0, 1.20, -2.55) | 배를 대고 발을 hip 아래로 |
+| ROCK (등을 대고 있을 때, 시도당 최대 6 s) | **열기** 0.6 s: 낮게 남을 쪽 다리는 곧게 펴서(hip_y 0, knee -0.25) hip_x 0.7로 몸통 가장자리 바깥으로 기울이고, 올라갈 쪽 다리는 접은 채 다리 평면만 바깥으로(hip_x 0.7). 이어서 **밀기** 0.4 s(올라갈 쪽 앞다리 hip_y -1.6 / knee -1.5, 뒷다리 2.6 / -0.2) → **거두기** 0.35 s → **유지** 0.5 s를 반복 | 낮은 쪽 다리가 무게중심을 회전축(몸통 가장자리) 쪽으로 옮겨, 넘어가는 데 필요한 roll을 약 58°에서 29°로 줄입니다. 올라갈 쪽 발은 등 너머 몸통 옆 지면을 짚어 그쪽을 들어 올리고, roll이 가장 클 때 그 다리를 떼면 무게중심이 낮은 쪽으로 돌아가며 몸이 옆으로 넘어갑니다. \|roll\| < 135°이면 SELF_RIGHT. 시간이 다 되면 다음 시도는 반대 방향으로 굴립니다(벽이나 경사로의 오르막 쪽이 한 방향을 막을 수 있음) |
+| SELF_RIGHT | 지면 쪽 다리: 앞 (-0.25 -> 0.6, -1.5, -1.5), 뒤 (-0.25 -> 0.6, 2.4, -0.6). 위쪽 다리는 접음 | 옆으로 누우면 다리 평면이 수평입니다. 지면 쪽 발을 로봇 윗면 쪽으로 휘두르며 지면 쪽으로 벌리면, 지면 반력이 CoM의 윗면 쪽에 작용해 몸체를 배 쪽으로 굴립니다. 등 쪽으로 넘어가 버리면(\|roll\| > 150°) 바로 ROCK |
+| PREPARE (1.3 s) | ① 무릎을 접고 hip_x를 가운데로, hip_y는 그대로(0.35 s) ② 무릎을 접은 채 hip_y를 1.25로(0.6 s) ③ (0, 1.20, -2.55)(0.35 s) | 배를 대고 발을 hip 아래로. SELF_RIGHT에서 편 다리를 땅에 댄 채 hip_y를 돌리면 0.5 m 지렛대가 45 N·m 한계에 걸려 몸이 다시 옆으로 넘어갔습니다. 무릎을 먼저 접으면(발까지 0.14 m) 5-10 N·m로 몸을 넘깁니다 |
 | STAND_UP (2.5 s) | 서기 자세까지 smoothstep | |
 | VERIFY | 1.5 s 안에 0.3 s 동안 똑바로 섬(\|roll\|, \|pitch\| < 25 deg, 높이 > 0.22 m) | 성공 -> `recovered` |
 
-이벤트 `fall`, `recovered`, `recovery_failed`, `recovery_retry`, `assisted_reset`은 `/locomotion/fall_event`로, 카운터는
-`/locomotion/state`로 보냅니다. 보조 리셋은 스레드에서 `gz_tools.reset_pose(x, y, z + 0.5, yaw)`를
-호출하고, `gz service` 호출이 응답할 때까지(CLI는 약 0.3-1 s 걸림, 최대 `reset_confirm_timeout`) 서기
-자세를 유지한 뒤, 낙하를 위해 `reset_settle_time`을 기다리고 일어섭니다. set_pose가 실패하면 복구는
-FAILED가 됩니다. FAILED는 영구 상태가 아닙니다. ASSISTED_RESET 동안 유지한 서기 자세 덕분에 로봇이
-이미 서 있으면(직립 조건 0.3 s) 그대로 복구로 보고 일어서기(STANDING_UP → STAND)로 넘어갑니다. 아니면
-`recovery_retry_time`(5 s, `auto_recover: false`이면 0 = FAILED 유지) 뒤에 3회 시도를 처음부터
-다시 합니다. 수동으로는 `recover`나 `reset_pose`로 바로 재시도합니다. 복구 중 직립 판정의 높이는 지도
-기준 높이와 측정한 발 기준 높이(다리 기구학) 중 큰 값입니다. 넘어지는 동안 depth 카메라가 같이 굴러서 몸 아래
-지도 칸이 틀어질 수 있기 때문입니다. 실제로 이 경우 "넘어진 뒤 일어났는데 미션이 멈춤"이 생겼습니다
-(로봇은 서 있는데 상태는 계속 FALLEN). `reset_pose` 명령도 같은 방식이며, 안정 대기 창은 요청 시점이
-아니라 순간이동이 실행된 시점부터 시작합니다.
+30° / 2 s 기울기 조건(`fall_lean_deg`, `fall_lean_time`)은 벽 쪽으로 밀린 로봇이 벽에 기대 41° 기운 채 STAND로 남아
+멈춘 경우 때문에 넣었습니다(55°에 닿지 않아 넘어짐으로 보지 않았음). 이벤트 `fall`, `recovered`, `recovery_failed`,
+`recovery_retry`, `assisted_reset`은 `/locomotion/fall_event`로, 카운터는 `/locomotion/state`로 보냅니다.
+FAILED 동안 관절은 측정값을 따라 힘을 빼므로, 벽이나 물체에 걸쳐 있던 몸이 미끄러져 내려와 다음 시도는 다른 자세에서
+시작합니다. FAILED에서 로봇이 이미 다리로 서 있으면(직립 조건 0.3 s) 그대로 복구로 보고 일어서기(STANDING_UP →
+STAND)로 넘어갑니다. 수동으로는 `recover`로 바로 재시도합니다. 복구 중 직립 판정의 높이는 지도 기준 높이와 측정한
+발 기준 높이(다리 기구학) 중 큰 값입니다. 넘어지는 동안 depth 카메라가 같이 굴러서 몸 아래 지도 칸이 틀어질 수 있기
+때문입니다. 실제로 이 경우 "넘어진 뒤 일어났는데 미션이 멈춤"이 생겼습니다(로봇은 서 있는데 상태는 계속 FALLEN).
 
-**물리 검증 결과** (MuJoCo, §4.2): 옆으로 누운 상태에서 시작(h1)과, 서 있다가 60 N·s로 밀려
-옆으로 넘어진 경우(h2)는 시드 3개 모두 첫 시도에 복구했습니다. 넘어진 뒤 STAND까지 각각 6.07 s,
-5.16 s이고 보조 리셋은 없었습니다. 등으로 떨어진 경우는 아직 풀지 못했습니다. 등을 대고 시작(h3)과
-100 N·s 밀기(h4)에서는 ROCK 키프레임(hip_x 범위 ±0.7 rad)이 평평한 등 위에서 몸을 굴리지 못해
-시도 횟수를 다 쓰고 보조 리셋으로 넘어갑니다. 뒷다리를 hip_y 약 2.4 rad로 지면에 짚어 굴리는 동작과,
-DAMP 단계에서 옆으로 누운 로봇이 등까지 굴러가지 않게 하는 처리가 다음 과제입니다.
+`assisted_reset: true`로 켜는 순간이동 보조 리셋(선택)은 3회 실패 뒤 스레드에서 `gz_tools.reset_pose(x, y, z + 0.5,
+yaw)`를 호출하고, `gz service` 호출이 응답할 때까지(CLI는 약 0.3-1 s 걸림, 최대 `reset_confirm_timeout`) 서기 자세를
+유지한 뒤, 낙하를 위해 `reset_settle_time`을 기다리고 일어섭니다. set_pose가 실패하면 FAILED로 갑니다. `reset_pose`
+명령(텔레옵 `0`)은 이 설정과 관계없이 쓸 수 있고, 안정 대기 창은 요청 시점이 아니라 순간이동이 실행된 시점부터
+시작합니다.
+
+**검증 결과**: Gazebo 헤드리스(`tools/fall_check.py`, §4.9)에서 옆·등·밀기·벽·경사로·미션 중 넘어짐 9개
+케이스 × 시드 10개 중 **89/90**을 순간이동 없이 일으켜 세웠고, 일어선 뒤 모두 다시 걸었습니다(이전 키프레임은 같은 케이스에서
+12/45). 미션 중 넘어진 10회는 모두 일어선 뒤 미션이 이어져 목표 지점에 도착했습니다. MuJoCo(§4.2,
+`physics_check.py --scenarios h_side h_push h_push100 h_back --seeds 0 1 2`)에서는
+옆으로 누운 채 시작(h1) 3/3, 60 N·s 밀기(h2) 3/3, 등을 대고 시작(h3) 3/3, 100 N·s 밀기로 등으로
+떨어짐(h4) 3/3이고 모두 첫 시도, 넘어짐 → STAND 6.4 / 6.3 / 7.5 / 7.7 s, 보조 리셋 0입니다(이전 키프레임은
+h3·h4 0/1). 남은 약점은 §4.9 결과 아래에 정리했습니다.
 
 ### 3.7 gz 도구 (`gz_tools.py`)
 
@@ -530,6 +544,7 @@ Gazebo의 순응적인 위치 서보(p 450 N m/rad)에 맞게 고쳤습니다. M
 | 중력 피드포워드 | 지지 다리마다 τ = −Jᵀ Rᵀ (0, 0, m g w_i)를 τ / `servo_kp`로 관절 목표에 더함. PD 서보가 무게 때문에 1–2 cm 처지는 것을 없앰. 하중 비율 w_i는 지지 시작과 끝 0.03 s 동안 램프(네 발 지지 구간에서 하중을 부드럽게 넘기고, 들 때는 하중 0) |
 | heading hold | 회전 명령이 없을 때 회전이 끝난 시점의 yaw를 P 1.0/s(최대 0.2 rad/s)로 유지 |
 | 지형 (맵이 있을 때) | 착지 높이와 지지발 높이가 elevation map을 따름(몸 높이 = 공칭 발 아래 맵 높이 평균 + 0.34 m). 몸 pitch = 지형 pitch(`terrain_pitch_gain`, `max_body_pitch`). Raibert 착지점은 MPC 모드와 같은 foothold planner로 배관 위·모서리를 피함(선택이 바뀌면 착지점 이동을 `stable_max_retarget_step` 1.5 cm/주기로 제한). 스윙 경로의 가장 높은 맵 점 + 발 반지름 + `swing_clearance` 위로 정점을 올리고(최대 `swing_max_lift`), 먼저 들고(`swing_lift_fraction`) 정점을 유지한 채 앞으로 옮긴 뒤 내림. 맵이 없거나 발 높이와 0.35 m 넘게 어긋나면 평지로 가정 |
+| 장애물 보행 | ① 공칭 착지 셀이 맵에 없으면(카메라가 앞만 봄: 출발 직후 몸 아래·뒤, 회전한 바깥쪽) 공칭 착지점을 그대로 씀(`foothold_keep_unseen`). 예전에는 planner가 가장 가까운 *보이는* 셀로 최대 0.16 m 앞으로 당겨 뒷발이 몸 밑으로 들어갔고, 도크 출발 5회 중 2회 뒤로 넘어졌음 ② 들어 올린 뒤 planner의 선택이 배관 반대편으로 바뀌면(착지점 변위가 `stable_retarget_jump` 5 cm 넘게 바뀜) 스윙 25 %까지는 새 착지점을 통째로 받고, 그 뒤에는 정한 착지점을 지킴. 예전에는 1.5 cm/주기로 옮겨 가다 스윙이 끝나 발이 배관 위에 내려섰음 ③ 다리 아래·앞(뒷발 뒤 0.4 m ~ 몸 앞 0.55 m, 왼발·가운데·오른발 선 세 개)의 맵에 지형선보다 4 cm 넘게 솟은 것(배관·잔해·단 모서리)이 있으면 1 s 동안 trot 주기를 0.5 s로 늦춤(스윙 0.16 → 0.2 s). 위상은 이어지므로 패턴만 바뀜. 경사로·계단 비탈은 직선이라 해당 없음 ④ 장애물 때문에 정점을 올린 스윙은 수평 이동을 앞당기고(스윙의 5–70 %) 정점을 80 %까지 유지한 뒤 내림(`stable_obstacle_early_x`). 서보가 늦게 따라와 실제 발이 배관을 다 넘기 전에 내려와 배관 위에 섰음 |
 | IK | `kinematics.ik_all` |
 
 **Gazebo 튜닝에서 확인한 것** (`tools/gazebo_check.py`, §4.5)
@@ -546,7 +561,7 @@ Gazebo의 순응적인 위치 서보(p 450 N m/rad)에 맞게 고쳤습니다. M
 
 ## 4. 평가
 
-보행 스택은 네 가지 오프라인 도구로 평가합니다. 모두 Windows에서 ROS 없이 실행합니다.
+보행 스택은 다섯 가지 오프라인 도구로 평가합니다. 모두 Windows에서 ROS 없이 실행합니다.
 
 | 도구 | 플랜트 | 무엇을 보나 | 결과 |
 |---|---|---|---|
@@ -554,6 +569,7 @@ Gazebo의 순응적인 위치 서보(p 450 N m/rad)에 맞게 고쳤습니다. M
 | `tools/physics_check.py` (§4.2) | MuJoCo 다물체 + gz식 PID 관절 서보 + 접촉·마찰 | 제어기 전체: 서보, 토크 포화, 접촉, 센서 주기, 깊이 기반 지각, 넘어짐 복구, 미끄러운 철판 | `docs/results/physics_check.json`, `docs/images/physics_*.png` |
 | `tools/tune_locomotion.py` (§4.4) | 위 두 가지를 함께 사용 | MPC·보행 파라미터 자동 탐색과 채택 판정 | `docs/results/tuning.json`, `docs/images/tuning_*.png` |
 | `tools/gazebo_check.py` (§4.5–4.8) | **실제 gz-sim 8(Harmonic) + DART**, 로봇의 gz 플러그인 그대로, 헤드리스 | 제어기 전체를 Gazebo 접촉·서보에서: 평지 시나리오, 지연, 두 보행 모드 비교, 실제 `plant.sdf`(깊이 카메라 → 지형 맵 경로 흉내, 키보드 운전자) | `docs/results/gazebo_check.json`, `docs/images/gazebo_*.png` |
+| `tools/fall_check.py` (§4.9) | 위와 같은 Gazebo 하네스 | 넘어짐 → 순간이동 없는 자가 복구 → 다시 걷기: 옆·등·밀기·벽·경사로·미션 중 넘어짐 | `docs/results/fall_check.json` |
 
 `physics_check.py`와 `tune_locomotion.py`는 `pip install mujoco matplotlib`이 필요한 개발 도구입니다.
 런타임 패키지(`module1_locomotion`, `dusan_common`)는 mujoco와 scipy를 import하지 않습니다.
@@ -645,8 +661,8 @@ CPU 코어 수 − 2(최대 8)입니다. 이전 실행을 비교 기준으로 �
 | (h2) 서 있을 때 60 N·s 밀기 → 넘어짐 → 복구 | (h1)과 같음 | 0/3 (당시 100 N·s) | **3/3** | 첫 시도에 복구, 5.16 s, 보조 리셋 0 |
 | (k) μ 0.15 철판, 사전정보 + 감지 | 넘어짐 없음, x = 6 m 통과 | 0/3 (처리 없음) | **3/3** | §3.8 |
 | (k) μ 0.2 철판, 사전정보 + 감지 | 같음 | 1/3 (처리 없음) | **3/3** | §3.8 |
-| (h3) 등을 대고 시작 (best effort) | (h1)과 같음 | 0/1 | 0/1 | 6회 시도 실패 → 보조 리셋 |
-| (h4) 서 있을 때 100 N·s 밀기, 등으로 떨어짐 (best effort) | (h1)과 같음 | – | 0/1 | 5회 시도 실패 → 보조 리셋 |
+| (h3) 등을 대고 시작 (best effort) | (h1)과 같음 | 0/1 | 0/1 | 6회 시도 실패 → 보조 리셋 (등 굴리기 키프레임 이후 3/3, 첫 시도, 7.5 s. §3.6) |
+| (h4) 서 있을 때 100 N·s 밀기, 등으로 떨어짐 (best effort) | (h1)과 같음 | – | 0/1 | 5회 시도 실패 → 보조 리셋 (등 굴리기 키프레임 이후 3/3, 첫 시도, 7.7 s. §3.6) |
 | (i) μ 0.15 철판, trot 0.4 강제, 사전정보 없음 (best effort) | 철판 통과 | 0/1 | 0/1 | 9.76 s에 슬립 감지, 넘어지지 않았지만 30 s 안에 x 5.82 m까지만 감 |
 | (i) μ 0.15 철판, crawl 0.2 강제 (best effort) | 철판 통과 | 0/1 | 0/1 | 넘어짐 2회, x 2.69 m |
 | (j) 0.17 m 계단 4단 상행 + 하행 (best effort) | 넘어짐 없음, x = 6.3 m 통과 | 0/1 | 0/1 | 최대 x 1.13 m까지만 가고 목표에 도달하지 못함, 넘어짐 6회 (보조 리셋 2회) |
@@ -715,7 +731,8 @@ CPU 코어 수 − 2(최대 8)입니다. 이전 실행을 비교 기준으로 �
 - **(f) 측면 밀기**: 착지 순간 큰 힘이 실려 몸통이 뜨고(hopping), 옆으로 크게 내딛는 발이 IK 자세와 실제 자세의
   차이(약 5°) 때문에 일찍 지면을 칩니다(약 400 N). 스윙 발을 측정 자세 기준으로 계산하거나 `kd_attitude`를 쓰는 방법은
   더 나빴습니다. 다음 후보는 관절 토크로 추정한 조기 접지 감지입니다.
-- **(h3)(h4) 등으로 떨어짐**: §3.6의 ROCK 키프레임 한계.
+- **(h3)(h4) 등으로 떨어짐**: 이 표의 실행 당시 ROCK 키프레임(다리를 편 채 hip_x를 같은 위상으로 흔듦)의 한계였습니다.
+  지금의 등 굴리기 키프레임(§3.6)으로는 시드 0/1/2 모두 첫 시도에 섭니다.
 - **(j) 계단·경사로**: 계단은 x 1.13 m까지만 가고 6번 넘어졌으며, 경사로는 x 1.5 m에서 넘어졌습니다(넘어짐 4회). 원인 분석은 다음 단계 과제입니다.
 
 ### 4.3 미끄러운 철판
@@ -1231,6 +1248,139 @@ python tools/gazebo_check.py --mode stable --map depth --label stable_regress2 -
 - (j)의 C-OBS1 0.10 m 배관 횡단은 두 모드 모두 3회 중 1회 넘어집니다.
 - 지연 수치는 개발 PC에서 Gazebo 10개를 동시에 돌린 조건입니다. 실제 로봇 PC의 풀이 시간에 따라 경사로 결과가 달라질 수 있습니다.
 
+### 4.9 Gazebo 넘어짐 복구 검증 (`tools/fall_check.py`)
+
+§4.5와 같은 하네스(실제 gz-sim 8 + DART, 로봇 자신의 gz 플러그인, 실제 `LocomotionController`)에서 로봇을 일부러
+넘어뜨리고, **순간이동 없이**(기본값 `assisted_reset: false`) 자기 다리로 일어나는지 봅니다. 일어선 지 2 s 뒤에는 다시
+걷게 합니다. 평지에서는 0.3 m/s로 6 s 걷고, plant 월드에서는 제자리 trot(`walk` 명령) 6 s입니다. plant에서는 팔레트·배관·
+경사로 가장자리가 가까워 아무 방향으로나 걷게 하면 복구가 아니라 길 찾기를 시험하게 되기 때문입니다(어디로 갈지는 미션이
+정하며, `mission` 케이스가 그 경우를 봅니다).
+
+| 케이스 | 넘어뜨리는 방법 |
+|---|---|
+| `side` | 옆으로 누운 채 스폰(roll ±(90 ± 15)°, pitch ±11°, 방향 무작위) |
+| `back` | 등을 대고 스폰(roll 180 ± 20°) |
+| `trot` | trot 0.4 m/s 중 몸통에 측면 400-500 N × 0.2 s |
+| `roll` | 서 있을 때 몸통 위 0.3 m에 측면 400-500 N × 0.2 s (발 위로 넘어감) |
+| `push` | 서 있을 때 몸통 위 0.3 m에 뒤쪽으로 400-500 N × 0.2 s |
+| `wall` | 실제 plant 월드 아래층 복도, 북쪽 벽에서 0.5 m 떨어져 서 있다가 벽 쪽으로 300-400 N |
+| `ramp_walk` | 11.8° 복도 경사로를 trot 0.3 m/s로 오르다가 경사로 위에서 측면 250-350 N |
+| `ramp_push` | 경사로 가운데(x = 49.1 m)까지 걸어 올라가 멈추고 2.5 s 뒤 측면 300-400 N |
+| `mission` | 실제 MissionLogic이 위층 복도에서 V1으로 가는 미션 중 약 14 s에 측면 450-550 N. 일어난 뒤 미션이 이어져 V1에 도착해야 함 |
+
+평지 케이스는 지도 없이, plant 케이스는 Ubuntu처럼 깊이 카메라 → `terrain_mapper` 지도(`--map depth`)로 걷습니다.
+옆·등으로 스폰하는 케이스는 roll / pitch를 오도메트리에서 읽습니다(`use_imu_orientation: false`). gz IMU의 자세가 스폰
+자세 기준이기 때문입니다. Ubuntu에서는 로봇이 똑바로 선 채 스폰하므로 IMU 그대로입니다. 통과 조건은 넘어짐 감지, 순간이동
+0회, `recovered`, 다시 걷기(걷기 구간의 절반 이상 WALK 모드, 미션은 V1 도착), 마지막 2 s 동안 STAND / WALK 모드에
+\|roll\|, \|pitch\| < 15°, 몸통이 지면 위 0.25 m 이상입니다. 걷다가 다시 넘어지면 다음 복구 뒤에 다시 걷게 하고, 그 횟수를
+따로 셉니다. 밀어도 넘어지지 않은 실행은 복구율에서 뺍니다.
+
+```
+python tools/fall_check.py                                   # 9개 케이스 x 시드 0-9 -> docs/results/fall_check.json
+python tools/fall_check.py --cases side back --seeds 0 1 --no-save
+python tools/fall_check.py --summary-only                    # 저장된 요약 보기
+```
+
+**결과** (`docs/results/fall_check.json`, 2026-11-11, 시드 0-9. "이전 키프레임"은 같은 도구로 잰 이전 ROCK / PREPARE와
+순간이동 끈 설정, 시드 0-4)
+
+| 케이스 | 이전 키프레임 (시드 0-4) | 현재 (시드 0-9) | 첫 시도에 복구 | 넘어짐 → STAND 평균 / 최대 | 다시 걷다 또 넘어짐 | 순간이동 |
+|---|---|---|---|---|---|---|
+| `side` 옆으로 누운 채 시작 | 1/5 | **10/10** | 5 | 10.1 / 32.3 s | 0 | 0 |
+| `back` 등을 대고 시작 | 0/5 | **10/10** | 10 | 9.1 / 10.7 s | 0 | 0 |
+| `trot` trot 중 측면 밀기 | 1/5 | **10/10** | 6 | 8.3 / 11.0 s | 0 | 0 |
+| `roll` 서서 측면 밀기 | 2/5 | **10/10** | 9 | 9.0 / 12.1 s | 0 | 0 |
+| `push` 서서 뒤로 밀기 | 1/5 | **10/10** | 8 | 8.7 / 11.0 s | 0 | 0 |
+| `wall` 복도 벽 쪽으로 밀기 | 4/5 | **10/10** | 9 | 6.8 / 9.7 s | 0 | 0 |
+| `ramp_walk` 경사로 오르다 밀기 | 0/5 | **9/10** | 3 | 15.3 / 29.4 s | 0 | 0 |
+| `ramp_push` 경사로에 서서 밀기 | 2/5 | **10/10** | 5 | 11.1 / 16.4 s | 1 | 0 |
+| `mission` 미션 중 밀기 | 1/5 | **10/10** | 6 | 14.4 / 62.6 s | 1 | 0 |
+
+- 넘어진 90회 중 **89회를 순간이동 없이 일어섰습니다**(이전 키프레임 12/45). 순간이동은 0회이고, 일어선 뒤에는 모두 다시
+  걸었습니다. `mission` 10회는 모두 일어선 뒤 경로를 다시 계획해 V1까지 갔습니다(미션은 넘어져 있는 동안
+  "locomotion not ready" 상태로 기다림).
+- 대부분 첫 시도나 두 번째 시도에서 6-12 s 만에 섭니다. 오래 걸린 경우는 아래와 같습니다.
+  - `side` 시드 3 (32 s): 배를 대고 일어서는 중 왼쪽 앞다리가 몸 아래에 끼어(hip_y가 -0.5 rad에서 멈춤) 세 다리로 기운 채
+    VERIFY에 3번 실패했습니다. FAILED 5 s 동안 힘을 빼자 몸이 옆으로 누웠고, 다음 시도는 SELF_RIGHT부터 다시 해서 섰습니다.
+  - `mission` 시드 4 (62.6 s): 위층 복도 벽 가까이에서 몸 앞쪽이 들린 채 앉은 자세(pitch 50-60°)로 멈춰 PREPARE → STAND_UP이
+    세 번 실패했습니다. FAILED 동안 미끄러져 내려온 뒤 등 굴리기 → 옆 → 배 순서로 섰습니다.
+  - `ramp_walk` 시드 0 / 5 / 9 (25-29 s): 경사면에서 옆과 등을 오가며 3회를 다 쓰고, 5 s 쉰 뒤 새 시도에서 섰습니다.
+- **실패 1회**: `ramp_walk` 시드 8. 경사로 남쪽 가장자리(난간 없음) 밖으로 떨어져, 경사로 옆면(약 0.27 m 높이) 바로 옆에
+  왼쪽 옆구리를 대고 누웠습니다. 몸 윗면이 옆면 쪽이라 SELF_RIGHT의 발이 디딜 곳이 없고, 등 굴리기는 같은 쪽으로 되돌아와
+  100 s 동안 14회 시도하고도 서지 못했습니다(시도는 계속함).
+- 경사로에서 일어선 직후 제자리 trot이나 미션 재개 중에 다시 넘어진 경우가 2회 있었습니다(`ramp_push` 1, `mission` 1).
+  두 번 다 다시 일어나 걸었습니다. 경사면을 가로질러 걷는 보행 자체의 약점입니다.
+
+### 4.10 Gazebo 전체 미션 검증 (`tools/mission_check.py`)
+
+§4.5와 같은 하네스에서 **데모 미션 전체**를 돌립니다. 도크에서 스폰하고 3.5 s에 't'(= `start`)를 보낸 뒤, 순찰 계획기의
+계기판 8개를 돌고, 도중에 가스 경보가 울리면 누출원을 찾고, 귀환해서 도킹할 때까지입니다. 실제 plant 월드(gz-sim + DART)와
+로봇 자신의 gz 플러그인에, 미션에 참여하는 노드의 실제 코드를 ROS 없이 연결합니다(`tools/gazebo_check/mission_stack.py`).
+
+- 보행: `LocomotionController`(stable, 깊이 카메라 → terrain_mapper 지도), 넘어지면 스스로 일어남(순간이동 없음)
+- 미션: `MissionLogic`(지형 비용 경로 계획, 배관 건너기, 장애물 계층), `ViewpointPlanner`, 가스 확산 + `SourceSeeker`,
+  배터리, 통신, `RthLogic`, `CmdVelMux`
+- 계기판 판독기는 정답 자세에서 계기판이 보이는지(입사각, 픽셀 크기, 가림, 회전 속도)로 대신합니다. 열화상은 돌리지 않습니다.
+
+실행마다 완료 여부(DOCKED + 계기판 8/8 + 가스 누출원 FOUND + 순간이동 0), 계기판 결과, 가스 결과, 넘어짐마다 위치·구역·가장
+가까운 잔해·미션 상태·보행 위상·속도·명령·직전 2 s 방향 변화·일어나는 데 걸린 시간, 멈춤(주행 중 15 s 동안 0.25 m 미만 이동),
+sim / wall 시간을 JSON으로 남깁니다. `--save-npz`는 100 Hz 로봇 기록과 10 Hz 미션 기록을 남깁니다.
+
+```
+python tools/mission_check.py --seeds 0 1 2 3 4 --jobs 5 --out <파일>.json --save-npz
+python tools/mission_check.py --seeds 0 --leg 9 --out <파일>.json                      # 9번째 구간만 (G07 → 도크)
+python tools/mission_check.py --seeds 0 1 --spawn=24.2,0.5,3.14 --goal=19.8,0.3 --out <파일>.json   # 임의 구간 (C-OBS5 서쪽 방향)
+```
+
+**이전 코드의 넘어짐 위치** (시드 0–4, 32회, `stable` 기본값, 넘어지기 시작한 위치 기준)
+
+| 위치 | 횟수 | 원인 |
+|---|---|---|
+| C-OBS5 배관(0.08 m, 복도를 가로지름) | 18 | A* 경로가 배관 바로 앞뒤에서 40–45° 꺾여 발이 배관 옆에 있을 때 돌았음(0.4 m/s, 최대 0.6 rad/s). 곧게 건너도 스윙 0.16 s에 0.3 m를 넘는 발이 서보 지연으로 배관 위에 내려섰고, 스윙 중 foothold 선택이 배관 반대편으로 바뀌면 1.5 cm/주기로 옮겨 가다 배관 위에서 스윙이 끝났음 |
+| F-OBS5 잔해 | 10 | 가스 탐색기가 잔해를 지도에서 빈 곳으로 보고 곧장 가로질렀음(8회 탐색 중, 2회 순찰 중 잔해 가장자리). 탐색이 시간 초과되자 두 번째 탐색이 통신 음영 예측으로 귀환을 일으켜 계기판 3개에서 미션이 끝난 시드도 2개 |
+| 도크 출발 | 2 | 출발 직후 카메라가 아직 몸 아래·뒤를 보지 못해 뒷발 착지점이 0.16 m 앞(보이는 셀)으로 당겨졌고, 뒷발이 몸 밑으로 들어가 뒤로 넘어졌음 |
+| F-OBS3 배관 북쪽 끝(칸막이 출입구) | 2 | 배관 끝을 돌아 문으로 들어가는 0.6 m 동안 약 100°를 꺾음(0.37 m/s, 0.6 rad/s) |
+
+**고친 것**
+
+- `dusan_common/debris_crossing.py` + `mission_logic`: 배관을 건너는 구간을 배관에 직각인 직선(축 앞 0.9 m ~ 뒤 0.8 m)으로 다시
+  만들고, 발이 배관에 닿기 전(축 앞 0.9 m)에 제자리에서 그 방향으로 돈 뒤 0.25 m/s, 옆걸음 없이, 회전 명령 0(heading hold가
+  방향 유지)으로 건넘. 건너지 않고 배관 끝을 지날 때는 같은 곡선을 따라 0.25 m/s, 0.35 rad/s 이하로 느리게 감
+- 보행(§3.9 "장애물 보행"): 맵에 없는 착지 셀은 공칭 착지점 유지, 스윙 후반의 foothold 점프 무시, 배관 같은 범프 근처에서
+  trot 주기 0.5 s, 장애물 스윙은 수평 이동을 앞당기고 늦게 내림
+- 가스 탐색기 지도(`debris_blocked_kinds` `rubble,pipe`): 잔해와 배관을 벽처럼 피함. 막으면 통로가 끊기는 배관(C-OBS1·C-OBS5·
+  F-OBS3)은 그대로 둠
+
+**결과** (Gazebo Harmonic, 시드마다 스폰 위치·명령 시각이 조금 다름. 이전 = 위 표의 실행)
+
+| 시드 | 이전 | 이후 | 이후 넘어짐 (위치) | 미션 시간 |
+|---|---|---|---|---|
+| 0 | 미완료: C-OBS5에서 240 s 못 일어남(계기판 7, 가스 FOUND), 넘어짐 5 | **완료** | 0 | 495 s |
+| 1 | 완료, 넘어짐 8 | **완료** | 0 | 513 s |
+| 2 | 미완료: C-OBS5에서 못 일어남(계기판 7, FOUND), 넘어짐 8 | **완료** | 3 (C-OBS5, F-OBS3 끝, 탐색 중 F-OBS3) | 796 s |
+| 3 | 미완료: 통신 음영 귀환(계기판 3, 가스 TIMEOUT), 넘어짐 7 | **완료** | 0 | 775 s |
+| 4 | 미완료: 통신 음영 귀환(계기판 3, TIMEOUT), 넘어짐 4 | **완료** | 0 | 503 s |
+| **합계** | **1/5 완료, 넘어짐 32(6.4/회)** | **5/5 완료** | **3 (0.6/회)** | 평균 616 s |
+| 5–9 (추가) | - | 4/5 완료 | 6 (1.2/회): C-OBS5 4, F-OBS3 끝 1, 탐색 중 1 | 평균 634 s |
+
+- 순간이동은 이전·이후 모두 0회입니다. 계기판은 완료한 실행 모두 8/8, 가스 누출원은 모두 FOUND입니다.
+- 미완료 1회(시드 8): C-OBS5를 건너다 넘어져 **배관 위에 등을 대고** 누웠고, 등 굴리기가 배관을 받침점 삼아 같은 자리로
+  되돌아와 240 s 동안 9번 다시 시도하고도 서지 못했습니다.
+- C-OBS5: 이후 미션 10회에서 19번 건너 14번은 넘어지지 않았습니다(서쪽 8/10, 돌아오는 동쪽 6/9). 이전 미션 5회에서는
+  10번 중 1번이었습니다. 구간 실행(`--spawn`, 방향마다 시드 5개)으로는 서쪽 5/5, 동쪽 3/5입니다.
+- 가스 탐색이 칸막이 뒤(뒷방)에서 시작하면 첫 탐색이 180 s 안에 끝나지 않는 경우가 있습니다(시드 2, 3). 두 번째 탐색에서
+  찾지만 미션 시간이 약 280 s 길어집니다.
+
+**회귀 확인** (같은 날, 최종 코드)
+
+- `tools/gazebo_check.py --mode stable --map depth`, 시드 0·1: a·e·i·k·o·s 각 2/2, r 2/2(이전 1/2), q 1/2(이전 0/2),
+  **j 0/2(이전 1/2), l 0/2(이전 2/2)**, 합계 15/20(이전 16/20). 이전 값은 같은 도구·설정으로 잰 이번 수정 전 보행 코드입니다.
+  j와 l은 키보드 운전자가 배관을 0.25 m/s로 곧게(C-OBS1, j) 또는 방향을 고치며 20° 비스듬히(C-OBS5, l) 넘는 시나리오입니다.
+  미션은 C-OBS1을 돌아가고 C-OBS5는 직각으로 건너므로 이 경우를 쓰지 않지만, 텔레옵으로 배관을 넘는 일은 전보다 위험합니다.
+  j는 `stable_obstacle_early_x: false`면 1/2로 돌아오지만(q는 2/2, l은 그대로 0/2), 그 설정에 앞다리의 빈 착지 셀을 planner에
+  맡기는 변경을 더해 돌린 미션은 출발 230 s 안에 5회 중 3회 넘어져 중단했고, 기본값은 미션 10회로 확인한 설정으로 두었습니다.
+- `tools/obstacle_check.py`(지도에 없는 박스, r t u v w x z × 시드 3개): 21/21, 넘어짐 0(이전 21/21).
+
 ## 5. 튜닝 가이드
 
 * **stable 모드 (기본)**: 먼저 Gazebo 하네스로 확인합니다(§4.5, `--mode stable`).
@@ -1287,7 +1437,7 @@ python -m pytest module1_locomotion/test/test_kinematics.py module1_locomotion/t
     module1_locomotion/test/test_fall_recovery.py module1_locomotion/test/test_controller.py \
     module1_locomotion/test/test_slip_detector.py module1_locomotion/test/test_stable_gait.py -q
 python -m pytest tools/test/test_physics_check.py tools/test/test_tune_locomotion.py -q   # 개발 도구 (mujoco 없으면 해당 테스트 skip)
-GZ_PYTHON=<gz 파이썬 경로> python -m pytest tools/test/test_gazebo_check.py -q            # Gazebo 폐루프 (GZ_PYTHON 없으면 skip)
+GZ_PYTHON=<gz 파이썬 경로> python -m pytest tools/test/test_gazebo_check.py tools/test/test_fall_check.py tools/test/test_mission_check.py -q   # Gazebo 폐루프 (GZ_PYTHON 없으면 skip)
 ```
 
 - **Gazebo 하네스** (`tools/test/test_gazebo_check.py`): 하네스 URDF·월드가 Ubuntu 실행과 같은지(plant.sdf 물리·시스템, PID 힘 모드 서보
@@ -1308,7 +1458,15 @@ GZ_PYTHON=<gz 파이썬 경로> python -m pytest tools/test/test_gazebo_check.py
 - **QP**: 알려진 해, OSQP 예제, scipy와 비교한 랜덤 QP, 불가능 판정, 웜스타트, 연마.
 - **MPC**: 5.0 s 비균일 호라이즌, 정확한 이산화, 서 있을 때 힘 = m g 이고 대칭, 보행 시 실행 가능성과 마찰 원뿔, 착지점, 지형,
   아래층 바닥, 풀이 시간, KKT, 관측기, crawl 앵커·sway 회귀, 폐루프 crawl, 풀이마다 전달되는 μ.
-- **넘어짐 복구**: 감지와 히스테리시스, 시퀀스, 시도 횟수, 보조 리셋, gz 명령줄, 비동기 밀기.
+- **넘어짐 복구**: 감지와 히스테리시스, 기댄 자세(30° / 2 s) 감지, 시퀀스, 등 굴리기 키프레임과 방향 바꾸기, SELF_RIGHT에서 등으로
+  넘어갈 때, PREPARE 단계, 시도 횟수, 기본값이 순간이동 없음이고 실패해도 계속 다시 시도하는지, 보조 리셋(선택), gz 명령줄, 비동기 밀기.
+- **넘어짐 검증 도구** (`tools/test/test_fall_check.py`): 케이스 설정(스폰 자세, 미는 방향·크기, plant 위치), 걷기·멈춤·밀기 운전자,
+  판정. `GZ_PYTHON`이 있으면 옆으로 누운 로봇이 gz-sim에서 순간이동 없이 일어나는지 돌립니다.
+- **전체 미션 검증 도구** (`tools/test/test_mission_check.py`): 위치 → 구역·가장 가까운 잔해, 넘어짐 분석(기울기가 커지기 시작한 시점,
+  위치, 미션 상태, 속도·명령), 멈춤 분석, 완료 판정, `--leg`·`--spawn` 구간 계획. `GZ_PYTHON`이 있으면 위층 복도의 짧은 구간을
+  미션 스택 전체와 함께 돌립니다.
+- **장애물 보행** (`test_controller.py`, `test_stable_gait.py`): 맵에 없는 착지 셀은 공칭 착지점을 유지하는지, 스윙 초반의 foothold 점프는 받고 후반의 점프는 무시하는지, 작은 변화는 1.5 cm/주기로 제한되는지, 배관 같은 범프에서는
+  trot 주기가 0.5 s로 바뀌고 1 s 유지되며 경사로에서는 바뀌지 않는지.
 - **제어기**: 기립, 한계를 지키는 유한한 목표로 걷기, 속도 한계, 보행 자동 선택, E-stop, 앉기, 넘어짐, 복도 아래층(z = −0.88),
   경사로, 맵 없음, 스레드 MPC, PointCloud2 파서, crawl 속도·표류, crawl 착지점 재조정 없음, 토크 피드포워드, 50 ms 서보 지연에서의
   보행 속도(integrated 대 prediction 몸체 목표), 실제 ElevationMap + FootholdPlanner로 10 cm 단차 두 개를 넘는 통합 실행,

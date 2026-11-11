@@ -17,6 +17,9 @@ source_seeker:
     ground_truth_override: false    # false: layout gas_leak.source for error_m
     ground_truth_x: -3.2
     ground_truth_y: 2.0
+    debris_blocked_kinds: "rubble,pipe"  # layout debris the seeker avoids like walls ("" = none; the nav
+                                    # map has debris free: the seek walked through the F-OBS5 rubble); an
+                                    # item that would close a passage (F-OBS3 at the doorway) stays free
 
     # ---------------------------------------------------- sensing / thresholds
     detect_ppm: 2.5                 # plume detected

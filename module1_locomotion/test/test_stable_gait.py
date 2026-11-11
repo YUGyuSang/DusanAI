@@ -52,6 +52,7 @@ def test_parameter_mapping_covers_the_controller_parameters():
     sp = SG.StableParams.from_controller_params(C.DEFAULT_PARAMS)
     used_by_controller = {"stable_trot_period", "stable_trot_duty", "stable_walk_period", "stable_walk_duty",
                           "stable_walk_sway_x", "stable_heading_hold_gain", "stable_heading_hold_max"}
+    used_by_controller |= {"stable_obstacle_" + k for k in ("trot_period", "trot_duty", "height", "ahead", "hold")}
     used_by_controller |= {f"stable_{g}_max_{a}" for g in ("trot", "walk") for a in ("vx", "vy", "wz")}
     stable_keys = {k for k in C.DEFAULT_PARAMS if k.startswith("stable_")}
     assert {k for k in stable_keys if k not in used_by_controller} <= set(SG.StableParams._MAP)
@@ -177,32 +178,61 @@ def test_levelling_and_terrain_inputs():
     assert max(heights) == pytest.approx(0.12 + 0.04, abs=0.01)
 
 
-def test_foothold_choice_is_applied_and_its_jumps_are_rate_limited():
-    """The planner's choice is taken at lift-off; later jumps (e.g. the nominal
-    point crossing a pipe) move the touch-down point by at most
-    max_retarget_step per control step."""
-    g = SG.StableGait(SG.StableParams(max_retarget_step=0.015))
+def _swing_run(params, offset_fn, ticks=15):
+    """Trot from stand with a foothold function adding ``offset_fn(call)`` to the
+    Raibert point; returns [(swing progress, p1 of the swinging legs)] per tick."""
+    g = SG.StableGait(SG.StableParams(**params))
     q0 = kin.stand_joint_angles()
     sched = _scheduler()
-    state = {"n": 0}
+    calls = {"n": 0}
 
     def foothold(leg, xy):
-        state["n"] += 1
-        return np.asarray(xy) + (np.array([0.06, 0.0]) if state["n"] > 6 else np.array([-0.04, 0.0]))
+        calls["n"] += 1
+        return np.asarray(xy) + offset_fn(calls["n"])
 
-    t, prev = 0.0, None
-    for k in range(12):
+    out, t = [], 0.0
+    for _ in range(ticks):
         t += DT
         gs = sched.update(t)
-        _q, info = g.step(DT, gs, (0.0, 0.0, 0.0), np.zeros(3), q0, foothold_fn=foothold)
+        g.step(DT, gs, (0.0, 0.0, 0.0), np.zeros(3), q0, foothold_fn=foothold)
         legs = np.nonzero(g.swinging)[0]
-        if k == 0:
-            raw = [g.touchdown_target(int(l), (0, 0, 0), gs.stance_duration, 0.0)[:2] for l in legs]
-            assert np.allclose(g.p1[legs, :2], np.array(raw) + [-0.04, 0.0], atol=1e-9)   # taken at once
-        elif prev is not None:
-            step = np.linalg.norm(g.p1[legs, :2] - prev[legs, :2], axis=1)
-            assert np.all(step <= 0.015 + 1e-9)
-        prev = g.p1.copy()
+        out.append((float(gs.swing_progress[legs[0]]) if len(legs) else -1.0, legs, g.p1.copy(), g))
+    return out
+
+
+def test_foothold_choice_is_applied_and_its_small_changes_are_rate_limited():
+    """The planner's choice is taken at lift-off; later small changes move the
+    touch-down point by at most max_retarget_step per control step."""
+    prm = dict(max_retarget_step=0.015)
+    run = _swing_run(prm, lambda n: np.array([-0.04, 0.0]) if n <= 2 else np.array([-0.04 + 0.004 * n, 0.0]))
+    s0, legs, p1, g = run[0]
+    raw = [g.touchdown_target(int(l), (0, 0, 0), 0.24, 0.0)[:2] for l in legs]
+    assert len(legs) == 2
+    for (_s, lg, a, _g), (_s2, lg2, b, _g2) in zip(run[:-1], run[1:]):
+        if len(lg2) and set(lg2) == set(lg):
+            assert np.all(np.linalg.norm(b[lg2, :2] - a[lg2, :2], axis=1) <= 0.015 + 1e-9)
+
+
+def test_foothold_jump_is_taken_early_and_ignored_late_in_the_swing():
+    """The planner switching to a foothold on the other side of a pipe (its
+    displacement changes by more than retarget_jump): early in the swing the new
+    point is taken whole, later the committed point is kept - slewing at the
+    rate limit set the foot down ON the pipe in between (Gazebo C-OBS5)."""
+    prm = dict(max_retarget_step=0.015, retarget_jump=0.05, retarget_jump_until=0.25)
+    # jump right after lift-off (2nd call per leg): taken whole
+    early = _swing_run(prm, lambda n: np.array([-0.12, 0.0]) if n <= 2 else np.array([0.12, 0.0]), ticks=3)
+    s, legs, p1, g = early[-1]
+    assert s <= 0.25
+    raw = np.array([g.touchdown_target(int(l), (0, 0, 0), 0.24, (1.0 - s) * 0.16)[:2] for l in legs])
+    assert np.allclose(p1[legs, :2], raw + [0.12, 0.0], atol=0.02)
+    # jump after 40 % of the swing: the committed point (moving with the ground) is kept
+    late = _swing_run(prm, lambda n: np.array([-0.12, 0.0]) if n <= 12 else np.array([0.12, 0.0]), ticks=12)
+    k = next(i for i, r in enumerate(late) if r[0] > 0.3)
+    s, legs, before, _g = late[k - 1]
+    for s2, legs2, after, _g2 in late[k:]:
+        if set(legs2) != set(legs):
+            break
+        assert np.allclose(after[legs, :2], before[legs, :2], atol=1e-9)       # zero command: no frame motion
 
 
 # ---------------------------------------------------------------------------

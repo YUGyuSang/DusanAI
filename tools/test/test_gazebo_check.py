@@ -56,6 +56,19 @@ def test_world_copies_the_plant_physics_and_systems(tmp_path):
     assert {"floor", "pipe", "step"} <= names
 
 
+def test_spawn_roll_pitch_in_the_include_pose(tmp_path):
+    """A robot can be spawned lying (fall recovery check): roll / pitch go into
+    the include pose of the flat and of the plant world."""
+    world, _ = W.build(str(tmp_path), "flat", (1.0, 2.0, 0.3, 0.5), tag="_rp", spawn_rp=(1.6, -0.1))
+    inc = ET.parse(world).getroot().find("world/include")
+    assert [float(v) for v in inc.findtext("pose").split()] == pytest.approx([1.0, 2.0, 0.3, 1.6, -0.1, 0.5])
+    root = ET.fromstring(W.plant_world_sdf(str(tmp_path / "spot.urdf"), (46.5, 0.72, 0.557, math.pi),
+                                           spawn_rp=(math.pi, 0.0)))
+    inc = [i for i in root.find("world").findall("include") if i.findtext("name") == "spot"][0]
+    assert [float(v) for v in inc.findtext("pose").split()] == pytest.approx([46.5, 0.72, 0.557, math.pi, 0.0,
+                                                                              math.pi])
+
+
 def test_harness_urdf_keeps_the_runtime_plugins_and_drops_render_sensors():
     robot = W.robot_tree(use_xacro=False)
     sensors = [s.get("type") for g in robot.findall("gazebo") for s in g.findall("sensor")]

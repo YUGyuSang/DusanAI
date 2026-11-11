@@ -505,14 +505,18 @@ python tools/generate_world.py                        # world_layout.yaml을 고
 | `tools/physics_check.py` (MuJoCo 물리 검증, `pip install mujoco`), `tools/tune_locomotion.py` (파라미터 탐색) | `python tools/physics_check.py --quick` | `docs/results/physics_check.json`, [module1 README §4](../module1_locomotion/README.md#4-평가) |
 | `tools/gazebo_check.py` (Gazebo 헤드리스 보행 검증) | `python tools/gazebo_check.py --scenarios a b --seeds 0 --duration 9 --no-save` | `docs/results/gazebo_check.json`, [module1 README §4.5](../module1_locomotion/README.md#45-gazebo-헤드리스-검증-toolsgazebo_checkpy) |
 | `tools/obstacle_check.py` (지도에 없는 박스를 넣은 미션) | `python tools/obstacle_check.py --scenarios u --seeds 0` | `--out` 파일, [REPORT §7.8.3](REPORT.md#783-gazebo-신규-박스-실험-toolsobstacle_checkpy) |
+| `tools/fall_check.py` (넘어짐 → 물리 자가 복구: 옆·등·밀기·벽·경사로·미션 중) | `python tools/fall_check.py --cases side back --seeds 0 --no-save` | `docs/results/fall_check.json`, [module1 README §4.9](../module1_locomotion/README.md#49-gazebo-넘어짐-복구-검증-toolsfall_checkpy) |
+| `tools/mission_check.py` (데모 미션 전체: 도크 → 8개 계기판 → 가스 탐색 → 귀환·도킹) | `python tools/mission_check.py --seeds 0 --out <파일>.json` | `--out` 파일, [module1 README §4.10](../module1_locomotion/README.md#410-gazebo-전체-미션-검증-toolsmission_checkpy) |
 
-- Gazebo 도구 두 개는 gz-sim 8 파이썬 바인딩(`gz.sim8`, `gz.transport13`)이 필요합니다. conda-forge의 `gz-sim8` 등으로 설치합니다([SETUP_GUIDE §7](SETUP_GUIDE.md#7-개발-도구)).
+- Gazebo 도구 네 개는 gz-sim 8 파이썬 바인딩(`gz.sim8`, `gz.transport13`)이 필요합니다. conda-forge의 `gz-sim8` 등으로 설치합니다([SETUP_GUIDE §7](SETUP_GUIDE.md#7-개발-도구)).
   Jetty(gz-sim 10) 바인딩은 `GZ_CHECK_RELEASE=jetty`로 시도할 수 있습니다(미검증).
 - 보행 모드는 `gazebo_check.py --mode stable|mpc`, `obstacle_check.py --modes stable mpc`로 고릅니다. 실제 plant 월드와 깊이 카메라 지도는 `--map depth`입니다
   (예: `python tools/gazebo_check.py --label plant_depth --map depth --scenarios j k o`).
-- physics_check는 `--out <파일>.json --no-figures`, gazebo_check는 `--no-save`를 붙이면 저장소의 결과 파일을 덮어쓰지 않습니다. obstacle_check는 `--out`에만 씁니다.
+- physics_check는 `--out <파일>.json --no-figures`, gazebo_check·fall_check는 `--no-save`를 붙이면 저장소의 결과 파일을 덮어쓰지 않습니다. obstacle_check·mission_check는 `--out`에만 씁니다
+  (mission_check는 `--save`일 때만 `docs/results/mission_check.json`).
+  mission_check의 구간 실행: `--leg K --legs N`(순찰 계획의 K번째 구간부터 N개), `--spawn=x,y,yaw --goal=x,y`(임의 구간).
   시나리오와 다른 옵션은 각 도구의 `--help`에 있습니다.
-- `GZ_PYTHON=<바인딩이 있는 python 경로>`를 지정하면 `tools/test/test_gazebo_check.py`의 폐루프 테스트도 실행됩니다.
+- `GZ_PYTHON=<바인딩이 있는 python 경로>`를 지정하면 `tools/test/test_gazebo_check.py`, `tools/test/test_fall_check.py`, `tools/test/test_mission_check.py`의 폐루프 테스트도 실행됩니다.
 
 ---
 
@@ -598,8 +602,10 @@ Gazebo 창 오른쪽 아래 World stats나 `ros2 topic hz /clock`(≈ 200 × RTF
 <a id="faq-fall"></a>
 ### Q8. 로봇이 넘어진다 / 일어나지 못한다
 
-- **자동 복구**: |roll| 또는 |pitch| > 55°, 또는 몸통 높이 < 0.12 m가 0.3 s 이어지면 넘어짐으로 봅니다. 자가 복구를 최대 3회 시도하고,
-  실패하면 `gz` set_pose로 보조 리셋합니다. 그래도 안 되면 5 s(`recovery_retry_time`, `locomotion.yaml`) 뒤 다시 시도합니다.
+- **자동 복구**: |roll| 또는 |pitch| > 55°, 또는 몸통 높이 < 0.12 m가 0.3 s 이어지면 넘어짐으로 봅니다. 로봇이 자기 다리로 일어납니다
+  (옆으로 누우면 다리로 밀어 배 쪽으로 굴리고, 등으로 누우면 먼저 옆으로 굴림). 3회 시도가 모두 실패하면 5 s(`recovery_retry_time`,
+  `locomotion.yaml`) 쉬고 처음부터 다시 시도하며, 일어설 때까지 반복합니다. 순간이동(`gz` set_pose) 보조 리셋은 기본으로 꺼져 있고
+  `locomotion.yaml`의 `assisted_reset: true`로 켤 수 있습니다.
   미션 중 20 s(`recover_after`, `mission.yaml`) 넘게 넘어져 있으면 미션 관리자가 `recover`를 보내고, 일어서면 경로를 다시 계획해 이어 갑니다.
 - **수동 복구**: 대시보드 **복구**, 텔레옵 `r`, 또는 `ros2 topic pub --once /locomotion/command std_msgs/msg/String "{data: recover}"`.
   자세를 강제로 리셋하려면 텔레옵 `0`(`reset_pose`).

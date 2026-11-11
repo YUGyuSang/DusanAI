@@ -101,24 +101,32 @@ _Z_PEAK = float(bezier(_Z_RAW, 0.5)[0])
 SWING_Z_CTRL = tuple(v / _Z_PEAK for v in _Z_RAW)
 
 
-def swing_point(p0, p1, s: float, height: float, lift: float = 0.0) -> np.ndarray:
+def swing_point(p0, p1, s: float, height: float, lift: float = 0.0, early: bool = False) -> np.ndarray:
     """Swing foot position at progress ``s`` from ``p0`` to ``p1`` (ground
     frame) with a ``height`` bump above the straight line.  ``lift`` (0..0.3)
     delays the horizontal motion to [lift, 1 - lift] of the swing and holds
     the apex over [0.5 - lift, 0.5 + lift] (step over an obstacle: up first,
-    then forward at the apex, then down)."""
+    then forward at the apex, then down).  ``early`` (servo lag over an
+    obstacle): the horizontal motion over [lift / 4, 1 - 1.5 lift] and the
+    apex held until 1 - lift - the lagging real foot is past the obstacle
+    before it comes down (Gazebo: with the symmetric profile a 0.3 m step over
+    the C-OBS5 pipe set the foot down on the pipe)."""
     p0 = np.asarray(p0, dtype=float)
     p1 = np.asarray(p1, dtype=float)
     lam = float(np.clip(lift, 0.0, 0.3))
-    u = (float(s) - lam) / (1.0 - 2.0 * lam)
+    if lam > 0.0 and early:
+        x0, x1, dn = 0.25 * lam, 1.0 - 1.5 * lam, 1.0 - lam
+    else:
+        x0, x1, dn = lam, 1.0 - lam, 0.5 + lam
+    u = (float(s) - x0) / max(x1 - x0, 1e-6)
     bx = float(bezier(SWING_X_CTRL, u)[0])
     s = float(np.clip(s, 0.0, 1.0))
     if lam <= 0.0:
         bz = float(bezier(SWING_Z_CTRL, s)[0])
     else:
         # obstacle step: rise over [0, 0.5 - lam], hold the apex while the foot moves
-        # over the obstacle, descend over [0.5 + lam, 1] (cubic Bezier 0 0 1 1 ramps)
-        up, dn = 0.5 - lam, 0.5 + lam
+        # over the obstacle, descend over [dn, 1] (cubic Bezier 0 0 1 1 ramps)
+        up = 0.5 - lam
         if s <= up:
             bz = float(bezier((0.0, 0.0, 1.0, 1.0), s / up)[0])
         elif s < dn:
@@ -167,8 +175,13 @@ class StableParams:
     clearance: float = 0.04              # [m] foot clearance above the highest map point along the swing
     max_lift: float = 0.25               # [m] apex limit above the higher swing end
     obstacle_lift: float = 0.2           # lift fraction (up first, then forward) when the apex is raised
+    obstacle_early_x: bool = True        # obstacle swing: forward early, down late (servo lag, swing_point)
     max_retarget_step: float = 0.015     # [m] per control step: touch-down point changes after lift-off
                                          # (only with a foothold planner, whose choice can jump)
+    retarget_jump: float = 0.05          # [m] the planner's displacement of the touch-down point changing by
+                                         # more than this = a different foothold (the other side of a pipe) ...
+    retarget_jump_until: float = 0.25    # ... taken whole up to this swing progress, later the committed
+                                         # touch-down point is kept (slewing would set the foot on the pipe)
 
     # controller parameter name -> field
     _MAP = {
@@ -184,8 +197,10 @@ class StableParams:
         "stable_stand_center_tau": "stand_center_tau",
         "stable_swing_attitude_blend": "swing_attitude_blend",
         "swing_clearance": "clearance", "swing_max_lift": "max_lift", "swing_lift_fraction": "obstacle_lift",
-        "stable_max_retarget_step": "max_retarget_step",
+        "stable_max_retarget_step": "max_retarget_step", "stable_retarget_jump": "retarget_jump",
+        "stable_retarget_jump_until": "retarget_jump_until",
         "stable_land_tau": "land_tau", "stable_stance_max_error": "stance_max_error",
+        "stable_obstacle_early_x": "obstacle_early_x",
     }
 
     @classmethod
@@ -252,6 +267,7 @@ class StableGait:
         self.height = np.zeros(4)                # swing apex above the line p0 -> p1 per leg
         self.lift = np.zeros(4)                  # swing lift fraction per leg
         self.fresh = np.zeros(4, dtype=bool)     # swing just started: first touch-down target not yet set
+        self.fh_off = np.zeros((4, 2))           # foothold planner displacement of the current touch-down point
 
     def init_from_measured(self, q, rpy) -> None:
         """Start from the measured posture (feet on the ground)."""
@@ -405,20 +421,35 @@ class StableGait:
                 t_rem = (1.0 - s) * float(gs.swing_duration)
                 tgt = self.touchdown_target(leg, cmd, float(gs.stance_duration), t_rem, v_err)
                 if foothold_fn is not None:
+                    raw = tgt[:2].copy()
                     adj = foothold_fn(leg, tgt[:2])
                     if adj is not None and np.all(np.isfinite(adj)):
                         tgt[:2] = np.asarray(adj, dtype=float)[:2]
+                    off = tgt[:2] - raw
                     if not self.fresh[leg]:
-                        d = tgt[:2] - self.p1[leg, :2]
-                        n = float(np.hypot(d[0], d[1]))
-                        if n > float(p.max_retarget_step):
-                            tgt[:2] = self.p1[leg, :2] + d * (float(p.max_retarget_step) / n)
+                        jump = float(np.hypot(*(off - self.fh_off[leg])))
+                        if float(p.retarget_jump) > 0.0 and jump > float(p.retarget_jump):
+                            if s > float(p.retarget_jump_until):
+                                # the planner switched to another foothold late in the swing (the
+                                # nominal point drifted over a pipe: near side <-> far side): keep the
+                                # committed touch-down point - slewing over to the new one at the rate
+                                # limit set the foot down ON the pipe (Gazebo C-OBS5)
+                                tgt[:2] = self.p1[leg, :2]
+                                off = self.fh_off[leg].copy()
+                            # else: early in the swing the new foothold is taken whole
+                        else:
+                            d = tgt[:2] - self.p1[leg, :2]
+                            n = float(np.hypot(d[0], d[1]))
+                            if n > float(p.max_retarget_step):
+                                tgt[:2] = self.p1[leg, :2] + d * (float(p.max_retarget_step) / n)
+                    self.fh_off[leg] = off
                 self.fresh[leg] = False
                 tgt[2] = float(self._ground(ground_fn, tgt[:2])[0])
                 self.p1[leg] = tgt
                 if s <= 0.5 or self.height[leg] <= 0.0:
                     self._apex(leg, height, obstacle_fn, s)
-            self.feet[leg] = swing_point(self.p0[leg], self.p1[leg], s, self.height[leg], self.lift[leg])
+            self.feet[leg] = swing_point(self.p0[leg], self.p1[leg], s, self.height[leg], self.lift[leg],
+                                         early=bool(p.obstacle_early_x))
 
         # ---------------- stance feet settle on the ground (nominal height / map) after touch-down
         z_tgt = self._ground(ground_fn, self.feet[:, :2])

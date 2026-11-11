@@ -1,6 +1,7 @@
 """Mission state machine tests (ROS free): a kinematic robot follows the
 mission's /cmd_vel/patrol output inside a synthetic room."""
 import math
+import os
 
 import numpy as np
 import pytest
@@ -13,6 +14,7 @@ from plant_simulation.mission_logic import (MISSION_DEFAULTS, MissionLogic, cros
                                             fallback_viewpoints, parse_patrol_plan)
 
 DT = 0.1
+PLANT_MAP = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "maps", "plant_map.yaml"))
 
 
 # ----------------------------------------------------------------------------
@@ -722,3 +724,42 @@ def test_default_planner_uses_the_terrain_cost():
     m.set_map(grid)
     m.set_pose(44.0, 0.0, math.pi, 0.0)
     assert m._plan((34.0, 0.0)) and calls == [MISSION_DEFAULTS["robot_radius"]]
+
+
+@pytest.mark.skipif(not os.path.exists(PLANT_MAP), reason="simulation/maps/plant_map.yaml not generated")
+def test_pipe_crossing_planned_straight_and_walked_steadily():
+    """C-OBS5 (0.08 m pipe across the corridor, 20 deg from square): the A* route
+    zig-zagged right at the pipe and the robot turned with its feet next to it
+    (Gazebo mission check: 4 of 5 runs fell there).  The mission plans the
+    crossing straight and square to the pipe, turns onto it before the feet
+    reach the pipe and walks over at crossing_speed without strafing / turning."""
+    from dusan_common.debris_crossing import find_crossings
+    lay = Layout.load()
+    grid = OccupancyGridMap.load(PLANT_MAP)
+    plan = {"viewpoints": [{"gauge_id": "P1", "x": 19.8, "y": 0.3, "yaw": math.pi}], "order": ["P1"], "legs": []}
+    m = MissionLogic({"min_start_time": 0.5}, layout=lay)
+    m.set_map(grid)
+    m.set_plan(plan)
+    sim = Sim(m, x=24.2, y=0.5, yaw=math.pi)
+    m.command("patrol", 0.0)
+    m.on_locomotion_state({"mode": "STAND"}, 0.0)
+    states, cmds = [], []
+
+    def hook(s):
+        states.append(m.crossing.state)
+        if m.crossing.state == "cross" and s.last_cmd is not None:
+            cmds.append(s.last_cmd)
+
+    assert sim.run(60, hook=hook, until=lambda s: s.m.base in ("INSPECTING", "DONE"))
+    path = sim.paths[0]
+    crs = find_crossings(path, m.crossing.pipes)
+    assert [c.pipe.id for c in crs] == ["C-OBS5"]
+    c = crs[0]
+    P = np.asarray(path)
+    seg = P[(np.array([c.progress(*p) for p in P]) > -0.85) & (np.array([c.progress(*p) for p in P]) < 0.75)]
+    d = np.diff(seg, axis=0)
+    hd = np.arctan2(d[:, 1], d[:, 0])
+    assert np.all(np.abs((hd - c.heading + math.pi) % (2 * math.pi) - math.pi) < 1e-6)   # straight, square
+    assert "cross" in states and m.crossing.n_crossings == 1
+    assert cmds and all(v[0] == pytest.approx(MISSION_DEFAULTS["crossing_speed"]) and v[1] == 0.0
+                        and abs(v[2]) <= MISSION_DEFAULTS["crossing_wz"] + 1e-9 for v in cmds)
