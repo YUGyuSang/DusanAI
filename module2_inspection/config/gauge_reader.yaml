@@ -47,6 +47,15 @@ gauge_reader:
     overlay_scale: 1.0
     overlay_idle_period_s: 0.5                        # overlay period of frames with nothing searched / motion-skipped
     stats_period_s: 30.0                              # processing statistics in the log (0 = off)
+    # ---------------------------------------------------------------- inspection snapshot (evidence image)
+    # one annotated JPEG per inspection visit, published when /inspection/target leaves the gauge
+    snapshot_enabled: true
+    snapshot_topic: "/inspection/gauge_snapshot"
+    snapshot_crop_px: 320                             # square dial crop + text footer
+    snapshot_full_width: 640                          # downscaled full frame with the overlay (0 = crop only)
+    snapshot_jpeg_quality: 85
+    snapshot_enhanced: true                           # draw on the low-light enhanced frame
+    snapshot_candidates: 3                            # best frames kept per visit
     # ---------------------------------------------------------------- reader (GaugeReaderConfig)
     reader:
       # enhancement

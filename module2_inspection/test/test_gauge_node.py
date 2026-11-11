@@ -470,3 +470,90 @@ def test_main_catches_external_shutdown(node_mod, monkeypatch):
     with pytest.raises(RuntimeError, match="constructor failed"):
         node_mod.main()
     assert destroyed == ["gauge_reader", "gauge_reader"]
+
+
+def _snapshot_msgs(node, n0):
+    return [json.loads(m.data) for m in node.pubs["/inspection/gauge_snapshot"].msgs[n0:]]
+
+
+def test_snapshot_published_once_when_the_target_leaves_the_gauge(node):
+    """The mission clears /inspection/target when it accepts a gauge: one evidence snapshot of that
+    visit (final fused value, annotated JPEGs) - not before, and not again for the duplicate
+    delivery of the latched + volatile subscriptions."""
+    import base64
+    assert "/inspection/gauge_snapshot" in node.pubs
+    _feed(node, target="")                              # close visits left open by earlier tests
+    pub = node.pubs["/inspection/gauge_snapshot"]
+    n0 = len(pub.msgs)
+    synth = GaugeSynth(seed=21)
+    g = LAYOUT.gauge("G05")
+    pose = _standoff_pose(g)
+    T = camera_world_pose(pose, "inspection_camera")
+    rng = np.random.default_rng(5)
+    readings = node.pubs["/inspection/gauge_readings"]
+    for k in range(4):
+        t = 3000.0 + 0.2 * k
+        node.clock.t = t
+        img, _ = synth.render_world(g, T, SynthConditions(noise_sigma=1.5, plate=True), rng=rng)
+        _feed(node, _image_msg(img, t), _odom_msg(pose, t - 0.01), _imu_msg(0.0, t), target="G05")
+        node._process()
+    assert len(pub.msgs) == n0                          # still inspecting: nothing yet
+    last = next(r for r in json.loads(readings.msgs[-1].data)["readings"] if r["id"] == "G05")
+    _feed(node, target="")                              # both subscriptions deliver ""
+    snaps = _snapshot_msgs(node, n0)
+    assert len(snaps) == 1
+    d = snaps[0]
+    for key in ("stamp", "t_end", "wall", "id", "tag", "value", "unit", "status", "confidence", "n_samples", "range",
+                "read", "frames", "readings", "frame_value", "frame_confidence", "robot_pose", "format", "width",
+                "height", "jpeg_b64", "full_jpeg_b64"):
+        assert key in d, key
+    assert d["id"] == "G05" and d["read"] is True and d["format"] == "jpeg"
+    assert d["value"] == pytest.approx(last["value"]) and d["status"] == last["status"]   # = what the mission accepts
+    assert d["frames"] == 4 and d["readings"] == 4 and 3000.0 <= d["stamp"] <= 3000.6
+    assert abs(d["frame_value"] - d["value"]) <= 0.01 * (g["max"] - g["min"])    # the drawn needle agrees
+    assert d["range"] == [g["min"], g["max"]] and d["unit"] == g["unit"] and d["tag"] == g["tag"]
+    crop = cv2.imdecode(np.frombuffer(base64.b64decode(d["jpeg_b64"]), np.uint8), cv2.IMREAD_COLOR)
+    full = cv2.imdecode(np.frombuffer(base64.b64decode(d["full_jpeg_b64"]), np.uint8), cv2.IMREAD_COLOR)
+    assert crop.shape[:2] == (d["height"], d["width"]) and d["width"] == node.p["snapshot_crop_px"]
+    assert full.shape[1] == node.p["snapshot_full_width"]
+    assert any("inspection snapshot published" in ln for _lv, ln in node.logger.lines)
+
+
+def test_snapshot_of_a_missed_gauge_and_of_a_direct_target_switch(node):
+    """No detection during the visit: the latest frame, read false, value null.  A switch from one
+    target to the next ends the first visit too."""
+    import base64
+    _feed(node, target="")
+    n0 = len(node.pubs["/inspection/gauge_snapshot"].msgs)
+    img = np.full((600, 800, 3), 60, np.uint8)
+    pose = _facing_away(LAYOUT.gauge("G01"))
+    for k in range(2):
+        t = 4000.0 + 0.2 * k
+        node.clock.t = t
+        _feed(node, _image_msg(img, t), _odom_msg(pose, t), _imu_msg(0.0, t), target="G01")
+        node._process()
+    _feed(node, target="G02")
+    snaps = _snapshot_msgs(node, n0)
+    assert [s["id"] for s in snaps] == ["G01"]
+    d = snaps[0]
+    assert d["read"] is False and d["value"] is None and d["readings"] == 0 and d["frames"] == 2
+    assert d["stamp"] == pytest.approx(4000.2) and base64.b64decode(d["jpeg_b64"])[:3] == b"\xff\xd8\xff"
+    _feed(node, target="")                              # G02 never got a frame: no snapshot
+    assert len(_snapshot_msgs(node, n0)) == 1
+
+
+def test_snapshot_failure_is_logged_not_raised(node, monkeypatch):
+    mod = sys.modules["module2_inspection.gauge_reader_node"]
+    _feed(node, target="")
+    n0 = len(node.pubs["/inspection/gauge_snapshot"].msgs)
+    t = 5000.0
+    node.clock.t = t
+    _feed(node, _image_msg(np.full((600, 800, 3), 60, np.uint8), t), imu=_imu_msg(0.0, t), target="G03")
+    node._process()
+
+    def boom(*a, **k):
+        raise RuntimeError("encoder broken")
+    monkeypatch.setattr(mod, "render_gauge_snapshot", boom)
+    _feed(node, target="")
+    assert len(node.pubs["/inspection/gauge_snapshot"].msgs) == n0
+    assert any(lv == "warning" and "snapshot failed" in ln for lv, ln in node.logger.lines)

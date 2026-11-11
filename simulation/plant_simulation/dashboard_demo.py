@@ -1,7 +1,7 @@
 """
 Offline demo of the digital-twin dashboard - no ROS, no Gazebo.
 
-    python -m plant_simulation.dashboard_demo [--port 8080] [--speed 4] [--no-autostart]
+    python -m plant_simulation.dashboard_demo [--port 8080] [--speed 4] [--no-autostart] [--fall-at 120,400]
 
     # headless evaluation run: as fast as possible, metrics session recorded
     # with the real MetricsRecorder (then: python tools/plot_metrics.py <dir>)
@@ -16,22 +16,36 @@ aggregator; the other modules are replaced by simple synthetic models:
   walks up the plume when the mission enables seeking;
 * comm: log-distance RSSI map from the layout access points + shadow zones;
 * inspection: gauge readings = ground truth + 1 % FS noise while the mission
-  dwells at a viewpoint, thermal alerts when a hot spot is in view;
+  dwells at a viewpoint, thermal alerts when a hot spot is in view; when the
+  mission accepts a gauge, an inspection photo of the synthetic dial (same
+  /inspection/gauge_snapshot message and renderer as gauge_reader_node) goes to
+  the metrics session -> gauges/*.jpg, inspection_report.html, tile thumbnails
+  and the '보고서 열기' link of the dashboard;
 * battery drain / charging on the dock, locomotion state, camera frames;
 * slippery ground (display only): the layout plates (C-OBS4 mu 0.2, F-OBS9
   mu 0.15) give the module1 friction-prior fields of /terrain/info and the
   slip-mode fields of /locomotion/state while the robot crosses them
   (:class:`SyntheticSlip`).  The kinematic robot is not slowed down, so a
-  headless metrics run is the same with or without it.
+  headless metrics run is the same with or without it;
+* falls (--fall-at T1,T2 simulated s, off by default): the robot falls on its
+  side there and rights itself through the module1 fall_recovery phases
+  (recovery_state, mode, roll and the fall / recovery counters of
+  /locomotion/state, fall / recovered events of /locomotion/fall_event); it
+  stands still meanwhile and the mission holds as with the real controller
+  (:class:`SyntheticFall`).
 
 Useful to preview the UI on the development PC, in tests, and (headless,
 with --metrics-dir) as an end-to-end check of mission -> metrics -> report
-figures without ROS.
+figures without ROS.  With the dashboard and without --metrics-dir the session
+is recorded in a temporary directory (deleted at exit; --metrics-dir keeps it)
+so that the photos and the report can be shown.
 """
 import argparse
 import math
 import os
 import random
+import shutil
+import tempfile
 import threading
 import time
 
@@ -64,6 +78,82 @@ THERMAL_HALF_FOV = 0.5 * float(SENSORS["thermal_camera"]["hfov"])
 
 def default_web_dir():
     return os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "web"))
+
+
+# synthetic gauge frame: 360 px dial face pasted at [60:420, 140:500] of a 640 x 480 frame
+DEMO_DIAL_ROI = (320.0, 240.0, 180.0)
+
+
+def demo_gauge_snapshot(layout, gid, frame, result, t, frames=1):
+    """/inspection/gauge_snapshot message for the synthetic frame of ``gid`` (module2 renderer,
+    crop around the known dial position).  ``result`` = the mission's accepted reading.
+    None when module2_inspection is not importable."""
+    try:
+        from module2_inspection.gauge_snapshot import render_gauge_snapshot, snapshot_message, wall_time_text
+    except ImportError:
+        return None
+    g = layout.gauge(gid) or {}
+    res = result if isinstance(result, dict) else {}
+    info = {"id": gid, "tag": g.get("tag", ""), "value": res.get("value"), "unit": g.get("unit", ""),
+            "status": res.get("status") or "unknown", "confidence": res.get("confidence"),
+            "n_samples": res.get("n_readings") or 0, "range": [g.get("min"), g.get("max")], "t_sim": t,
+            "wall": wall_time_text()}
+    imgs = render_gauge_snapshot(frame, None, info, crop_px=320, full_width=640, quality=85, roi=DEMO_DIAL_ROI)
+    return snapshot_message(info, imgs, stamp=t, t_end=t, wall=info["wall"], read=res.get("value") is not None,
+                            frames=int(frames), readings=int(frames), frame_value=res.get("value"),
+                            frame_confidence=res.get("confidence"), robot_pose=None, distance=None,
+                            incidence_deg=None, synthetic=True)
+
+
+# synthetic fall on the side and self-righting: (recovery_state, mode, duration s, |roll| rad at the end)
+FALL_PHASES = (("FALL_DETECTED", "FALLEN", 0.1, 1.40), ("DAMP", "FALLEN", 1.2, 1.55),
+               ("TUCK", "RECOVERING", 0.8, 1.55), ("SELF_RIGHT", "RECOVERING", 1.6, 0.50),
+               ("PREPARE", "RECOVERING", 1.0, 0.05), ("STAND_UP", "RECOVERING", 2.5, 0.02),
+               ("VERIFY", "RECOVERING", 0.3, 0.0))
+
+
+class SyntheticFall:
+    """Falls at given simulated times, each followed by a successful self-righting
+    (display / mission-hold check only, no physics)."""
+
+    def __init__(self, times=()):
+        self.times = sorted(float(t) for t in (times or ()))
+        self.t0 = None
+        self.fall_count = self.successes = self.attempts = 0
+
+    @property
+    def down(self):
+        return self.t0 is not None
+
+    def counters(self):
+        return {"fall_count": self.fall_count, "recovery_success": self.successes, "assisted_resets": 0,
+                "recovery_attempts": self.attempts}
+
+    def step(self, t, x, y):
+        """-> (dict of /locomotion/state fields, [fall events]); fields always carry the counters,
+        mode / recovery_state / roll only while the robot is down."""
+        events = []
+        if self.t0 is None and self.times and t >= self.times[0]:
+            self.times.pop(0)
+            self.t0 = float(t)
+            self.fall_count += 1
+            events.append({"event": "fall", "x": x, "y": y, "roll": 1.40, "pitch": 0.05})
+        fields = {"recovery_state": "NORMAL"}
+        if self.t0 is not None:
+            dt = t - self.t0
+            for name, mode, dur, roll in FALL_PHASES:
+                if dt < dur:
+                    if name == "TUCK" and self.attempts < self.fall_count:
+                        self.attempts += 1                       # an attempt starts after the impact
+                    fields = {"recovery_state": name, "mode": mode, "roll": roll, "body_height": 0.12}
+                    break
+                dt -= dur
+            else:
+                self.t0 = None
+                self.successes += 1
+                events.append({"event": "recovered", "x": x, "y": y, "roll": 0.0, "pitch": 0.0})
+        fields.update(self.counters())
+        return fields, events
 
 
 class SyntheticPlant:
@@ -278,7 +368,7 @@ class SyntheticSlip:
 
 
 def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None, quiet=False,
-             serve=True, realtime=True, sim_duration=None, metrics_dir=None, stop_when_done=False):
+             serve=True, realtime=True, sim_duration=None, metrics_dir=None, stop_when_done=False, fall_at=()):
     """Run the synthetic plant + real mission (+ dashboard server).
 
     serve          start the HTTP dashboard (False: headless)
@@ -287,6 +377,7 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
     sim_duration   stop after this many SIMULATED seconds
     metrics_dir    record a metrics session (MetricsRecorder) below this directory
     stop_when_done stop once a started mission has finished (docked / done)
+    fall_at        simulated times [s] of synthetic falls + self-righting (SyntheticFall)
     Returns (DashboardState, MissionLogic); the metrics session directory (or
     None) is left in ``run_demo.session_dir``.
     """
@@ -298,8 +389,12 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
     except Exception:
         pass
     plant = SyntheticPlant(layout, grid)
-    state = DashboardState(layout)
+    temp_metrics = None
+    if serve and not metrics_dir:           # photos + report need a session directory
+        metrics_dir = temp_metrics = tempfile.mkdtemp(prefix="dusan_demo_metrics_")
+    state = DashboardState(layout, metrics_root=metrics_dir)
     slip = SyntheticSlip(friction_zones_from_layout(layout))
+    falls = SyntheticFall(fall_at)
     mission = MissionLogic({"autostart": bool(autostart), "autostart_delay": 3.0, "rth_ack_timeout": 3.0}, layout)
     mission.set_map(grid)
     # patrol plan + route like module2 would publish
@@ -368,7 +463,8 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
     server = None
     if serve:
         server = DashboardServer(state.snapshot, lambda: state.static, default_web_dir(), port=port, host=host,
-                                 sse_rate=5.0, command_fn=command, blob_fn=blob, port_fallbacks=5)
+                                 sse_rate=5.0, command_fn=command, blob_fn=blob, port_fallbacks=5,
+                                 session_dir_fn=state.session_dir)
         bound = server.start()
         if not quiet:
             print(f"dashboard demo on http://localhost:{bound}  (speed x{speed}, Ctrl-C to quit)")
@@ -377,9 +473,12 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
     if metrics_dir:
         run_demo.session_dir = make_session_dir(metrics_dir)
         rec = MetricsRecorder(run_demo.session_dir, layout)
+        rec.on_change = lambda: state.set_session(rec.session_info())      # like /metrics/session
         rec.event(0.0, "demo", "start", "offline dashboard demo (synthetic plant, real mission logic)")
+        state.set_session(rec.session_info())
         if not quiet:
-            print(f"recording metrics to {run_demo.session_dir}")
+            print(f"recording metrics to {run_demo.session_dir}"
+                  + (" (temporary, deleted at exit; --metrics-dir keeps it)" if temp_metrics else ""))
     started = False
 
     dt = 0.1
@@ -387,6 +486,7 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
     last_gas_layer = -1e9
     rng = random.Random(7)
     seek_path = []
+    insp = None             # current inspection visit {gid, frame, n} -> photo when the mission accepts it
     try:
         while not stop.is_set():
             t0 = time.time()
@@ -394,6 +494,15 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
                 with lock:
                     t = plant.t
                     mission.set_pose(plant.x, plant.y, plant.yaw, t)
+                    fall_fields, fall_events = falls.step(t, plant.x, plant.y)
+                    if falls.down:                  # the mission holds like with the real controller
+                        mission.on_locomotion_state(fall_fields, t)
+                    elif fall_events or mission.loco_mode in ("FALLEN", "RECOVERING"):
+                        mission.on_locomotion_state({"mode": "STAND", "recovery_state": "NORMAL"}, t)
+                    for ev in fall_events:
+                        state.set_fall_event(ev)
+                        if rec:
+                            rec.on_fall_event(t, ev)
                     ppm = plant.gas_at(plant.x, plant.y)
                     mission.on_gas(ppm, t)
                     # toy seeker
@@ -449,6 +558,9 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
                         cv2.putText(frame, f"{g['id']} {val:.2f} {g['unit']}", (150, 455), cv2.FONT_HERSHEY_SIMPLEX,
                                     0.8, (255, 255, 255), 2, cv2.LINE_AA)
                         frames["gauge"] = frame
+                        if rec is not None:
+                            n = insp["n"] + 1 if (insp and insp["gid"] == g["id"]) else 1
+                            insp = {"gid": g["id"], "frame": frame, "n": n}
                     # thermal alerts for hot spots in view
                     alerts = []
                     for h in layout.hotspots:
@@ -471,7 +583,17 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
                         frames["thermal"] = cv2.applyColorMap((th / th.max() * 255).astype(np.uint8),
                                                               cv2.COLORMAP_INFERNO)
                     out = mission.step(t)
-                    if seeking and cmd is not None:
+                    if insp is not None and not (mission.base == "INSPECTING" and mission.current is not None
+                                                 and mission.current.gauge_id == insp["gid"]):
+                        # the mission left the gauge (accepted / skipped): one inspection photo
+                        snap = demo_gauge_snapshot(layout, insp["gid"], insp["frame"],
+                                                   mission.results.get(insp["gid"]), t, insp["n"])
+                        if snap is not None:
+                            rec.on_gauge_snapshot(t, snap)
+                        insp = None
+                    if falls.down:
+                        drive = (0.0, 0.0, 0.0)
+                    elif seeking and cmd is not None:
                         drive = cmd
                     elif out.cmd_vel is not None:
                         drive = out.cmd_vel
@@ -489,8 +611,8 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
                     state.set_mission(mstate)
                     started = started or mission.mode is not None
                     rssi = plant.rssi_at(plant.x, plant.y)
-                    state.set_robot(plant.x, plant.y, plant.z, rng.gauss(0, 0.01), rng.gauss(0, 0.01), plant.yaw,
-                                    plant.vx, plant.vy, plant.wz, t_sim=t)
+                    state.set_robot(plant.x, plant.y, plant.z, fall_fields.get("roll", rng.gauss(0, 0.01)),
+                                    rng.gauss(0, 0.01), plant.yaw, plant.vx, plant.vy, plant.wz, t_sim=t)
                     moving = math.hypot(plant.vx, plant.vy) > 0.03 or abs(plant.wz) > 0.05
                     loco = {"mode": "WALK" if moving else "STAND", "gait": "trot", "gait_auto": True,
                             "body_height": 0.34 + rng.gauss(0, 0.004), "roll": rng.gauss(0, 0.01),
@@ -499,6 +621,7 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
                             "stability_margin": 0.08 + rng.gauss(0, 0.005)}
                     terrain, slip_fields = slip.step(plant.x, plant.y, plant.yaw, t, dt)   # no rng: metrics unchanged
                     loco.update(slip_fields)
+                    loco.update(fall_fields)
                     state.set_locomotion(loco)
                     state.set_terrain(terrain)
                     state.set_gas_ppm(ppm)
@@ -550,7 +673,9 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
         if rec is not None:
             rec.event(plant.t, "demo", "stop", mission.base)
             rec.close()
-            if not quiet:
+            if temp_metrics:
+                shutil.rmtree(temp_metrics, ignore_errors=True)
+            elif not quiet:
                 print(f"metrics written to {run_demo.session_dir}")
     return state, mission
 
@@ -567,11 +692,17 @@ def main():
     ap.add_argument("--sim-duration", type=float, default=None, help="stop after N simulated seconds")
     ap.add_argument("--metrics-dir", default=None,
                     help="record a metrics session there (plot it with tools/plot_metrics.py)")
+    ap.add_argument("--fall-at", default="",
+                    help="simulated times [s] of synthetic falls + self-righting, e.g. 120,400")
     a = ap.parse_args()
+    try:
+        fall_at = [float(v) for v in a.fall_at.replace(",", " ").split()]
+    except ValueError:
+        ap.error("--fall-at needs numbers, e.g. 120,400")
     sim_duration = a.sim_duration if a.sim_duration is not None else (1800.0 if a.headless else None)
     run_demo(a.port, a.speed, not a.no_autostart, a.host, a.duration, serve=not a.headless,
              realtime=not a.headless, sim_duration=sim_duration, metrics_dir=a.metrics_dir,
-             stop_when_done=a.headless)
+             stop_when_done=a.headless, fall_at=fall_at)
 
 
 if __name__ == "__main__":

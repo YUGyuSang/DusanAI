@@ -70,7 +70,9 @@ def test_texts_korean_and_english():
     assert dh.mission_text("SEEK", "G03", [2, 8], False) == "MISSION: GAS SEARCH (2/8)"   # target only while patrolling
     assert dh.mission_text("", korean=False) == "MISSION: --"
     assert dh.mission_text("WEIRD", korean=False) == "MISSION: WEIRD"
-    assert dh.locomotion_text("WALK", "stable", "trot", True) == "보행: WALK · stable · trot"
+    assert dh.locomotion_text("WALK", "stable", "trot", True) == "보행: 걷는 중 · 안정 모드 · 트롯"
+    assert dh.locomotion_text("WALK", "stable", "trot", False) == "LOCOMOTION: WALK / stable / trot"
+    assert dh.locomotion_text("WEIRD", korean=True) == "보행: WEIRD"
     assert dh.locomotion_text(korean=False) == "LOCOMOTION: --"
     assert dh.battery_text(76.4) == "76%" and dh.battery_text(None) == "--%"
     for st in ("IDLE", "PATROL", "INSPECTING", "SEEK", "RTH", "DOCKED", "MANUAL", "PAUSED", "DONE"):

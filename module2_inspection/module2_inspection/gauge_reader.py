@@ -1701,8 +1701,12 @@ STATUS_COLORS = {"normal": (60, 200, 60), "warning": (0, 165, 255), "alarm": (0,
 
 
 def draw_reading(img: np.ndarray, rd: GaugeReading, lines: Sequence[str], status: str = "unknown",
-                 thickness: int = 2) -> np.ndarray:
-    """Draw one reading in place: fitted face ellipse, needle, scale end points and text."""
+                 thickness: int = 2, top: int = 0) -> np.ndarray:
+    """Draw one reading in place: fitted face ellipse, needle, scale end points and text.
+
+    The text lines are stacked above the dial, one black box per line; the boxes never overlap
+    each other (line pitch = box height) and never reach above ``top`` (e.g. below the banner
+    of :func:`draw_header`, :data:`HEADER_HEIGHT`)."""
     col = STATUS_COLORS.get(status, STATUS_COLORS["unknown"])
     cx, cy, a, b, angd = rd.ellipse
     cv2.ellipse(img, (int(round(cx * 4)), int(round(cy * 4))), (int(round(a * 4)), int(round(b * 4))), angd,
@@ -1715,20 +1719,29 @@ def draw_reading(img: np.ndarray, rd: GaugeReading, lines: Sequence[str], status
                              for p in (gd.PHI_MIN_DEG, gd.PHI_MAX_DEG)])
     for (u, v), cc in zip(ends, ((255, 255, 0), (0, 0, 255))):
         cv2.circle(img, (int(round(u)), int(round(v))), max(2, thickness + 1), cc, -1, cv2.LINE_AA)
+    lines = [str(ln) for ln in lines if ln]
+    if not lines:
+        return img
     scale = float(np.clip(a / 120.0, 0.45, 0.8))
-    y = int(cy - b - 10 - (len(lines) - 1) * 22 * scale)
-    y = max(y, int(18 * scale) + 2)
-    for ln in lines:
-        (tw, th), _ = cv2.getTextSize(ln, cv2.FONT_HERSHEY_SIMPLEX, scale, 2)
-        x = int(np.clip(cx - tw / 2, 2, img.shape[1] - tw - 2))
-        cv2.rectangle(img, (x - 2, y - th - 3), (x + tw + 2, y + 4), (0, 0, 0), -1)
-        cv2.putText(img, ln, (x, y), cv2.FONT_HERSHEY_SIMPLEX, scale, col, 1 if scale < 0.6 else 2, cv2.LINE_AA)
-        y += int(22 * scale) + 4
+    tk = 1 if scale < 0.6 else 2
+    sizes = [cv2.getTextSize(ln, cv2.FONT_HERSHEY_SIMPLEX, scale, tk) for ln in lines]
+    # box of a line: [baseline - text height - 3, baseline + descent + 1]; pitch = tallest box + 2
+    pitch = max(th + bl for (_tw, th), bl in sizes) + 6
+    y = int(round(cy - b - 8 - sizes[-1][1] - (len(lines) - 1) * pitch))
+    y = max(y, int(top) + sizes[0][0][1] + 4)
+    for ln, ((tw, th), bl) in zip(lines, sizes):
+        x = int(np.clip(cx - tw / 2, 3, max(3, img.shape[1] - tw - 3)))
+        cv2.rectangle(img, (x - 3, y - th - 3), (x + tw + 3, y + bl + 1), (0, 0, 0), -1)
+        cv2.putText(img, ln, (x, y), cv2.FONT_HERSHEY_SIMPLEX, scale, col, tk, cv2.LINE_AA)
+        y += pitch
     return img
+
+
+HEADER_HEIGHT = 22                       # px of the draw_header banner
 
 
 def draw_header(img: np.ndarray, text: str, color=(255, 255, 255)) -> np.ndarray:
     """Banner with status text at the top of an overlay image (in place)."""
-    cv2.rectangle(img, (0, 0), (img.shape[1], 22), (0, 0, 0), -1)
+    cv2.rectangle(img, (0, 0), (img.shape[1], HEADER_HEIGHT), (0, 0, 0), -1)
     cv2.putText(img, text, (6, 16), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
     return img

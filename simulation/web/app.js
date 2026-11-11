@@ -70,6 +70,7 @@
   };
   const setText = (id, text) => { const e = $(id); if (e) e.textContent = text; };
   const isNum = (v) => typeof v === "number" && isFinite(v);
+  const has = (o, k) => !!o && Object.prototype.hasOwnProperty.call(o, k);
   const fmt = (v, nd, unit) => (isNum(v) ? v.toFixed(nd === undefined ? 2 : nd) + (unit ? " " + unit : "") : "—");
   const fmtVal = (v) => (isNum(v) ? v.toFixed(Math.abs(v) >= 100 ? 1 : 2) : "—");
   const deg = (rad) => (isNum(rad) ? (rad * 180 / Math.PI).toFixed(1) + "°" : "—");
@@ -98,9 +99,11 @@
     const d = new Date(t * 1000);
     return d.toTimeString().slice(0, 8);
   };
-  // per-gauge snapshot (future backend field, e.g. reading.image_url): same-origin paths or data URIs only
-  const safeImg = (u) => (typeof u === "string" && u && (/^data:image\//i.test(u) ||
-    (!/^[a-z][a-z0-9+.-]*:/i.test(u) && !u.startsWith("//"))) ? u : null);
+  // per-gauge inspection photo (gauge.image_url = session/gauges/<file>.jpg): same-origin paths or data URIs only
+  const sameOrigin = (u) => typeof u === "string" && u !== "" && !/^[a-z][a-z0-9+.-]*:/i.test(u) &&
+    !u.startsWith("//") && !u.startsWith("\\");
+  const safeImg = (u) => (typeof u === "string" && (/^data:image\//i.test(u) || sameOrigin(u)) ? u : null);
+  const safeHref = (u) => (sameOrigin(u) ? u : null);
   // leak tag of the layout ("GASTANK-01 relief valve") -> Korean
   const leakTag = (t) => (t ? lbl("leak", t).replace(/relief valve/i, "릴리프 밸브") : "");
   // leak-source error: the mission's value (seeker, full precision) once the source is
@@ -1035,10 +1038,80 @@
     pb.setAttribute("data-cmd", paused ? "resume" : "pause");
     pb.classList.toggle("is-paused", paused);
 
+    renderResult(s, fin);
     $("btnReport").classList.toggle("ready", fin);
     $("btnReport").textContent = fin ? "✓ 임무 보고서 보기" : "임무 보고서";
     $("reportDot").hidden = !fin || activeTab === "report";
     stale("cardMission", m.age, 6);
+  }
+
+  // final result row of the mission card: shown once the robot docked after the whole route,
+  // with the numbers frozen at that moment (REPORT, the same data as the report tab) and the live
+  // save location of the metrics session (photos + inspection report)
+  let resultKey = "";
+  function resultData(s) {
+    const src = REPORT ? REPORT.s : s;
+    const m = src.mission || {};
+    const done = new Set(m.completed || []);
+    const gauges = (src.gauges || []).filter((g) => done.has(g.id));
+    const errs = gauges.map((g) => g.error_pct_fs).filter(isNum);
+    const th = src.thermal || [];
+    const l = src.locomotion || {};
+    const seek = m.seek || null;
+    const pr = m.progress || [];
+    return {
+      read: done.size, total: isNum(pr[1]) ? pr[1] : done.size + (m.missed || []).length, missed: (m.missed || []).length,
+      mean: errs.length ? errs.reduce((a, b) => a + b, 0) / errs.length : null,
+      warn: gauges.filter((g) => g.status === "warning").length, alarm: gauges.filter((g) => g.status === "alarm").length,
+      hot: th.filter((h) => h.status === "warning" || h.status === "alarm").length,
+      seek: seek && seek.result ? seek.result : "", seekErr: seek && isNum(seek.error_m) ? seek.error_m : null,
+      falls: l.fall_count, ok: l.recovery_success, assisted: l.assisted_resets,
+      elapsed: m.mission_elapsed, state: m.state,
+    };
+  }
+  // "~/a/b/c/20261111_1200/" -> "~/a/…/20261111_1200/": the session name stays readable
+  function shortDir(d, max) {
+    if (d.length <= max) return d;
+    const parts = d.replace(/\/$/, "").split("/");
+    const last = parts.pop();
+    return (parts[0] || "") + "/…/" + last + "/";
+  }
+  function resultItem(label, value, cls, tip) {
+    const it = el("span", "r-item");
+    it.appendChild(el("span", "k", label));
+    const b = el("b", cls || null, value);
+    if (tip) b.title = tip;
+    it.appendChild(b);
+    return it;
+  }
+  function renderResult(s, fin) {
+    const box = $("missionResult");
+    document.body.classList.toggle("mission-done", fin);
+    box.hidden = !fin;
+    if (!fin) { if (resultKey) { box.textContent = ""; resultKey = ""; } return; }
+    const d = resultData(s);
+    const r = s.report || null;
+    const key = JSON.stringify([d, r && r.dir]);
+    if (key === resultKey) return;                // rebuilt only when something changed, not at 5 Hz
+    resultKey = key;
+    box.textContent = "";
+    box.appendChild(el("span", "r-title", d.state === "DONE" ? "✓ 순찰 완료" : "✓ 임무 완료"));
+    box.appendChild(resultItem("계기 판독", d.read + " / " + d.total + (d.missed ? " (실패 " + d.missed + ")" : ""), d.missed ? "warn" : ""));
+    if (isNum(d.mean)) box.appendChild(resultItem("평균 오차", d.mean.toFixed(2) + " % FS"));
+    box.appendChild(resultItem("이상", "계기 " + (d.warn + d.alarm) + " · 열화상 " + d.hot, d.warn + d.alarm + d.hot ? "warn" : "",
+      "계기 경고 " + d.warn + " · 경보 " + d.alarm + " / 열화상 경고 이상 " + d.hot + "곳"));
+    box.appendChild(resultItem("누출원", d.seek === "FOUND" ? "발견 · 오차 " + (isNum(d.seekErr) ? d.seekErr.toFixed(2) + " m" : "—")
+      : d.seek ? lbl("seek", d.seek) : "경보 없음"));
+    box.appendChild(resultItem("넘어짐/자가 복구", (isNum(d.falls) ? d.falls : "—") + " / " + (isNum(d.ok) ? d.ok : "—") +
+      (isNum(d.assisted) && d.assisted > 0 ? " · 보조 " + d.assisted : ""), "", "넘어짐 / 스스로 일어남" +
+      (isNum(d.assisted) && d.assisted > 0 ? " / 보조 리셋(위치 재설정)" : "")));
+    box.appendChild(resultItem("소요", fmtDur(d.elapsed)));
+    const sv = el("span", "r-item r-saved");
+    sv.appendChild(el("span", "k", "결과 저장"));
+    const p = el("b", "path", r && r.dir ? shortDir(r.dir, 34) : "기록 없음 (metrics_logger 꺼짐)");
+    p.title = r && r.dir ? r.dir + "\n계기 사진 gauges/*.jpg · 점검 보고서 inspection_report.html · events.csv · summary.json" : "";
+    sv.appendChild(p);                            // the report itself: '보고서 열기' of the gauges card
+    box.appendChild(sv);
   }
 
   // ------------------------------------------------------ robot + power
@@ -1055,14 +1128,56 @@
     setText("robotVel", isNum(r.vx) ? Math.abs(r.vx).toFixed(2) + " m/s" : "—");
     $("robotVel").title = isNum(r.vx) ? r.vx.toFixed(2) + " m/s · " + (r.wz || 0).toFixed(2) + " rad/s" : "";
     const falls = isNum(l.fall_count) ? l.fall_count : null;
-    setText("locoFalls", (falls === null ? "—" : falls + "회") + " / " + (isNum(l.recovery_success) ? l.recovery_success + "회" : "—"));
+    const assisted = isNum(l.assisted_resets) && l.assisted_resets > 0 ? l.assisted_resets : 0;
+    setText("locoFalls", (falls === null ? "—" : falls + "회") + " / " + (isNum(l.recovery_success) ? l.recovery_success + "회" : "—") +
+      (assisted ? " · 보조 " + assisted : ""));
     $("locoFalls").className = "v" + (falls ? " warn-text" : "");
+    $("locoFalls").title = "넘어짐 " + (falls === null ? "—" : falls) + "회 · 스스로 일어남 " +
+      (isNum(l.recovery_success) ? l.recovery_success : "—") + "회" + (assisted ? " · 보조 리셋(위치 재설정) " + assisted + "회" : "");
+    renderRecovery(l);
     const slipOn = l.slip_mode === true;
     const sb = $("slipBadge");
     sb.hidden = !(slipOn || t.slippery === true);
     sb.textContent = slipOn ? "▲ 미끄럼 대응" : "▲ 미끄러운 바닥";
     sb.title = slipText(l) || "";
     stale("cardRobot", isNum(r.age) ? r.age : l.age, 5);
+  }
+
+  // fall / self-righting phase of module1 fall_recovery (/locomotion/state recovery_state) as a badge
+  // in the robot card: the same four steps as the Gazebo HUD (넘어짐 감지 > 자세 뒤집기 > 일어서기 >
+  // 복구 완료); "복구 완료" stays for a few seconds after the robot is upright again
+  const REC_STEP = { FALL_DETECTED: 0, DAMP: 0, FAILED: 0, TUCK: 1, ROCK: 1, SELF_RIGHT: 1, PREPARE: 2, STAND_UP: 2, VERIFY: 2, ASSISTED_RESET: 2 };
+  const REC_TITLE = ["넘어짐 감지", "자세 뒤집기", "일어서기"];
+  const rec = { down: false, until: 0, byReset: false, base: null };
+  const robotDown = (l) => (!!l.recovery_state && l.recovery_state !== "NORMAL") || l.mode === "FALLEN" || l.mode === "RECOVERING";
+  function renderRecovery(l) {
+    const b = $("recBadge");
+    const rs = l.recovery_state || "";
+    const down = robotDown(l);
+    if (down) {
+      if (!rec.down) rec.base = { ok: l.recovery_success, assisted: l.assisted_resets };
+      const step = has(REC_STEP, rs) ? REC_STEP[rs] : (l.mode === "FALLEN" ? 0 : 1);
+      const failed = rs === "FAILED";
+      b.hidden = false;
+      b.className = "badge sm " + (failed || step === 0 ? "s-alarm" : "s-warn");
+      b.textContent = (failed ? "◆ 자가 복구 실패" : (step === 0 ? "◆ " : "▲ ") + REC_TITLE[step]) + " · " + (step + 1) + "/4";
+      b.title = "자가 복구 단계: " + lbl("recovery", rs, lbl("state", l.mode, "—")) + (rs ? " (" + rs + ")" : "");
+    } else if (rec.down) {
+      const base = rec.base || {};
+      const up = (k, bk) => isNum(l[k]) && isNum(base[bk]) && l[k] > base[bk];
+      rec.byReset = up("assisted_resets", "assisted") && !up("recovery_success", "ok");
+      rec.until = Date.now() + 6000;
+    }
+    if (!down) {
+      const show = Date.now() < rec.until;
+      b.hidden = !show;
+      if (show) {
+        b.className = "badge sm " + (rec.byReset ? "s-warn" : "s-good");
+        b.textContent = rec.byReset ? "▲ 보조 리셋으로 복귀" : "✓ 복구 완료 · 4/4";
+        b.title = rec.byReset ? "자가 복구 실패 후 보조 리셋(위치 재설정)으로 다시 섬" : "넘어진 뒤 스스로 일어남";
+      }
+    }
+    rec.down = down;
   }
 
   function renderSafety(s) {
@@ -1257,7 +1372,7 @@
     const foot = el("div", "t-foot");
     [head, tag, body, range, meta, foot].forEach((x) => root.appendChild(x));
     const t = { root: root, stWrap: stWrap, status: undefined, tag: tag, body: body, val: val, range: range, track: track, mark: mark,
-      zones: false, meta: meta, foot: foot, thumb: null, thumbSrc: null };
+      zones: false, meta: meta, foot: foot, thumb: null, thumbLink: null, thumbSrc: null };
     tiles[id] = t;
     return t;
   }
@@ -1345,13 +1460,23 @@
       }
       t.foot.title = read ? "신뢰도 " + fmt(g.confidence, 2) + (isNum(g.n_updates) ? " · 판독 " + g.n_updates + "회" : "") + " · " + fmtAge(g.age) : "";
       if (read) t.val.title += "\n" + t.foot.title;          // the footer is hidden on short screens
-      // per-gauge snapshot thumbnail (future backend field): rendered only when present
+      // inspection photo of the accepted reading (metrics session): thumbnail, click = full camera frame
       const src = safeImg(g.image_url) || safeImg((results[g.id] || {}).image_url);
       if (src) {
-        if (!t.thumb) { t.thumb = el("img", "t-thumb"); t.thumb.alt = g.id + " 판독 스냅샷"; t.thumb.loading = "lazy"; t.body.appendChild(t.thumb); }
-        if (t.thumbSrc !== src) { t.thumb.src = src; t.thumbSrc = src; }
+        if (!t.thumb) {
+          t.thumbLink = el("a", "t-thumb-link");
+          t.thumbLink.target = "_blank"; t.thumbLink.rel = "noopener";
+          t.thumb = el("img", "t-thumb"); t.thumb.alt = g.id + " 점검 사진"; t.thumb.loading = "lazy";
+          t.thumbLink.appendChild(t.thumb); t.body.appendChild(t.thumbLink);
+        }
+        if (t.thumbSrc !== src) {
+          t.thumb.src = src; t.thumbSrc = src;
+          const full = safeHref(g.image_full_url) || safeHref(src);
+          if (full) t.thumbLink.href = full; else t.thumbLink.removeAttribute("href");
+          t.thumbLink.title = g.id + " 점검 사진 (누르면 전체 화면 사진)";
+        }
       } else if (t.thumb) {
-        t.thumb.remove(); t.thumb = null; t.thumbSrc = null;
+        t.thumbLink.remove(); t.thumb = null; t.thumbLink = null; t.thumbSrc = null;
       }
       if (read) nRead++;
       if (g.status === "warning") nWarn++;
@@ -1412,7 +1537,7 @@
     const seekVal = seek && seek.result ? lbl("seek", seek.result) : (g.seek && g.seek.state && g.seek.state !== "IDLE" ? "추적 중" : "추적 안 함");
     k.appendChild(reportKpi("가스 누출원", seekVal,
       seek && isNum(seek.error_m) ? "위치 오차 " + fmtErrM(seek.error_m) + (isNum(seek.elapsed) ? " · 추적 " + fmtSec(seek.elapsed) : "")
-        : "넘어짐 " + (isNum(l.fall_count) ? l.fall_count : "—") + "회"));
+        : "넘어짐 " + (isNum(l.fall_count) ? l.fall_count : "—") + "회 · 자가 복구 " + (isNum(l.recovery_success) ? l.recovery_success : "—") + "회"));
 
     // issues: the found leak source first (headline finding), then alarms, warnings, information
     const ul = $("reportIssues");
@@ -1455,6 +1580,20 @@
     });
   }
 
+  // link to the inspection report written by metrics_logger (session/inspection_report.html)
+  function renderReportLink(s) {
+    const a = $("reportLink");
+    const r = s.report || null;
+    const href = r ? safeHref(r.url) : null;
+    a.hidden = !href;
+    if (!href) return;
+    if (a.getAttribute("href") !== href) a.setAttribute("href", href);
+    a.classList.toggle("final", !!r.final);
+    a.textContent = r.final ? "보고서 열기" : "보고서 열기 (중간)";
+    a.title = "점검 보고서를 새 탭에서 열기 · 계기별 사진·판독값·참값·오차, 열화상·가스 결과" +
+      (r.final ? "" : " · 임무 진행 중 중간 보고") + (r.written ? " · 작성 " + r.written : "") + (r.dir ? "\n저장 위치 " + r.dir : "");
+  }
+
   // the frozen report: first finished snapshot of the current mission (the live
   // snapshot keeps changing after docking - battery, gas, events ...)
   function captureReport(s) {
@@ -1465,7 +1604,8 @@
     REPORT = { t_sim: s.t_sim, s: JSON.parse(JSON.stringify({
       mission: m, gauges: s.gauges, thermal: s.thermal,
       gas: { alarm: !!g.alarm, ppm: g.ppm, alarm_ppm: g.alarm_ppm, seek: g.seek },
-      locomotion: { fall_count: (s.locomotion || {}).fall_count } })) };
+      locomotion: { fall_count: (s.locomotion || {}).fall_count, recovery_success: (s.locomotion || {}).recovery_success,
+        assisted_resets: (s.locomotion || {}).assisted_resets } })) };
   }
   function renderReportView(s) {
     renderReport(REPORT ? REPORT.s : s);
@@ -1544,6 +1684,9 @@
       (isNum(l.mpc_solve_ms) ? l.mpc_solve_ms.toFixed(1) + " ms" + (l.mpc_status ? " · " + lbl("mpc", l.mpc_status) : "") : "—"));
     $("locoMpc").title = l.mpc_status || "";
     setText("locoMargin", fmt(l.stability_margin, 3, "m"));
+    setText("locoRecovery", robotDown(l) ? lbl("recovery", l.recovery_state, lbl("state", l.mode)) :
+      (l.recovery_state ? lbl("recovery", l.recovery_state) : "—") + (isNum(l.recovery_attempts) ? " · 시도 누적 " + l.recovery_attempts + "회" : ""));
+    $("locoRecovery").title = l.recovery_state || "";
     const cv = s.cmd_vel || {};
     setText("cmdSource", lbl("source", cv.source, "—") + (s.flags && s.flags.teleop_active ? " (수동)" : ""));
     $("cmdSource").title = cv.source || "";
@@ -1557,6 +1700,9 @@
     setText("missionReplans", isNum(m.replans) ? m.replans + "회" : "—");
     setText("missionRemain", fmt(m.path_remaining, 1, "m"));
     setText("planSource", m.plan_source || "—");
+    const rp = s.report || null;
+    setText("sessionDir", rp && rp.dir ? rp.dir : "— (metrics_logger 기록 없음)");
+    $("sessionDir").title = rp && rp.dir ? "세션 " + rp.session + " · gauges/*.jpg, inspection_report.html, events.csv, summary.json" : "";
 
     const sf = s.safety || {};
     const b = s.battery || {};
@@ -1669,7 +1815,8 @@
     // on every snapshot, whichever tab is open: the report freezes at the real completion moment
     try { captureReport(s); } catch (err) { console.error("captureReport", err); }
     // one malformed field must not freeze every other panel
-    const fns = [renderMission, renderRobot, renderSafety, renderGas, renderThermal, renderGauges, renderEvents, renderCams];
+    const fns = [renderMission, renderRobot, renderSafety, renderGas, renderThermal, renderGauges, renderReportLink,
+      renderEvents, renderCams];
     if (!drawer.hidden) fns.push(renderDetails);
     if (activeTab === "report") fns.push(renderReportView);
     fns.forEach((fn) => {

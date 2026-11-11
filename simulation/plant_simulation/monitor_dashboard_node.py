@@ -8,6 +8,9 @@ monitor_dashboard node: digital-twin control room at http://<host>:<port>.
   daemon thread),
 * forwards operator commands (POST /api/command) to /mission/command,
   /locomotion/command or /battery/set_level,
+* serves the inspection photos and the inspection report of the current metrics
+  session (/metrics/session from metrics_logger) under /session/ (gauge tile
+  thumbnails, '보고서 열기' link),
 * publishes /twin/markers (MarkerArray) for RViz: gauges coloured by status
   with values, hot spots, leak truth vs estimate, dock, access points.
 """
@@ -93,7 +96,8 @@ class MonitorDashboardNode(Node):
         self.p = declare_params(self, DASHBOARD_DEFAULTS)
         self.layout = Layout.load(self.p["layout_file"] or None)
         self.state = DashboardState(self.layout, history_s=self.p["history_s"], max_events=self.p["max_events"],
-                                    path_max_points=self.p["path_max_points"], gas_alarm_ppm=self.p["gas_alarm_ppm"])
+                                    path_max_points=self.p["path_max_points"], gas_alarm_ppm=self.p["gas_alarm_ppm"],
+                                    metrics_root=self.p["metrics_root"])
         self._pub_lock = threading.Lock()
         self._img_lock = threading.Lock()
         self._img_msgs = {"gauge": None, "thermal": None}
@@ -136,6 +140,8 @@ class MonitorDashboardNode(Node):
         self.create_subscription(Image, "/inspection/gauge_overlay", lambda m: self._on_image("gauge", m), be(2))
         self.create_subscription(Image, "/inspection/thermal_fusion", lambda m: self._on_image("thermal", m), be(2))
         subscribe_latched(self, String, "/patrol/plan_json", lambda m: S.set_plan(parse_json_msg(m)))
+        # metrics session directory + inspection photos / report (served under /session/)
+        subscribe_latched(self, String, "/metrics/session", lambda m: S.set_session(parse_json_msg(m)))
         subscribe_latched(self, Path, "/patrol/route", lambda m: self._on_path("route", m))
         subscribe_latched(self, Path, "/nav/plan", lambda m: self._on_path("nav", m))
         self.create_subscription(Path, "/mpc/predicted_trajectory", lambda m: self._on_path("mpc", m), be(2))
@@ -150,7 +156,8 @@ class MonitorDashboardNode(Node):
                                       port=int(self.p["port"]), host=str(self.p["host"]),
                                       sse_rate=float(self.p["sse_rate"]), command_fn=self._command,
                                       blob_fn=self._blob, logger=self._log,
-                                      port_fallbacks=int(self.p["port_fallbacks"]))
+                                      port_fallbacks=int(self.p["port_fallbacks"]),
+                                      session_dir_fn=self.state.session_dir)
         try:
             port = self.server.start()
             host = self.p["host"] if self.p["host"] not in ("0.0.0.0", "") else "localhost"

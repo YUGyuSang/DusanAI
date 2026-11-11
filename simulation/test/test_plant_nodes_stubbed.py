@@ -733,3 +733,63 @@ def test_clock_relay_decimates_the_gazebo_clock(ros, monkeypatch):
     assert len(ros.published("/clock")) == n + 1
     ros.deliver("/clock_gz", gz_clock(3))             # world reset: forwarded at once
     assert ros.published("/clock")[-1].clock.nanosec == 3000000
+
+
+def _jpeg_b64():
+    import base64
+    import cv2
+    return base64.b64encode(cv2.imencode(".jpg", np.full((32, 32, 3), 128, np.uint8))[1].tobytes()).decode()
+
+
+def test_metrics_logger_saves_inspection_photos_and_publishes_the_session(ros, tmp_path):
+    import os
+    ros.params["metrics_logger"] = {"output_dir": str(tmp_path), "session_name": "s2"}
+    node = load("metrics_logger_node").MetricsLoggerNode()
+    sdir = str(tmp_path / "s2")
+    first = json.loads(ros.published("/metrics/session")[-1].data)     # latched: where the session lives
+    assert first["session_dir"] == os.path.abspath(sdir) and first["report"] is None and first["gauges"] == {}
+    pub = ros.pub("/metrics/session")[0]
+    assert pub.qos.durability == "tl"
+    ros.deliver("/inspection/gauge_snapshot", json_string(
+        {"id": "G08", "stamp": 21.04, "value": 0.93, "unit": "MPa", "status": "normal", "confidence": 0.9,
+         "jpeg_b64": _jpeg_b64(), "full_jpeg_b64": _jpeg_b64(), "wall": "2026-11-11 10:00:00"}))
+    assert os.path.isfile(os.path.join(sdir, "gauges", "G08_21.0.jpg"))
+    assert os.path.isfile(os.path.join(sdir, "gauges", "G08_21.0_full.jpg"))
+    info = json.loads(ros.published("/metrics/session")[-1].data)
+    assert info["gauges"]["G08"]["image"] == "gauges/G08_21.0.jpg" and info["report"] == "inspection_report.html"
+    ros.deliver("/mission/state", json_string({"state": "DOCKED", "completed": ["G08"], "missed": [],
+                                               "results": {"G08": {"value": 0.93, "status": "normal", "t": 21.0,
+                                                                   "n_readings": 5}}}))
+    info = json.loads(ros.published("/metrics/session")[-1].data)
+    assert info["report_final"] is True
+    n = len(ros.published("/metrics/session"))
+    node.on_shutdown()
+    assert len(ros.published("/metrics/session")) == n               # nothing published while shutting down
+    with open(os.path.join(sdir, "inspection_report.json"), encoding="utf-8") as f:
+        r = json.load(f)
+    row = next(x for x in r["gauges"]["rows"] if x["id"] == "G08")
+    assert row["value_source"] == "mission" and row["image"] == "gauges/G08_21.0.jpg" and r["final"] is True
+    assert os.path.isfile(os.path.join(sdir, "inspection_report.html"))
+
+
+def test_monitor_dashboard_serves_the_metrics_session(ros, tmp_path):
+    import os
+    sdir = tmp_path / "20261111_100000"
+    (sdir / "gauges").mkdir(parents=True)
+    (sdir / "gauges" / "G05_49.8.jpg").write_bytes(b"\xff\xd8\xff\xe0fake")
+    (sdir / "inspection_report.html").write_text("<!doctype html>report", encoding="utf-8")
+    ros.params["monitor_dashboard"] = {"port": 0, "host": "127.0.0.1", "metrics_root": str(tmp_path)}
+    node = load("monitor_dashboard_node").MonitorDashboardNode()
+    try:
+        ros.deliver("/metrics/session", json_string(
+            {"session_dir": str(sdir), "session": sdir.name, "report": "inspection_report.html", "report_final": True,
+             "gauges": {"G05": {"image": "gauges/G05_49.8.jpg"}}}))
+        base = f"http://127.0.0.1:{node.server.port}"
+        snap = json.loads(urllib.request.urlopen(base + "/api/state", timeout=5).read())
+        g5 = next(g for g in snap["gauges"] if g["id"] == "G05")
+        assert g5["image_url"] == "session/gauges/G05_49.8.jpg" and snap["report"]["final"] is True
+        assert urllib.request.urlopen(base + "/" + g5["image_url"], timeout=5).read().startswith(b"\xff\xd8")
+        assert b"report" in urllib.request.urlopen(base + "/" + snap["report"]["url"], timeout=5).read()
+        assert os.path.realpath(node.state.session_dir()) == os.path.realpath(str(sdir))
+    finally:
+        node.on_shutdown()

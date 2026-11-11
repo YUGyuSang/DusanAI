@@ -2,11 +2,18 @@
 demo_hud node: robot camera + status overlay for the demo (reference video look).
 
 Subscribes
-  /inspection_camera/image  sensor_msgs/Image        robot camera (background)
-  /gas/sensor               std_msgs/Float32         "현재 가스 농도: X ppm" + log bar
-  /battery/state            sensor_msgs/BatteryState battery gauge (percentage 0..1 or 0..100)
-  /locomotion/state         std_msgs/String JSON     mode / locomotion_mode / gait
-  /mission/state            std_msgs/String JSON     state, target, progress, gas_alarm
+  /inspection_camera/image   sensor_msgs/Image        robot camera (background)
+  /gas/sensor                std_msgs/Float32         "현재 가스 농도: X ppm" + log bar
+  /battery/state             sensor_msgs/BatteryState battery gauge (percentage 0..1 or 0..100)
+  /locomotion/state          std_msgs/String JSON     mode / locomotion_mode / gait, recovery_state +
+                                                      fall / recovery counters (robot-down panel)
+  /mission/state             std_msgs/String JSON     state, target, progress, gas_alarm, rth_reason,
+                                                      completed / missed / results, seek (banners,
+                                                      result panel at the dock)
+  /metrics/session           std_msgs/String JSON     (latched) session directory = where the
+                                                      results were saved (result panel)
+  /inspection/gauge_snapshot std_msgs/String JSON     inspection photo of an accepted gauge (corner
+                                                      of the 'gauge read' banner)
 Publishes (rate Hz)
   <hud_topic>     (default /demo/hud,     bgr8) for ROS tools (rqt_image_view, ros2 bag)
   <gz_hud_topic>  (default /demo/hud_rgb, rgb8) only while somebody subscribes: ros_gz_bridge
@@ -14,7 +21,8 @@ Publishes (rate Hz)
                   /demo/hud that the GUI ImageDisplay panel "Robot HUD" shows (gz-gui's
                   ImageDisplay does not decode BGR images, hence the rgb8 copy)
 
-The frame itself is drawn by the ROS-free plant_simulation.demo_hud.compose_hud().
+The frame itself is drawn by the ROS-free plant_simulation.demo_hud.compose_hud(); the
+transient items (banners, robot-down panel, result panel) come from demo_hud.HudStory.
 """
 import threading
 import time
@@ -28,8 +36,9 @@ from std_msgs.msg import Float32, String
 from dusan_common.image_utils import image_msg_to_bgr, numpy_to_image_msg
 from dusan_common.ros_helpers import declare_params, parse_json_msg
 
-from plant_simulation.demo_hud import HUD_DEFAULTS, HudCompositor
-from plant_simulation.node_utils import best_effort_qos, finite, reliable_qos, run_node, subscribe_any
+from plant_simulation.demo_hud import HUD_DEFAULTS, HudCompositor, HudStory
+from plant_simulation.node_utils import (best_effort_qos, finite, reliable_qos, run_node, subscribe_any,
+                                         subscribe_latched)
 
 
 class DemoHudNode(Node):
@@ -47,6 +56,15 @@ class DemoHudNode(Node):
         self._cam = None                       # (wall time, Image msg)
         self._vals = {}                        # key -> (wall time, value)
         self._warned = set()
+        layout = None
+        try:                                   # ground truth for the mean reading error of the result panel
+            from dusan_common.layout import Layout
+            layout = Layout.load(str(self.p["layout_file"]) or None)
+        except Exception as exc:
+            self.get_logger().warning(f"no layout ({type(exc).__name__}: {exc}) - result panel without reading "
+                                      "errors")
+        self.story = HudStory(layout, float(self.p["gauge_hold"]), float(self.p["event_hold"]),
+                              float(self.p["recovered_hold"]))
 
         self.pub = self.create_publisher(Image, str(self.p["hud_topic"]), reliable_qos(2))
         gz_topic = str(self.p["gz_hud_topic"]).strip()
@@ -58,6 +76,8 @@ class DemoHudNode(Node):
         self.create_subscription(BatteryState, "/battery/state", self._on_battery, best_effort_qos(5))
         subscribe_any(self, String, "/locomotion/state", self._on_locomotion)
         subscribe_any(self, String, "/mission/state", self._on_mission)
+        subscribe_latched(self, String, "/metrics/session", self._on_session)
+        self.create_subscription(String, "/inspection/gauge_snapshot", self._on_snapshot, reliable_qos(5))
         self.create_timer(1.0 / max(0.2, float(self.p["rate"])), self._tick)
         self.get_logger().info(f"HUD {self.p['width']}x{self.p['height']} at {self.p['rate']} Hz on "
                                f"{self.p['hud_topic']}" + (f" (+ rgb8 {gz_topic} for Gazebo)" if gz_topic else ""))
@@ -83,11 +103,28 @@ class DemoHudNode(Node):
         if isinstance(d, dict):
             self._set("loco", (str(d.get("mode") or ""), str(d.get("locomotion_mode") or ""),
                                str(d.get("gait") or "")))
+            with self._lock:
+                self.story.on_locomotion(d, time.monotonic())
 
     def _on_mission(self, msg):
         d = parse_json_msg(msg)
         if isinstance(d, dict):
             self._set("mission", d)
+            with self._lock:
+                self.story.on_mission(d, time.monotonic())
+
+    def _on_session(self, msg):
+        d = parse_json_msg(msg)
+        with self._lock:
+            self.story.on_session(d)
+
+    def _on_snapshot(self, msg):
+        d = parse_json_msg(msg)
+        with self._lock:
+            ok = self.story.on_snapshot(d)
+        if not ok and isinstance(d, dict) and "snapshot" not in self._warned:
+            self._warned.add("snapshot")
+            self.get_logger().warning(f"gauge snapshot {d.get('id')} without a decodable photo - banner without it")
 
     # ----------------------------------------------------------------- frame
     def _fresh(self, key, now):
@@ -113,6 +150,8 @@ class DemoHudNode(Node):
             st["mission_target"] = str(m.get("target") or "")
             st["mission_progress"] = m.get("progress")
             st["gas_alarm"] = bool(m.get("gas_alarm"))
+        with self._lock:
+            st.update(self.story.status(now, mission=m is not None, loco=loco is not None))
         st["sim_time"] = self.get_clock().now().nanoseconds * 1e-9
         return st
 

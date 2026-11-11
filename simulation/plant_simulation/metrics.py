@@ -12,16 +12,28 @@ Writes one session directory  <output_dir>/<YYYYmmdd_HHMMSS>/  containing
   battery.csv         battery / RSSI / safety state (decimated)
   pose.csv            robot pose at pose_rate (2 Hz) + travelled distance
   summary.json        aggregate KPIs, rewritten periodically and on shutdown
+  gauges/<id>_<t>.jpg evidence photo of every gauge inspection (/inspection/gauge_snapshot;
+                      <id>_<t>_full.jpg = whole camera frame), t = simulation time of the frame
+  inspection_report.json / inspection_report.html
+                      per-gauge OFFICIAL result (the reading the mission accepted, /mission/state
+                      "results"), ground truth, error, photo; thermal and gas results; mission
+                      summary (plant_simulation.inspection_report).  Rewritten whenever a gauge
+                      result or photo arrives and at mission end (DONE / DOCKED) and on close.
 
 All times are simulation seconds (t_sim) unless named t_wall.
 """
+import base64
+import binascii
 import csv
 import json
 import math
 import os
+import re
 import time
 
 import numpy as np
+
+from plant_simulation import inspection_report as report
 
 METRICS_DEFAULTS = {
     "output_dir": "~/dusan_metrics",
@@ -36,7 +48,11 @@ METRICS_DEFAULTS = {
     "gauge_error_threshold_pct": 5.0,   # % FS target used for the success rate
     "gas_alarm_ppm": 25.0,
     "max_jump_m": 2.0,                  # odometry jumps above this are not counted as distance
+    "snapshot_max_bytes": 4000000,      # larger evidence images (decoded) are not saved
 }
+
+REPORT_FILES = ("inspection_report.json", "inspection_report.html")
+_GAUGE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$")
 
 CSV_COLUMNS = {
     "events.csv": ["t_sim", "t_wall", "source", "kind", "detail"],
@@ -75,6 +91,17 @@ def _stats(values):
         return {"n": 0, "mean": None, "median": None, "p95": None, "max": None}
     return {"n": int(v.size), "mean": round(float(v.mean()), 4), "median": round(float(np.median(v)), 4),
             "p95": round(float(np.percentile(v, 95)), 4), "max": round(float(v.max()), 4)}
+
+
+def _tidy(v, nd=4):
+    """JSON copy with floats rounded (simulation times like 457.8000000000356) and NaN -> None."""
+    if isinstance(v, float):
+        return round(v, nd) if math.isfinite(v) else None
+    if isinstance(v, dict):
+        return {k: _tidy(x, nd) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [_tidy(x, nd) for x in v]
+    return v
 
 
 def make_session_dir(output_dir, session_name=""):
@@ -170,6 +197,18 @@ class MetricsRecorder:
         self.rth_active = False
         self.rth_events = []
         self.n_events = 0
+        # inspection evidence + report
+        self.mission_results = {}            # /mission/state "results": the mission's own per-gauge answer
+        self.mission_pending = []
+        self.mission_seek = None
+        self.snapshots = {}                  # gid -> metadata of the latest evidence photo (+ file names)
+        self.snapshot_count = 0
+        self.thermal_last_status = {}
+        self.report_written = None           # wall time text of the last report
+        self.report_final = False
+        self.reports_archived = 0
+        self.on_change = None                # callback() after a photo / report was written
+        self._report_state = None
         self._closed = False
 
     # --------------------------------------------------------------- io
@@ -207,6 +246,8 @@ class MetricsRecorder:
     def close(self):
         if self._closed:
             return
+        if self.mission_results or self.snapshots or self.mission_start_t is not None:
+            self.write_report()
         self.write_summary()
         self._closed = True
         for f in self._files.values():
@@ -302,8 +343,68 @@ class MetricsRecorder:
             self.mission_completed = list(d["completed"])
         if isinstance(d.get("missed"), list):
             self.mission_missed = list(d["missed"])
+        if isinstance(d.get("pending"), list):
+            self.mission_pending = [str(x) for x in d["pending"]]
+        if isinstance(d.get("seek"), dict):
+            self.mission_seek = dict(d["seek"])
         if "target" in d:
             self.target = d.get("target") or ""
+        changed = False
+        if isinstance(d.get("results"), dict):
+            changed = self._on_results(t, d["results"])
+        final = self.mission_state in report.FINAL_STATES
+        if final and self._report_state != self.mission_state and (self.mission_results or self.snapshots):
+            self._report_state = self.mission_state
+            self.write_report(final=True)
+        elif changed and (self.mission_results or self.snapshots):
+            self.write_report(final=final)
+        if not final:
+            self._report_state = None
+
+    def _on_results(self, t, results):
+        """Official per-gauge results of the mission -> 'gauge result' events; True if changed."""
+        new = {str(k): dict(v) for k, v in results.items() if isinstance(v, dict)}
+        if new == self.mission_results:
+            return False
+        if self.mission_results and not new:
+            self._archive_report()              # a new mission started: keep the previous report
+        for gid, r in sorted(new.items()):
+            if r == self.mission_results.get(gid):
+                continue
+            g = self._gauges.get(gid, {})
+            if r.get("status") == "missed":
+                txt = f"{gid} missed: {r.get('reason') or 'no reading'}"
+            else:
+                val, true = _num(r.get("value")), _num(g.get("value"))
+                txt = f"{gid} read: " + (f"{val:.4f} {r.get('unit') or g.get('unit', '')} ({r.get('status')})"
+                                         if val is not None else "no value")
+                if r.get("n_readings") is not None:
+                    txt += f" from {r.get('n_readings')} readings"
+                span = float(g.get("max", 1.0)) - float(g.get("min", 0.0))
+                if val is not None and true is not None and span > 0:
+                    txt += f", error {abs(val - true) / span * 100.0:.2f} % FS"
+            self.event(t, "gauge", "result", txt)
+        self.mission_results = new
+        return True
+
+    def _archive_report(self):
+        """Rename the report of the previous mission to inspection_report_<k>.* (photos stay)."""
+        if self.report_written is None:
+            self.snapshots = {}
+            return
+        self.reports_archived += 1
+        for name in REPORT_FILES:
+            src = os.path.join(self.dir, name)
+            stem, ext = os.path.splitext(name)
+            try:
+                if os.path.exists(src):
+                    os.replace(src, os.path.join(self.dir, f"{stem}_{self.reports_archived}{ext}"))
+            except OSError as exc:
+                self.event(self.t_last, "metrics", "write_error", f"{name}: {exc}")
+        self.snapshots = {}
+        self.report_written = None
+        self.report_final = False
+        self._changed()                         # the dashboard drops the link of the old report
 
     def on_target(self, t, gid):
         self.target = gid or ""
@@ -347,6 +448,130 @@ class MetricsRecorder:
                 self.gauge_last[gid] = {"value": val, "true_value": true, "error_pct_fs": None,
                                         "status": r.get("status"), "true_status": true_status, "t": _num(t)}
 
+    # ---------------------------------------------------- evidence images
+    def _write_bytes(self, rel, data):
+        """Atomic write below the session dir; False (and an event) on any OS error."""
+        path = os.path.join(self.dir, *rel.split("/"))
+        tmp = path + ".tmp"
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(tmp, "wb") as f:
+                f.write(data)
+            os.replace(tmp, path)
+            return True
+        except OSError as exc:
+            self.event(self.t_last, "metrics", "write_error", f"{rel}: {exc}")
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            return False
+
+    def _decode_jpeg(self, b64):
+        if not isinstance(b64, str) or not b64:
+            return None
+        if len(b64) > 4 * int(self.p["snapshot_max_bytes"]) // 3 + 8:
+            return None
+        try:
+            data = base64.b64decode(b64, validate=True)
+        except (binascii.Error, ValueError):
+            return None
+        return data if data[:3] == b"\xff\xd8\xff" else None
+
+    def on_gauge_snapshot(self, t, d):
+        """/inspection/gauge_snapshot: evidence photo of one inspection visit ->
+        gauges/<id>_<t>.jpg (+ <id>_<t>_full.jpg), 'gauge snapshot' event, report update."""
+        if not isinstance(d, dict) or not _GAUGE_ID.match(str(d.get("id") or "")):
+            return None
+        self._touch(t)
+        gid = str(d["id"])
+        stamp = _num(d.get("stamp"))
+        stamp = stamp if stamp is not None else (_num(t) or 0.0)
+        crop = self._decode_jpeg(d.get("jpeg_b64"))
+        if crop is None:
+            self.event(t, "gauge", "snapshot_error", f"{gid}: no valid JPEG in the snapshot")
+            return None
+        prev = self.snapshots.get(gid)
+        if prev and prev.get("stamp") == stamp and prev.get("bytes") == len(crop):
+            return prev                         # the same message delivered twice
+        base = f"gauges/{gid}_{stamp:.1f}"
+        k = 1
+        while os.path.exists(os.path.join(self.dir, *(base + ".jpg").split("/"))):
+            k += 1
+            base = f"gauges/{gid}_{stamp:.1f}_{k}"
+        meta = {key: v for key, v in d.items() if not key.endswith("_b64")}
+        meta.update(stamp=stamp, t_received=_num(t), bytes=len(crop),
+                    count=int((prev or {}).get("count", 0)) + 1, image=None, image_full=None)
+        if self._write_bytes(base + ".jpg", crop):
+            meta["image"] = base + ".jpg"
+        full = self._decode_jpeg(d.get("full_jpeg_b64"))
+        if full is not None and self._write_bytes(base + "_full.jpg", full):
+            meta["image_full"] = base + "_full.jpg"
+        self.snapshots[gid] = meta
+        self.snapshot_count += 1
+        val = _num(d.get("value"))
+        self.event(t, "gauge", "snapshot",
+                   f"{gid} " + (f"{val:.4f} {d.get('unit') or ''} ({d.get('status')})" if val is not None
+                                else "no reading") + f" -> {meta['image'] or 'not saved'}")
+        self.write_report(final=self.mission_state in report.FINAL_STATES)
+        return meta
+
+    def report_document(self, final=None):
+        """JSON document of the inspection report (plant_simulation.inspection_report)."""
+        final = (self.mission_state in report.FINAL_STATES) if final is None else bool(final)
+        rows = report.gauge_rows(self._gauges, self.layout, self.mission_results, self.snapshots, self.gauge_last,
+                                 pending=self.mission_pending, final=final)
+        trows = report.thermal_rows(self._hots, self.layout, self.thermal_detected, self.thermal_peak,
+                                    self.thermal_last_status)
+        return report.build_report(self.summary(), rows, trows, self.mission_seek, final=final,
+                                   session_name=os.path.basename(os.path.normpath(self.dir)),
+                                   written_wall=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self.wall())))
+
+    def write_report(self, final=None):
+        """inspection_report.json + inspection_report.html (atomic replace).  Returns the document."""
+        if self._closed:
+            return None
+        try:
+            doc = self.report_document(final)
+            page = report.render_html(doc, self.dir)
+        except Exception as exc:  # a malformed message must never stop the recording
+            self.event(self.t_last, "metrics", "report_error", repr(exc))
+            return None
+        ok = self._write_bytes("inspection_report.json",
+                               json.dumps(_tidy(doc), indent=2, ensure_ascii=False, default=str).encode("utf-8"))
+        ok = self._write_bytes("inspection_report.html", page.encode("utf-8")) and ok
+        if ok:
+            first = self.report_written is None or (doc["final"] and not self.report_final)
+            self.report_written, self.report_final = doc["written_wall"], doc["final"]
+            if first:
+                g = doc["gauges"]
+                self.event(self.t_last, "metrics", "report",
+                           f"inspection_report.html ({'final' if doc['final'] else 'partial'}: "
+                           f"{g['read']}/{g['total']} gauges read)")
+        self._changed()
+        return doc
+
+    def session_info(self):
+        """What the dashboard needs to serve photos and the report of this session."""
+        return {
+            "session_dir": os.path.abspath(self.dir), "session": os.path.basename(os.path.normpath(self.dir)),
+            "report": "inspection_report.html" if self.report_written else None,
+            "report_json": "inspection_report.json" if self.report_written else None,
+            "report_final": bool(self.report_final), "report_written": self.report_written,
+            "gauges": {gid: {"image": m.get("image"), "image_full": m.get("image_full"), "stamp": m.get("stamp"),
+                             "value": m.get("value"), "unit": m.get("unit"), "status": m.get("status"),
+                             "wall": m.get("wall")}
+                       for gid, m in sorted(self.snapshots.items()) if m.get("image")},
+        }
+
+    def _changed(self):
+        cb = self.on_change
+        if cb is not None:
+            try:
+                cb()
+            except Exception as exc:  # a broken listener must not stop the recording
+                self.event(self.t_last, "metrics", "listener_error", repr(exc))
+
     def _match_hotspot(self, h):
         """-> (matched_id or None, distance or None)."""
         pos = h.get("position")
@@ -386,6 +611,8 @@ class MetricsRecorder:
                 self.thermal_detected.add(mid)
                 if tmax is not None:
                     self.thermal_peak[mid] = max(self.thermal_peak.get(mid, -1e9), tmax)
+                if h.get("status"):
+                    self.thermal_last_status[mid] = str(h.get("status"))
                 if true_status is not None and h.get("status"):
                     self.thermal_status_n += 1
                     self.thermal_status_ok += int(h.get("status") == true_status)
@@ -569,6 +796,12 @@ class MetricsRecorder:
                 "final_state": self.mission_state, "transitions": self.mission_states[-200:],
             },
             "events_logged": self.n_events,
+            "inspection": {
+                "report": "inspection_report.html" if self.report_written else None,
+                "report_final": bool(self.report_final), "snapshots_saved": self.snapshot_count,
+                "photos": {gid: m.get("image") for gid, m in sorted(self.snapshots.items())},
+                "mission_results": self.mission_results,
+            },
         }
 
     def write_summary(self):

@@ -72,7 +72,7 @@
     event_source: {
       dashboard: "대시보드", mission: "임무", locomotion: "보행", fall: "넘어짐", teleop: "원격조종", safety: "안전",
       patrol: "순찰 계획", battery: "배터리", gas: "가스", gauge: "계기", thermal: "열화상", operator: "운영자",
-      demo: "데모",
+      demo: "데모", metrics: "기록",
     },
     target: { mission: "임무", locomotion: "보행", battery: "배터리" },
     command: {
@@ -86,6 +86,12 @@
       assisted_reset: "보조 리셋", reset_request: "리셋 요청",
     },
     side: { left: "왼쪽", right: "오른쪽" },
+    // module1 fall_recovery.py phases (/locomotion/state recovery_state)
+    recovery: {
+      NORMAL: "정상", FALL_DETECTED: "넘어짐 감지", DAMP: "충격 완화", TUCK: "다리 접기", ROCK: "몸 흔들어 뒤집기",
+      SELF_RIGHT: "몸 뒤집기", PREPARE: "일어설 준비", STAND_UP: "일어서기", VERIFY: "자세 확인",
+      FAILED: "자가 복구 실패", ASSISTED_RESET: "보조 리셋 (위치 재설정)",
+    },
   };
 
   const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
@@ -222,6 +228,11 @@
     [/^'seek' ignored while return_to_home is active$/, () => "'가스 추적' 무시: 충전소 복귀 진행 중"],
     [/^'seek' ignored in (\S+)$/, (m) => "'가스 추적' 무시: " + st(m[1]) + " 상태"],
     [/^autostart: starting the full mission$/, () => "자동 시작: 전체 임무 시작"],
+    // a start before the patrol planner has published its plan waits for it (mission_logic start_plan_wait)
+    [/^(full|patrol) accepted - waiting up to (\S+) s for the patrol plan \(patrol_planner still computing\)$/,
+      (m) => (m[1] === "full" ? "전체 임무" : "순찰") + " 접수 - 순찰 계획 대기 (최대 " + m[2] + "초, 경로 계산 중)"],
+    [/^start waiting for the patrol plan cancelled by '(.*)'$/,
+      (m) => "순찰 계획 대기 중이던 시작 취소 ('" + command("mission", m[1]) + "')"],
     [/^GAS ALARM: (\S+) ppm > (\S+) ppm$/, (m) => "가스 경보: " + m[1] + " ppm > " + m[2] + " ppm"],
     [/^gas alarm re-armed$/, () => "가스 경보 감시 재개"],
     [/^return_to_home released - (start|resume) the mission$/,
@@ -267,7 +278,7 @@
     [/^locomotion ready again \((\S+)\) - re-planning$/, (m) => "보행 준비 완료 (" + st(m[1]) + ") - 재계획"],
     [/^locomotion not ready \((\S+)\) - holding$/, (m) => "보행 준비 안 됨 (" + st(m[1]) + ") - 제자리 대기"],
     [/^robot still down after (\S+) s \(recovery (.+?)\) - sending 'recover'$/,
-      (m) => "로봇이 " + m[1] + " s째 넘어져 있음 (복구 단계 " + m[2] + ") - '복구' 명령 전송"],
+      (m) => "로봇이 " + m[1] + " s째 넘어져 있음 (복구 단계: " + label("recovery", m[2]) + ") - '복구' 명령 전송"],
     [/^obstacle avoidance failed \((\d+)x\): (.+)$/, (m) => "장애물 회피 오류 (" + m[1] + "회): " + m[2]],
     [/^obstacle at (\S+) m - detour (left|right) \(\+(\S+) m\)$/,
       (m) => m[1] + " m 앞 장애물 - " + label("side", m[2]) + "으로 우회 (+" + m[3] + " m)"],
@@ -288,6 +299,10 @@
     [/^GAS SOURCE FOUND(?: at \((\S+), (\S+)\))?(?:, error (\S+) m)?$/,
       (m) => "가스 누출원 발견" + (m[1] ? " (" + m[1] + ", " + m[2] + ")" : "") + (m[3] ? ", 오차 " + m[3] + " m" : "")],
     [/^gas source seeking ended: (\S+)$/, (m) => "가스 누출원 추적 종료: " + label("seek", m[1])],
+    // inspection report of the metrics session (dashboard_state.set_session)
+    [/^inspection report final: (\S+)$/, () => "점검 보고서 작성 완료 (임무 종료)"],
+    [/^inspection report written: (\S+)$/, () => "점검 보고서 작성 (중간 보고)"],
+    [/^session directory (.+) ignored \(not inside (.+)\)$/, (m) => "기록 폴더 무시: " + m[1] + " (" + m[2] + " 밖)"],
 
     // ---- command responses (web_server.py, monitor_dashboard_node.py, dashboard_demo.py)
     [/^(mission|locomotion|battery) '(.*)' sent$/,
@@ -301,6 +316,8 @@
     [/^body must be JSON$/, () => "요청 본문은 JSON이어야 함"],
     [/^body must be a JSON object$/, () => "요청 본문은 JSON 객체여야 함"],
     [/^not found$/, () => "찾을 수 없음"],
+    [/^commands disabled$/, () => "명령 기능 꺼짐"],
+    [/^command failed: (.*)$/, (m) => "명령 실패: " + m[1]],
   ];
 
   function event(text, source) {

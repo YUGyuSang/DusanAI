@@ -181,7 +181,7 @@ All JSON payloads are `std_msgs/String` produced with `dusan_common.ros_helpers.
 | /odom | nav_msgs/Odometry | plant_simulation/odom_tf | everyone | world-frame ground truth (frame `odom`, child `base_link`), twist in base frame |
 | /cmd_vel | geometry_msgs/Twist | cmd_vel_mux | locomotion_controller | body velocity (vx, vy, wz) |
 | /locomotion/command | std_msgs/String | teleop, mission, safety | locomotion_controller | `stand` `sit` `walk` `gait:trot` `gait:crawl` (alias `gait:walk`) `gait:auto` `mode:stable` `mode:mpc` `mode:toggle` (locomotion mode, applied while standing; a walking robot first stops at a safe gait boundary and resumes) `recover` `estop` `release` `push` `push:<fx>,<fy>` `reset_pose` |
-| /locomotion/state | String JSON | locomotion_controller | dashboard, mission, metrics | `{mode: WALK|STAND|SIT|STANDING_UP|FALLEN|RECOVERING|ESTOP, locomotion_mode: stable|mpc, locomotion_mode_pending: stable|mpc|null, gait, gait_auto, phase, contacts[4], body_height, roll, pitch, fall_count, recovery_attempts, recovery_success, mpc_solve_ms, mpc_status, stability_margin, terrain, cmd[3]}` + slippery-ground fields `slip` (detection flag), `slip_mode`, `slip_source` (`detected`/`terrain`/`both`/`none`), `slip_speed` [m/s], `slip_legs[4]`, `slip_events`, `mu_est`, `mpc_mu`, `friction_prior` (μ of /terrain/info or null), `torque_ff` (module1 README §3.8; further extra keys listed in module1 README §2) |
+| /locomotion/state | String JSON | locomotion_controller | dashboard, mission, metrics, demo_hud, follow_camera | `{mode: WALK|STAND|SIT|STANDING_UP|FALLEN|RECOVERING|ESTOP, locomotion_mode: stable|mpc, locomotion_mode_pending: stable|mpc|null, gait, gait_auto, phase, contacts[4], body_height, roll, pitch, fall_count, recovery_attempts, recovery_success, assisted_resets, recovery_state (fall_recovery phase, NORMAL when upright), mpc_solve_ms, mpc_status, stability_margin, terrain, cmd[3]}` + slippery-ground fields `slip` (detection flag), `slip_mode`, `slip_source` (`detected`/`terrain`/`both`/`none`), `slip_speed` [m/s], `slip_legs[4]`, `slip_events`, `mu_est`, `mpc_mu`, `friction_prior` (μ of /terrain/info or null), `torque_ff` (module1 README §3.8; further extra keys listed in module1 README §2) |
 | /locomotion/fall_event | String JSON | locomotion_controller | metrics | `{event: fall|recovered|recovery_failed|recovery_retry|assisted_reset, t, x, y, roll, pitch}` |
 | /mpc/predicted_trajectory | nav_msgs/Path | locomotion_controller | rviz, dashboard | 5 s CoM prediction (the four /mpc/* topics carry data only in `locomotion_mode` = mpc; `mpc_status` = `none` in the stable mode) |
 | /mpc/footholds | visualization_msgs/MarkerArray | locomotion_controller | rviz | predicted footholds over the horizon |
@@ -205,6 +205,7 @@ All JSON payloads are `std_msgs/String` produced with `dusan_common.ros_helpers.
 | /inspection/target | String (plain gauge id or "") | mission_manager | gauge_reader | gauge expected in view |
 | /inspection/gauge_readings | String JSON | gauge_reader | mission, dashboard, metrics | `{stamp, readings:[{id, tag, value, unit, confidence, angle_deg, range:[min,max], status, n_samples, robot_pose:[x,y,yaw]}]}` (latest fused reading per gauge seen in this frame) |
 | /inspection/gauge_overlay | Image (bgr8) | gauge_reader | dashboard, rviz | detection overlay with value text |
+| /inspection/gauge_snapshot | String JSON | gauge_reader | metrics, demo_hud | one evidence photo per inspection visit, published when `/inspection/target` leaves the gauge (the mission accepted or skipped it): `{stamp, t_end, wall, id, tag, value, unit, status, confidence, n_samples, range:[min,max], read, frames, readings, frame_value, frame_confidence, robot_pose, distance, incidence_deg, format: "jpeg", width, height, jpeg_b64, full_jpeg_b64|null}`; `value`/`status` = final fused reading (= the value the mission accepts), `jpeg_b64` = base64 JPEG (~25 KiB) of the dial crop with fitted edge + needle and a footer (id, tag, value, unit, status, confidence, samples, sim time, wall time), `full_jpeg_b64` = downscaled full frame with the overlay; frame = the best detection whose own needle agrees with the final value (no detection: latest frame, `read` false, value null). No cv_bridge: plain JSON (module2_inspection.gauge_snapshot) |
 | /inspection/thermal_alerts | String JSON | thermal_fusion | mission, dashboard, metrics | `{stamp, hotspots:[{id|null, tag|null, max_temp_c, mean_temp_c, position:[x,y,z]|null, status: normal|warning|alarm, bbox:[u,v,w,h]}]}` |
 | /inspection/thermal_fusion | Image (bgr8) | thermal_fusion | dashboard, rviz | colour-mapped thermal blended on RGB |
 | /patrol/route | nav_msgs/Path | patrol_planner | mission, rviz, dashboard | full A* path through viewpoints (latched) |
@@ -240,9 +241,10 @@ All JSON payloads are `std_msgs/String` produced with `dusan_common.ros_helpers.
 | /nav/plan | nav_msgs/Path | mission_manager & return_to_home | rth (comm prediction), dashboard | path currently being followed |
 | /cmd_vel_mux/active | String | cmd_vel_mux | dashboard | name of the selected source |
 | /mission/command | String | teleop, dashboard | mission_manager, return_to_home | `start` `patrol` `seek` `rth` `pause` `resume` `abort` `dock` |
-| /mission/state | String JSON | mission_manager | dashboard, metrics | `{state: IDLE|PATROL|INSPECTING|SEEK|RTH|DOCKED|MANUAL|PAUSED|DONE, target, completed:[ids], pending:[ids], gas_alarm, message}` + `obstacle` object (see below) |
+| /mission/state | String JSON | mission_manager | dashboard, metrics, demo_hud | `{state: IDLE|PATROL|INSPECTING|SEEK|RTH|DOCKED|MANUAL|PAUSED|DONE, target, completed:[ids], pending:[ids], gas_alarm, message}` + `obstacle` object (see below) |
 | /twin/markers | MarkerArray | monitor_dashboard | rviz | gauge status labels, hot spots, leak estimate |
-| /demo/hud | Image (bgr8) | demo_hud | rqt_image_view, ros2 bag | robot camera (`/inspection_camera/image`) + gas ppm bar (10 / 25 ppm colours, blinking alarm frame), battery, mission and locomotion state, sim time; 640×480 at `rate` 5 Hz |
+| /metrics/session | String JSON (latched) | metrics_logger | dashboard, demo_hud | `{session_dir, session, report, report_json, report_final, report_written, gauges:{<id>:{image, image_full, stamp, value, unit, status, wall}}}`: metrics session directory and its files relative to it (`gauges/<id>_<t>.jpg`, `inspection_report.html`); republished after every photo / report write. The dashboard serves them same-origin under `/session/<file>` (only for a `session_dir` inside its `metrics_root`, default `~/dusan_metrics`) and adds `image_url` / `image_full_url` per gauge and a `report` link (+ `dir`: the session directory with the home directory as `~`) to its snapshot |
+| /demo/hud | Image (bgr8) | demo_hud | rqt_image_view, ros2 bag | robot camera (`/inspection_camera/image`) + gas ppm bar (10 / 25 ppm colours, blinking alarm frame), battery, current mission step in words (target gauge, step n/8, RTH reason), locomotion state, sim time; banners for a few seconds after a gauge result (value, status, inspection photo of `/inspection/gauge_snapshot`), a skipped gauge, the gas source found, an RTH start; robot-down panel from `/locomotion/state` `recovery_state` (4 steps: fall detected, self-righting, standing up, recovered); result panel at the dock (gauges, mean error vs. layout truth, gas, falls / self-recoveries, duration, `/metrics/session` directory); 640×480 at `rate` 5 Hz |
 | /demo/hud_rgb | Image (rgb8) | demo_hud | ros_gz_bridge → gz `/demo/hud` | same frame for the Gazebo GUI ImageDisplay panel "Robot HUD" (gz-gui cannot decode BGR); published only while subscribed |
 
 **cmd_vel mux priorities** (highest first, each with 0.5 s timeout): teleop (also while
@@ -404,12 +406,21 @@ def max_height_along(emap, p0_xy, p1_xy) -> float   # swing apex helper (NaN-saf
   → SEEK → report → resume, yields to RTH, `start` = full mission, ends with RTH),
   `monitor_dashboard_node.py` (digital-twin web UI on http://localhost:8080, stdlib
   http.server + Server-Sent Events, static files in `simulation/web/`),
-  `metrics_logger_node.py` (CSV/JSON under `~/dusan_metrics/<date>/`),
+  `metrics_logger_node.py` (CSV/JSON under `~/dusan_metrics/<date>/`; inspection photos `gauges/<id>_<t>.jpg`
+  and `inspection_report.json` / `.html` with the mission's official per-gauge result, ground truth, error,
+  photo, thermal and gas results - written on every gauge result / photo and at DONE / DOCKED),
   `clock_relay_node.py` (`/clock_gz` → `/clock` decimated to 200 Hz, see section 3),
-  `demo_hud_node.py` (HUD frame drawn by the ROS-free `demo_hud.py`: `/demo/hud`, `/demo/hud_rgb`),
-  `follow_camera.py` (gz CLI only: waits for Gazebo, the robot and the GUI, then sends a
+  `demo_hud_node.py` (HUD frame drawn by the ROS-free `demo_hud.py`: `/demo/hud`, `/demo/hud_rgb`;
+  `demo_hud.HudStory` turns `/mission/state`, `/locomotion/state`, `/metrics/session` and
+  `/inspection/gauge_snapshot` into the banners / robot-down panel / result panel, wall-clock hold times,
+  nothing announced for the state found at start-up),
+  `follow_camera.py` (waits for Gazebo, the robot and the GUI with the gz CLI, then sends a
   `gz.msgs.CameraTrack` FOLLOW on the GUI topic `/gui/track`, falls back to the Harmonic
-  `/gui/follow` service; always exits 0). mission_manager plans with the terrain cost layer
+  `/gui/follow` service; fall guard (needs rclpy, `--no-fall-guard` to disable): the GUI turns
+  `follow_offset` with the full robot attitude, so while |roll| or |pitch| > 30 deg or the robot reports
+  a fall the camera is held (follow_pgain 0.0002, offset levelled with Rx(roll)^T Ry(pitch)^T) and
+  released 1 s after the robot is upright with `recovery_state` NORMAL; published through the gz-transport
+  python bindings when installed, else `gz topic -p`; always exits 0). mission_manager plans with the terrain cost layer
   (section 2) and avoids novel obstacles (below: steps (a)–(d), patrol legs validated against detected obstacles).
   mission_manager robustness: every callback is wrapped by `plant_simulation.node_utils.guarded` (exception logged
   with traceback on the 1st and every 50th failure, the node keeps spinning); 3 consecutive `MissionLogic.step`
