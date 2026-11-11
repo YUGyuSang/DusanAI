@@ -191,6 +191,8 @@ class HarnessConfig:
     extra_objects: Tuple = ()                         # novel static boxes in the world, not in the nav map
     perception_depth: bool = False                    # depth camera + mapper also when the controller map is
     #                                                   blind / truth (the obstacle layer always gets depth)
+    lite_log: bool = False                            # skip the per-joint logs (q, dq, targets, torque, body
+    #                                                   command): long missions
     out_dir: str = ""
     verbose: bool = False
 
@@ -274,7 +276,7 @@ class GzHarness:
         self.log: Dict[str, list] = {k: [] for k in (
             "t", "pos", "rpy", "vel", "omega", "mode", "gait", "q", "dq", "q_target", "tau", "contacts",
             "cmd", "cmd_f", "feet", "mpc_ms", "rec_state", "fall_metric", "body_cmd", "ik_ok", "ground",
-            "terrain_class")}
+            "terrain_class", "gait_phase")}
         # ------------------------------------------------ gz server
         self.fixture = TestFixture(self.world_path)
         self.fixture.on_pre_update(self._pre)
@@ -547,16 +549,18 @@ class GzHarness:
         L["omega"].append(om)
         L["mode"].append(dbg["mode"])
         L["gait"].append(dbg["gait"])
-        L["q"].append(st.q.copy())
-        L["dq"].append(st.dq.copy())
-        L["q_target"].append(np.asarray(q, dtype=float).copy())
-        # servo torque estimate: the PID force of the plugin at the last applied target
-        tgt = self.q_sent if self.q_sent is not None else q
-        kp = np.array([self.servo[j]["p_gain"] for j in JOINTS])
-        kd = np.array([self.servo[j]["d_gain"] for j in JOINTS])
-        cmax = np.array([self.servo[j]["cmd_max"] for j in JOINTS])
-        tau = np.clip(kp * (tgt - st.q) - kd * st.dq, -cmax, cmax)
-        L["tau"].append(tau)
+        L["gait_phase"].append(float(dbg.get("phase", math.nan)))
+        if not self.cfg.lite_log:
+            L["q"].append(st.q.copy())
+            L["dq"].append(st.dq.copy())
+            L["q_target"].append(np.asarray(q, dtype=float).copy())
+            # servo torque estimate: the PID force of the plugin at the last applied target
+            tgt = self.q_sent if self.q_sent is not None else q
+            kp = np.array([self.servo[j]["p_gain"] for j in JOINTS])
+            kd = np.array([self.servo[j]["d_gain"] for j in JOINTS])
+            cmax = np.array([self.servo[j]["cmd_max"] for j in JOINTS])
+            tau = np.clip(kp * (tgt - st.q) - kd * st.dq, -cmax, cmax)
+            L["tau"].append(tau)
         L["contacts"].append(np.array(dbg["contacts"], dtype=bool))
         L["cmd"].append(np.array(cmd))
         L["cmd_f"].append(np.array(dbg["cmd"]))
@@ -568,8 +572,9 @@ class GzHarness:
         L["ground"].append(ground)
         L["terrain_class"].append(str(self.terrain_info.get("class", "")) if self.terrain_info else "")
         L["fall_metric"].append(bool(max(abs(rpy[0]), abs(rpy[1])) > math.radians(55.0) or pos[2] - ground < 0.12))
-        bc = self.ctrl.body_ik
-        L["body_cmd"].append(np.r_[bc[0], bc[1]] if bc is not None else np.full(6, np.nan))
+        if not self.cfg.lite_log:
+            bc = self.ctrl.body_ik
+            L["body_cmd"].append(np.r_[bc[0], bc[1]] if bc is not None else np.full(6, np.nan))
         L["ik_ok"].append(bool(dbg["ik_reachable"]))
 
     # ------------------------------------------------------------------ run

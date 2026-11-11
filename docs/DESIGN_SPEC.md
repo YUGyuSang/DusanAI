@@ -92,6 +92,18 @@ DusanAI/
   Costs are finite: where no free detour exists (C-OBS4 plate, C-OBS5 pipe across the corridor)
   the path still crosses; C-OBS1 (north end) and C-OBS3 (rubble y -1.3..0.5, 1.26 m passage
   along the north wall) are passed around.
+* Lying-pipe crossings: `dusan_common/debris_crossing.py` (mission_manager, `crossing_*` in
+  mission.yaml). Every crossing of a pipe inside its span on a planned patrol / self-RTH path is
+  replaced by a straight segment square to the pipe (0.9 m before to 0.8 m after the pipe axis,
+  tilted up to 0.35 rad when walls block it, checked on the nav map); while following, the robot
+  turns in place onto that heading before its feet reach the pipe (0.6 + 0.3 m before the axis),
+  then crosses at a steady 0.25 m/s with no sideways command and yaw rate 0 (module1's heading
+  hold) until 0.6 m past it; next to a pipe it does not cross (an end) speed / yaw rate are scaled
+  down along the same curve (<= 0.25 m/s, <= 0.35 rad/s).
+* Seeker map: `terrain_cost.debris_blocked_grid` marks the layout debris of the seeker parameter
+  `debris_blocked_kinds` (default `rubble,pipe`, + 0.10 m) occupied in source_seeker's nav grid,
+  except an item whose blocking would cut the free space apart at the seeker's robot radius
+  (C-OBS1, C-OBS5, F-OBS3 stay free); the cost-layer planners keep the debris crossable.
 * Gauge dial: `dusan_common.gauge_design` (min at 225°, max at −45°, clockwise 270°, red band =
   last 15 %).
 * Cameras: Gazebo convention (looks along +X of its link). `dusan_common.camera.PinholeCamera`.

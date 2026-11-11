@@ -70,6 +70,24 @@ mission_manager:
     obstacle_slow_dist: 1.0       # m free travel: slow down below ...
     obstacle_stop_dist: 0.35      # m ... stop below
     obstacle_unconfirmed_scale: 0.5  # speed floor for unconfirmed evidence
+    # ------------------------------ lying pipes (dusan_common/debris_crossing.py)
+    # every pipe crossing of a path is planned straight and square to the pipe; the robot turns
+    # onto it before its feet reach the pipe, then walks over at a steady pace (no turn / strafe)
+    crossing_enabled: true
+    crossing_approach: 0.9        # m straight run before the pipe axis (robot centre)
+    crossing_depart: 0.8          # m straight run after it
+    crossing_max_angle: 0.35      # rad tilt from square tried when walls block the square line
+    crossing_end_margin: 0.15     # m a path this close past a pipe end still crosses it ...
+    crossing_max_oblique: 1.05    # rad ... when it meets the pipe axis at most this far from square
+    crossing_zone: 0.6            # m centre to the pipe axis within which a foot can reach the pipe
+    crossing_align_margin: 0.3    # m before that zone: turn in place onto the crossing heading
+    crossing_align_tol: 0.2       # rad heading error that needs the turn in place
+    crossing_align_wz: 0.4        # rad/s
+    crossing_speed: 0.25          # m/s steady pace over the pipe
+    crossing_wz: 0.0              # rad/s yaw rate limit over the pipe (0: module1's heading hold keeps the heading)
+    crossing_near_dist: 0.45      # m centre to a pipe that is passed (its end), not crossed: ...
+    crossing_near_vx: 0.25        # m/s ... slow
+    crossing_near_wz: 0.35        # rad/s
     # ---------------------------------------------------- stuck detection
     stuck_time: 8.0               # s without progress while driving
     stuck_distance: 0.15          # m counted as progress

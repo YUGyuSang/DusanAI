@@ -5,7 +5,7 @@
 | 대상 플랫폼 | Ubuntu 26.04 + ROS 2 Lyrical + Gazebo Jetty (gz-sim 10). Ubuntu 24.04 + Jazzy + Harmonic 도 지원 |
 | 저장소 구조 | `module1_locomotion/`, `module2_inspection/`, `module3_gas_safety/`, `simulation/` (ROS 패키지 `plant_simulation`), `dusan_common/`, `docs/`, `tools/`, `scripts/` |
 | 함께 볼 문서 | [README](../README.md) (개요·설치), [USAGE](USAGE.md) (실행·사용), [SETUP_GUIDE](SETUP_GUIDE.md), [DESIGN_SPEC](DESIGN_SPEC.md) (인터페이스 계약), 모듈별 README (부록 A) |
-| 수치 출처 | `docs/results/*.json`: 오프라인 평가 6종(2026-10-12 릴리스 재실행본. `locomotion_eval.json`만 2026-10-13 최종 점검에서 다시 실행), MuJoCo 물리 검증 `physics_check.json`과 파라미터 탐색 `tuning.json`(2026-10-13), **Gazebo 헤드리스 검증 `gazebo_check.json`(2026-10-13, Gazebo Harmonic. MPC 최종 검증 `mpc_final2`와 stable 회귀 `stable_regress2`는 2026-10-26)**, Gazebo 넘어짐 복구 검증 `fall_check.json`(2026-11-11). 릴리스 테스트 요약, 오프라인 대시보드 데모의 `summary.json`. 지도에 없는 장애물의 Gazebo 점검(`tools/obstacle_check.py`, 2026-10-26)은 결과 JSON을 커밋하지 않았고 수치는 §7.8에 옮겼다 |
+| 수치 출처 | `docs/results/*.json`: 오프라인 평가 6종(2026-10-12 릴리스 재실행본. `locomotion_eval.json`만 2026-10-13 최종 점검에서 다시 실행), MuJoCo 물리 검증 `physics_check.json`과 파라미터 탐색 `tuning.json`(2026-10-13), **Gazebo 헤드리스 검증 `gazebo_check.json`(2026-10-13, Gazebo Harmonic. MPC 최종 검증 `mpc_final2`와 stable 회귀 `stable_regress2`는 2026-10-26)**, Gazebo 넘어짐 복구 검증 `fall_check.json`(2026-11-11). 릴리스 테스트 요약, 오프라인 대시보드 데모의 `summary.json`. 지도에 없는 장애물의 Gazebo 점검(`tools/obstacle_check.py`, 2026-10-26)은 결과 JSON을 커밋하지 않았고 수치는 §7.8에 옮겼다. 데모 미션 전체 점검(`tools/mission_check.py`, 2026-11-11)도 같으며 수치는 §4.10.8에 있다 |
 
 > [!IMPORTANT]
 > **검증 범위.** 이 보고서의 수치는 모두 ROS가 없는 Windows 개발 PC에서 나왔다.
@@ -102,6 +102,7 @@
 | Gazebo 헤드리스 검증 (`tools/gazebo_check.py`, Harmonic) | 평지 시험 월드: stable 63/63, mpc 57/66(블라인드 지형 제외). 출발 직후 넘어짐(제어기 버그 ①)은 수정되어 저장소에 반영됐다. **지금 기본값(stable + trot, 깊이 맵)**: 기립·텔레옵 60 s·밀기·노드 15 s 늦게 시작 각 3/3, 도크 → 배관 우회 → 경사로 위 3/3, 배관을 넘는 같은 경로 2/3, 잔해 북쪽 통로로 복도 전체(도크 → 홀 문) 3/3, 잔해 앞 출발 통로 비켜 가기 2/6. 잔해 곧게·0.08 m 배관 곧게는 0/3 | §4.10 |
 | MPC 모드 최종 검증 (`gazebo_check.json`의 `mpc_final2`, 2026-10-26, 실측 MPC 지연) | 평지·정답 맵 27/27(stable 27/27). plant 깊이 맵 16/21(stable 16/21): q·r은 MPC가 낫고(3/3 대 0/3, 3/3 대 2/3), o·l·j는 못함(2/3 대 3/3, 1/3 대 3/3, 1/3 대 2/3). 기본값은 stable 유지. stable 회귀 `stable_regress2`는 10-13 기록과 33회 모두 같음 | §4.10.7 |
 | 지도에 없는 장애물 Gazebo 점검 (`tools/obstacle_check.py`, Harmonic) | stable: r t u v w x z × 시드 3개 21/21, 45 m 경로 y 3/3(10-26 최종 점검, 처음 1/1), 넘어짐 0. MPC: r t u v w x z 21/21, y 0/3 | §7.8.3. 결과 JSON은 커밋하지 않음 |
+| Gazebo 데모 미션 전체 (`tools/mission_check.py`, Harmonic, 2026-11-11) | 도크 → 계기판 8개 → 가스 탐색 → 귀환·도킹. 시드 0–4 **5/5 완료**(이전 코드 1/5), 넘어짐 실행당 0.6회(이전 6.4회), 순간이동 0. 시드 5–9 4/5(배관 위에 등을 대고 누운 1회 미완료) | §4.10.8. 결과 JSON은 커밋하지 않음 |
 | **Gazebo GUI + ROS 2 실행** | **미실행** (개발 PC에 ROS 없음) | Ubuntu PC에서 §8.4 절차로 측정 |
 
 ---
@@ -1164,6 +1165,38 @@ python tools/gazebo_check.py --mode stable --map depth --label stable_regress2 -
 45 m 경로 y에서 낮아 "모든 시나리오에서 stable 이상" 조건을 채우지 못했다. 벽에 더 붙어 출발하는 갭 출구(스크래치 xb)도
 MPC 5/9, stable 8/9로 남았다. MPC 지연은 개발 PC에서 Gazebo 10개를 동시에 돌린 조건이라, 실제 로봇 PC에서는 경사로 결과가
 달라질 수 있다. MPC를 쓰려면 `/locomotion/state`의 `mpc_solve_ms`가 30 ms를 넘지 않는지 확인한다.
+
+#### 4.10.8 데모 미션 전체 (`tools/mission_check.py`, 2026-11-11)
+
+같은 하네스에 미션에 참여하는 노드의 실제 코드(미션 관리자, 순찰 계획기, 가스 확산·탐색기, 배터리, 통신, 귀환, cmd_vel 먹스)를
+ROS 없이 연결해, 도크 출발 → 계기판 8개 → 가스 누출원 탐색 → 귀환·도킹을 끝까지 돌렸다. 계기판 판독기는 정답 자세의 가시성으로
+대신했다. 완료 = DOCKED + 계기판 8/8 + 누출원 FOUND + 순간이동 0.
+
+이전 코드(시드 0–4)는 1/5만 완료했고 32번 넘어졌다(실행당 6.4회). 넘어진 곳은 C-OBS5 배관 18회, 가스 탐색 중 F-OBS5 잔해 10회,
+도크 출발 2회, F-OBS3 배관 끝(칸막이 출입구) 2회였다. 원인과 수정은 아래와 같다.
+
+| 위치 | 원인 | 수정 |
+|---|---|---|
+| C-OBS5 (0.08 m, 복도를 가로지름) | A* 경로가 배관 앞뒤에서 40–45° 꺾여 발이 배관 옆일 때 돌았다. 곧게 건너도 0.16 s 스윙의 0.3 m 걸음이 서보 지연으로 배관 위에 내려섰고, 스윙 중 foothold 선택이 배관 반대편으로 바뀌면 1.5 cm/주기로 옮겨 가다 배관 위에서 스윙이 끝났다 | 건너는 구간을 배관에 직각인 직선으로 계획하고 배관 앞에서 먼저 방향을 맞춘 뒤 0.25 m/s, 옆걸음·회전 없이 건넘(`dusan_common/debris_crossing.py`). 범프 근처 trot 주기 0.5 s, 스윙 후반 foothold 점프 무시, 장애물 스윙은 수평 이동을 앞당기고 늦게 내림 |
+| F-OBS5 잔해 | 가스 탐색기는 지도에서 잔해를 빈 곳으로 보고 곧장 가로질렀다. 탐색이 시간 초과된 두 시드는 두 번째 탐색이 통신 음영 귀환을 일으켜 계기판 3개에서 끝났다 | 탐색기 지도에 잔해·배관을 장애물로 넣음(`debris_blocked_kinds`). 막으면 통로가 끊기는 배관은 그대로 둠 |
+| 도크 출발 | 카메라가 아직 몸 아래·뒤를 보지 못해 foothold planner가 뒷발을 보이는 셀로 0.16 m 앞으로 당겼다 | 맵에 없는 착지 셀은 공칭 착지점 유지(`foothold_keep_unseen`) |
+| F-OBS3 끝 | 배관 끝을 돌아 문으로 들어가며 0.6 m에 약 100°를 0.37 m/s, 0.6 rad/s로 꺾었다 | 건너지 않는 배관 0.45 m 안에서는 같은 곡선을 0.25 m/s, 0.35 rad/s 이하로 감 |
+
+결과(Harmonic, 시드마다 스폰·명령 시각이 조금 다름):
+
+| | 완료 | 넘어짐 | 순간이동 | 미션 시간 |
+|---|---|---|---|---|
+| 이전, 시드 0–4 | 1/5 | 32 (6.4/회) | 0 | 841 s (완료 1회) |
+| **이후, 시드 0–4** | **5/5** | **3 (0.6/회)** | 0 | 평균 616 s |
+| 이후, 시드 5–9 | 4/5 | 6 (1.2/회) | 0 | 평균 634 s |
+
+- 완료한 실행은 모두 계기판 8/8, 누출원 FOUND였다. 미완료 1회(시드 8)는 C-OBS5를 건너다 배관 위에 등을 대고 누워 240 s 동안
+  일어나지 못했다(등 굴리기가 배관을 받침점 삼아 제자리로 돌아옴).
+- 남은 넘어짐 9회: C-OBS5 5회(가는 서쪽 2, 돌아오는 동쪽 3), F-OBS3 3회(그중 1회는 탐색 중 출입구), 누출원 옆 탐색 중
+  제자리 회전 1회. 시드 8을 빼고 모두 다시 일어나 미션을 이어 갔다. C-OBS5는 19번 건너 14번 넘어지지 않았다(이전 10번 중 1번).
+- 회귀: 지도에 없는 박스(`tools/obstacle_check.py`) 21/21로 이전과 같다. 키보드 운전 시나리오(`tools/gazebo_check.py`, 깊이 맵,
+  시드 0·1)는 15/20(이전 16/20)이다. 잔해 통로 r과 0.08 m 배관 곧게 q는 좋아졌고, 텔레옵으로 배관을 곧게 넘는 j(1/2 → 0/2)와
+  복도 전체 l(2/2 → 0/2)은 나빠졌다. 미션은 이 동작(배관을 비스듬히, 방향을 고치며 넘기)을 쓰지 않는다. 상세: module1 README §4.10.
 
 ## 5. Module 2 — Inspection AI
 

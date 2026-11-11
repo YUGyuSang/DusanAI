@@ -141,6 +141,8 @@ locomotion_controller:
     # ---------------------------------------------------------------- terrain
     use_foothold_planner: true
     foothold_search_radius: 0.10   # [m]
+    foothold_keep_unseen: true     # stable mode: an unseen touch-down cell keeps the nominal foothold (the planner
+                                   #   pulled the hind feet forward to the nearest seen cell at the dock start)
 
     # ---------------------------------------------------------------- torque saturation
     torque_scale_threshold: 0.85   # predicted |tau| / effort above -> slow down
@@ -249,6 +251,16 @@ locomotion_controller:
     stable_max_step_y: 0.08
     stable_retarget_until: 0.8     # swing progress up to which the touch-down point follows the command
     stable_max_retarget_step: 0.015  # [m/step] touch-down point changes after lift-off (only with the foothold planner / map)
+    stable_retarget_jump: 0.05     # [m] the planner switched to another foothold after lift-off (other side of a pipe) ...
+    stable_retarget_jump_until: 0.25  # ... taken whole up to this swing progress, later the committed point is kept
+    stable_obstacle_early_x: true  # swing over an obstacle: forward early, down late - the servo-lagged real foot
+                                   #   set down short ON the C-OBS5 pipe with the symmetric profile
+    stable_obstacle_trot_period: 0.5  # [s] slower trot while a bump (pipe, rubble, step edge) is under / just
+                                   #   ahead of the legs: more time for the swing over it (0 = off)
+    stable_obstacle_trot_duty: 0.6 # stance fraction of that pace (swing 0.2 s instead of 0.16 s; 0.5 fell more)
+    stable_obstacle_height: 0.04   # [m] bump above the local terrain line (a ramp / stair flight is a line)
+    stable_obstacle_ahead: 0.55    # [m] body x up to which the map is checked (from behind the hind feet)
+    stable_obstacle_hold: 1.0      # [s] slow pace kept this long after the last bump
     stable_land_tau: 0.05          # [s] stance foot height after touch-down -> ground target
     stable_stance_max_error: 0.015 # [m] stance force limit: target - measured foot (horizontal), ~70 N with the
                                    #     4.5 kN/m servo; without it the open-loop sweep slid the feet (teleop 0/3)

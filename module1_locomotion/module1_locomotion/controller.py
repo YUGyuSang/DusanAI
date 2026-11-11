@@ -163,6 +163,8 @@ DEFAULT_PARAMS: Dict[str, Any] = {
     # terrain
     "use_foothold_planner": True,
     "foothold_search_radius": 0.10,
+    "foothold_keep_unseen": True,        # stable mode: an unseen (unmapped) touch-down cell keeps the nominal
+                                         # foothold instead of moving it to the nearest seen cell
     # torque saturation
     "torque_scale_threshold": 0.85,
     "torque_recover_threshold": 0.70,
@@ -251,6 +253,17 @@ DEFAULT_PARAMS: Dict[str, Any] = {
     "stable_max_step_y": 0.08,
     "stable_retarget_until": 0.8,
     "stable_max_retarget_step": 0.015,
+    "stable_retarget_jump": 0.05,        # [m] foothold planner switched to another foothold after lift-off ...
+    "stable_retarget_jump_until": 0.25,  # ... taken whole up to this swing progress, later the target is kept
+    "stable_obstacle_early_x": True,     # obstacle swing: forward early, down late (the real foot lags the servo)
+    # slower trot while a raised obstacle (pipe, rubble, step edge) is under / just ahead of the legs:
+    # the swing over it gets more time (Gazebo C-OBS5: the servo-lagged foot of a 0.16 s swing over
+    # the 0.08 m pipe was set down on the pipe); 0 = off
+    "stable_obstacle_trot_period": 0.5,  # [s]
+    "stable_obstacle_trot_duty": 0.6,    # stance fraction of that pace (swing 0.2 s instead of 0.16 s; 0.5 fell more)
+    "stable_obstacle_height": 0.04,      # [m] bump above the local terrain line under / ahead of the legs
+    "stable_obstacle_ahead": 0.55,       # [m] body x up to which the map is checked (rear: the hind feet)
+    "stable_obstacle_hold": 1.0,         # [s] the slow pace is kept this long after the last bump
     "stable_land_tau": 0.05,
     "stable_stance_max_error": 0.015,
     "stable_swing_attitude_blend": 0.0,
@@ -619,6 +632,9 @@ class LocomotionController:
         self.gait_mpc = GaitScheduler(self.gaits, initial="stand")
         self.gait_stable = GaitScheduler(self.gaits_stable, initial="stand")
         self.gait = self.gait_stable if mode == "stable" else self.gait_mpc
+        self._pace_period = float(p["stable_trot_period"])     # current stable trot period (obstacle pace)
+        self._pace_t_check = -1e9
+        self._pace_t_obstacle = -1e9
         self.mpc = ConvexMPC(mpc_config_from_params(p))
         threaded = bool(p["use_mpc_thread"]) if threaded_mpc is None else bool(threaded_mpc)
         self.worker: Optional[_MPCWorker] = _MPCWorker(self.mpc) if threaded else None
@@ -1235,6 +1251,8 @@ class LocomotionController:
                         and not switching:
                     self.gait.request(target_gait if self.gait.name == "stand" else self.gait.name)
 
+        if self.loco_mode == "stable":
+            self._update_stable_pace(t, st, emap)
         gs = self.gait.update(t)
         if self.mode == "WALK" and gs.name == "stand" and self.gait.pending is None:
             self._enter_stand_from_walk(t, st)
@@ -1420,6 +1438,7 @@ class LocomotionController:
         planner = self.planner
         if planner is not None:
             cache = self._stable_fh                  # leg -> (raw world xy, chosen world xy)
+            keep_unseen = bool(self.p["foothold_keep_unseen"])
 
             def foothold_fn(leg, xy, _emap=emap):
                 wx, wy = to_world(xy)
@@ -1429,8 +1448,15 @@ class LocomotionController:
                     wa = hit[1]                      # ground-fixed target barely moved: same choice
                 else:
                     try:
-                        pt, _score, valid = planner.select(_emap, w, z_ref)
-                        wa = np.asarray(pt[:2], dtype=float) if valid else w
+                        if keep_unseen and not math.isfinite(float(_emap.height_at(float(w[0]), float(w[1])))):
+                            # the depth camera looks ahead: a cell under / behind the body (start-up,
+                            # the outer side after a turn) is unseen, which says nothing about the ground
+                            # there - the planner would pull the foot towards the nearest SEEN cell, i.e.
+                            # the hind feet forward under the body (no rear support: fall at the dock start)
+                            wa = w
+                        else:
+                            pt, _score, valid = planner.select(_emap, w, z_ref)
+                            wa = np.asarray(pt[:2], dtype=float) if valid else w
                     except Exception:
                         wa = w
                     cache[leg] = (w, wa)
@@ -1464,6 +1490,51 @@ class LocomotionController:
             self._yaw_ref = yaw
             return 0.0
         return float(np.clip(k * wrap_angle(self._yaw_ref - yaw), -wmax, wmax))
+
+    def _obstacle_bump(self, st: RobotState, emap) -> float:
+        """Highest bump [m] of the elevation map above the local terrain line along
+        three lines (left feet, centre, right feet) from behind the hind feet to
+        ``stable_obstacle_ahead`` in front of the body (a ramp or a stair flight
+        is a line, a lying pipe / rubble a bump); NaN without map data."""
+        if emap is None:
+            return float("nan")
+        p = self.p
+        yaw = float(st.rpy[2])
+        c, s_ = math.cos(yaw), math.sin(yaw)
+        xs = np.arange(-0.40, float(p["stable_obstacle_ahead"]) + 1e-9, 0.04)
+        best = float("nan")
+        for yl in (-rm.LEG_PLANE_Y, 0.0, rm.LEG_PLANE_Y):
+            wx = float(st.pos[0]) + c * xs - s_ * yl
+            wy = float(st.pos[1]) + s_ * xs + c * yl
+            h = terrain_heights(emap.height_at, wx, wy)
+            ok = np.isfinite(h) & (np.abs(h - self.ground_z) < 0.35)
+            if ok.sum() < 4:
+                continue
+            a, b = np.polyfit(xs[ok], h[ok], 1)
+            bump = float(np.max(h[ok] - (a * xs[ok] + b)))
+            best = bump if not math.isfinite(best) else max(best, bump)
+        return best
+
+    def _update_stable_pace(self, t: float, st: RobotState, emap) -> None:
+        """Trot period of the stable mode: ``stable_obstacle_trot_period`` while a
+        bump (``_obstacle_bump``) is under / just ahead of the legs and for
+        ``stable_obstacle_hold`` s after, ``stable_trot_period`` otherwise.  The
+        scheduler phase is continuous, so the pattern swap only changes the pace."""
+        p = self.p
+        slow = float(p["stable_obstacle_trot_period"])
+        normal = float(p["stable_trot_period"])
+        if slow <= 0.0 or abs(slow - normal) < 1e-9:
+            return
+        if t - self._pace_t_check >= 0.05:
+            self._pace_t_check = t
+            bump = self._obstacle_bump(st, emap) if self.mode in ("WALK", "STAND") else float("nan")
+            if math.isfinite(bump) and bump > float(p["stable_obstacle_height"]):
+                self._pace_t_obstacle = t
+        want = slow if t - self._pace_t_obstacle <= float(p["stable_obstacle_hold"]) else normal
+        if abs(want - self._pace_period) > 1e-9:
+            self._pace_period = want
+            duty = float(p["stable_obstacle_trot_duty"] if want == slow else p["stable_trot_duty"])
+            self.gait_stable.set_pattern("trot", make_gaits(want, duty)["trot"])
 
     def _step_stable(self, t: float, dt: float, st: RobotState, gs, emap=None) -> np.ndarray:
         """STAND / WALK of the ``stable`` mode (stable_gait.StableGait):

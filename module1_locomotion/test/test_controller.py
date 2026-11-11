@@ -2005,3 +2005,70 @@ def test_mpc_turn_in_place_about_a_point_behind_the_base():
     c.p["mpc_turn_pivot_x"] = 0.0
     c.cmd_f = np.array([0.0, 0.0, wz])
     assert c._turn_pivot_vy() == 0.0
+
+
+def test_stable_foothold_keeps_an_unseen_nominal_cell():
+    """Gazebo mission check (dock start): the depth camera looks ahead, the cells
+    under / behind the body are unseen; the foothold planner then moved the hind
+    touch-down points up to 0.16 m forward to the nearest SEEN cell - the hind
+    feet ended under the body and the robot tipped over backwards.  An unseen
+    nominal cell keeps the nominal foothold (``foothold_keep_unseen``)."""
+
+    class Forward:                                      # a planner that always picks a cell 0.1 m ahead
+        def __init__(self):
+            self.calls = 0
+
+        def select(self, emap, xy, z):
+            self.calls += 1
+            return np.array([xy[0] + 0.1, xy[1], 0.0]), 0.0, True
+
+    seen_ahead = FakeMap(lambda x, y: np.where(np.asarray(x) > 0.0, 0.0, np.nan))
+    st = C.RobotState()
+    st.pos = np.array([0.0, 0.0, 0.34])
+    st.rpy = np.zeros(3)
+    for keep in (True, False):
+        ctrl = C.LocomotionController({"use_mpc_thread": False, "locomotion_mode": "stable",
+                                       "foothold_keep_unseen": keep})
+        ctrl.planner = Forward()
+        ctrl._terrain_now = np.zeros(5)
+        fh = ctrl._stable_terrain(0.01, st, seen_ahead, 0.0)[3]
+        hind = fh(2, np.array([-0.22, 0.13]))
+        front = fh(0, np.array([0.22, 0.13]))
+        assert front == pytest.approx([0.32, 0.13])              # seen: the planner's choice
+        if keep:
+            assert hind == pytest.approx([-0.22, 0.13]) and ctrl.planner.calls == 1
+        else:
+            assert hind == pytest.approx([-0.12, 0.13]) and ctrl.planner.calls == 2
+    assert C.DEFAULT_PARAMS["foothold_keep_unseen"] is True
+
+
+def test_stable_trot_slows_down_at_a_bump_but_not_on_a_ramp():
+    """Obstacle pace: the stable trot period becomes stable_obstacle_trot_period while
+    a bump (lying pipe) is under / ahead of the legs and for stable_obstacle_hold s
+    after; a ramp (a terrain line) keeps the normal pace; phase stays continuous."""
+    ctrl = C.LocomotionController({"use_mpc_thread": False, "locomotion_mode": "stable"})
+    ctrl.mode = "WALK"
+    ctrl.ground_z = 0.0
+    st = C.RobotState()
+    st.pos = np.array([0.0, 0.0, 0.34])
+    st.rpy = np.zeros(3)
+    pipe = FakeMap(lambda x, y: np.where(np.abs(np.asarray(x) - 0.3) < 0.04, 0.08, 0.0))
+    ramp = FakeMap(lambda x, y: 0.2 * np.asarray(x, dtype=float))
+    flat = FakeMap(lambda x, y: 0.0 * np.asarray(x, dtype=float))
+    assert ctrl._obstacle_bump(st, pipe) > 0.06
+    assert abs(ctrl._obstacle_bump(st, ramp)) < 1e-6 and abs(ctrl._obstacle_bump(st, flat)) < 1e-9
+    assert math.isnan(ctrl._obstacle_bump(st, None))
+    period = lambda: ctrl.gait_stable.gaits["trot"].period             # noqa: E731
+    ctrl._update_stable_pace(0.0, st, ramp)
+    assert period() == pytest.approx(0.4)
+    ctrl._update_stable_pace(0.1, st, pipe)
+    assert period() == pytest.approx(0.5) and ctrl._pace_period == pytest.approx(0.5)
+    ctrl._update_stable_pace(0.6, st, flat)
+    assert period() == pytest.approx(0.5)                                # held
+    ctrl._update_stable_pace(1.2, st, flat)
+    assert period() == pytest.approx(0.4)
+    off = C.LocomotionController({"use_mpc_thread": False, "locomotion_mode": "stable",
+                                  "stable_obstacle_trot_period": 0.0})
+    off.mode = "WALK"
+    off._update_stable_pace(0.1, st, pipe)
+    assert off.gait_stable.gaits["trot"].period == pytest.approx(0.4)

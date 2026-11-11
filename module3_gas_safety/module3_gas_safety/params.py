@@ -102,6 +102,11 @@ SEEKER_PARAMS: Dict[str, object] = dict(_COMMON, **{
     "ground_truth_override": False,
     "ground_truth_x": -3.2,
     "ground_truth_y": 2.0,
+    # layout debris the seeker treats as obstacles (comma separated types, "" = none): its gradient
+    # steps / local A* see only the nav map, where debris is free (Gazebo: falls in the F-OBS5 rubble,
+    # over the F-OBS4 pipe); an item whose blocking would close a passage (F-OBS3 across the
+    # partition doorway) stays free
+    "debris_blocked_kinds": "rubble,pipe",
 })
 for _k, _v in vars(_SEEKER_CFG).items():
     if _k == "nose_offset":

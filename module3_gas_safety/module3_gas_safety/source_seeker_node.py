@@ -32,6 +32,7 @@ from dusan_common.grid_map import OccupancyGridMap
 from dusan_common.obstacle_layer import EvidenceFrame, frame_accepted, organised_cloud_to_xyz
 from dusan_common.planning import path_to_msg
 from dusan_common.ros_helpers import json_msg
+from dusan_common.terrain_cost import debris_blocked_grid
 
 from .layout_map import map_fingerprint
 from .node_common import (best_effort_qos, declare, latched_qos, load_layout_and_map, now_sec,
@@ -47,7 +48,7 @@ class SourceSeekerNode(Node):
         self.p = p = declare(self, SEEKER_PARAMS)
         self.layout, grid = load_layout_and_map(self, p["layout_file"], p["map_yaml"])
         self._map_fp = map_fingerprint(grid)
-        self.seeker = SourceSeeker(seeker_config(p), grid)
+        self.seeker = SourceSeeker(seeker_config(p), self._seek_grid(grid))
         if p["ground_truth_override"]:
             self.truth = (float(p["ground_truth_x"]), float(p["ground_truth_y"]))
         else:
@@ -166,6 +167,12 @@ class SourceSeekerNode(Node):
         self._obstacle_frame(msg, lambda m, fid: EvidenceFrame.from_traversability(
             OccupancyGridMap.from_msg(m), int(self.p["obstacle_cost_threshold"])))
 
+    def _seek_grid(self, grid):
+        """Nav map + the layout debris of ``debris_blocked_kinds`` as obstacles (an item
+        whose blocking would close a passage at the seeker's robot radius stays free)."""
+        kinds = tuple(k.strip() for k in str(self.p.get("debris_blocked_kinds", "")).split(",") if k.strip())
+        return debris_blocked_grid(grid, self.layout, kinds, keep_passable=float(self.p["robot_radius"]))             if kinds else grid
+
     def _on_map(self, msg: OccupancyGrid) -> None:
         try:
             grid = OccupancyGridMap.from_msg(msg)
@@ -175,7 +182,7 @@ class SourceSeekerNode(Node):
         fp = map_fingerprint(grid)
         if fp != self._map_fp:
             self._map_fp = fp
-            self.seeker.set_map(grid)
+            self.seeker.set_map(self._seek_grid(grid))
             self.get_logger().info(f"nav map updated from /map ({grid.width}x{grid.height})")
 
     # -------------------------------------------------------------- control

@@ -47,6 +47,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from dusan_common.debris_crossing import CROSSING_DEFAULTS, CrossingGovernor, CrossingParams, straighten_crossings
 from dusan_common.geometry import wrap_angle
 from dusan_common.obstacle_layer import OBSTACLE_DEFAULTS, ObstacleAvoider
 from dusan_common.planning import densify, plan as plan_path
@@ -88,6 +89,9 @@ MISSION_DEFAULTS = {
     # slow down / stop -> left/right detour rejoining the route -> re-plan on static + dynamic
     # -> keep the map route (stuck logic below); obstacle_enabled false = legacy behaviour
     **OBSTACLE_DEFAULTS,
+    # lying pipes (dusan_common/debris_crossing.py): crossings planned straight and square to the
+    # pipe, walked over at a steady pace without turning / strafing; slow next to a pipe end
+    **CROSSING_DEFAULTS,
     # stuck detection
     "stuck_time": 8.0,             # s without progress while driving
     "stuck_distance": 0.15,        # m that counts as progress
@@ -302,6 +306,8 @@ class MissionLogic:
                               rotate_in_place_angle=self.p["rotate_in_place_angle"], k_heading=self.p["k_heading"])
         # novel obstacles seen by the robot (elevation map) on top of the static nav map
         self.obstacles = ObstacleAvoider.from_params(self.p, float(self.p["robot_radius"]))
+        # lying pipes of the layout: straight crossings (planning) + crossing governor (following)
+        self.crossing = CrossingGovernor(layout, CrossingParams.from_params(self.p))
         # world inputs
         self.grid = None
         self.viewpoints = []
@@ -1073,12 +1079,25 @@ class MissionLogic:
             raw.append((gx, gy))
         if len(raw) == 1:
             raw = [(self.pose[0], self.pose[1])] + raw
+        raw = self._straight_crossings(raw)
         # dusan_common.pure_pursuit selects its lookahead point among path
         # VERTICES starting at the closest one; with the 1.5 m spacing of
         # planning.plan() the closest vertex can lie behind the robot at more
         # than the lookahead distance, which makes the target flip behind /
         # ahead (rotate-in-place oscillation).  Dense vertices avoid that.
         return densify(raw, float(self.p["follow_spacing"]))
+
+    def _straight_crossings(self, path):
+        """Pipe crossings of ``path`` replaced by straight segments square to the pipe
+        (dusan_common.debris_crossing), each new segment free on the nav map."""
+        cg = self.crossing
+        if not cg.enabled or len(path) < 2:
+            return path
+        r = 0.7 * float(self.p["robot_radius"])
+        grid = self.grid
+        line_ok = (lambda a, b: grid.line_of_sight(a[0], a[1], b[0], b[1], r)) if grid is not None else None
+        out, n = straighten_crossings(path, cg.pipes, line_ok, cg.p)
+        return out if n else path
 
     def _plan_raw(self, goal, leg):
         if self.pose is None:
@@ -1332,6 +1351,10 @@ class MissionLogic:
             self._out.cmd_vel = (0.0, 0.0, 0.0)
             on_arrival(t)
             return
+        if scale > 0.0:
+            # lying pipe ahead / under the robot: turn onto the crossing before the feet reach it,
+            # then a steady straight pace; slow past a pipe end (dusan_common.debris_crossing)
+            vx, vy, wz = self.crossing.govern(x, y, yaw, (vx, vy, wz), self.pp.remaining_path())
         self._out.cmd_vel = (vx, vy, wz)
         # progress / stuck detection
         if self._prog_ref is None:

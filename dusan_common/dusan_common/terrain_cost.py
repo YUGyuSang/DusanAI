@@ -292,3 +292,69 @@ def debris_crossed(path: Sequence[Sequence[float]], source, clearance: float = 0
         if d is not None and np.any(d <= clearance + 1e-9):
             out.append(str(ob.get("id", ob.get("type"))))
     return out
+
+
+def _big_components(grid, radius: float, min_area: float = 1.0) -> int:
+    """Number of free components (at ``radius``) larger than ``min_area`` m^2."""
+    lab = grid.free_labels(radius)
+    n = np.bincount(lab.ravel())
+    if len(n) <= 1:
+        return 0
+    return int(np.count_nonzero(n[1:] * float(grid.resolution) ** 2 >= min_area))
+
+
+def debris_blocked_grid(grid, source, kinds: Iterable[str] = ("pipe", "rubble"), margin: float = 0.10,
+                        keep_passable: float = 0.0):
+    """Copy of the nav map with the debris of ``kinds`` in ``source`` (Layout /
+    layout dict / obstacle list) marked occupied, grown by ``margin`` m.
+
+    For planners without a cost layer that steer the robot themselves, e.g.
+    the gas source seeker: its gradient steps and local A* see only the
+    binary nav map (debris FREE) and drove the robot straight over the
+    F-OBS5 rubble field / F-OBS4 pipe, where it fell (Gazebo mission check).
+    The cost-layer planners (patrol, RTH) keep the debris crossable.
+
+    ``keep_passable`` > 0 (the planner's robot radius): an item whose blocking
+    would cut the free space apart at that radius (more free regions of
+    >= 1 m^2, e.g. the F-OBS3 pipe across the partition doorway) stays free."""
+    if grid is None or source is None:
+        return grid
+    from .grid_map import OccupancyGridMap
+    occ = np.array(grid.occ, dtype=np.int8, copy=True)
+    h, w = occ.shape
+    res = float(grid.resolution)
+    kinds = set(kinds)
+    changed = False
+    frame = getattr(grid, "frame_id", "map")
+    n_ref = _big_components(grid, keep_passable) if keep_passable > 0.0 else 0
+    for ob in _obstacles(source):
+        if ob.get("type") not in kinds:
+            continue
+        b = footprint_bounds(ob)
+        if b is None:
+            continue
+        pad = float(margin) + res
+        i0 = max(0, int(math.floor((b[0] - pad - grid.origin_x) / res)))
+        i1 = min(w, int(math.ceil((b[2] + pad - grid.origin_x) / res)) + 1)
+        j0 = max(0, int(math.floor((b[1] - pad - grid.origin_y) / res)))
+        j1 = min(h, int(math.ceil((b[3] + pad - grid.origin_y) / res)) + 1)
+        if i0 >= i1 or j0 >= j1:
+            continue
+        xs = grid.origin_x + (np.arange(i0, i1) + 0.5) * res
+        ys = grid.origin_y + (np.arange(j0, j1) + 0.5) * res
+        X, Y = np.meshgrid(xs, ys)
+        d = footprint_distance(ob, X, Y)
+        if d is None:
+            continue
+        win = occ[j0:j1, i0:i1]
+        before = win.copy()
+        win[np.asarray(d) <= float(margin)] = 100
+        if keep_passable > 0.0:
+            trial = OccupancyGridMap(occ, res, grid.origin_x, grid.origin_y, frame_id=frame)
+            if _big_components(trial, keep_passable) > n_ref:
+                win[...] = before                  # blocking it would close a passage
+                continue
+        changed = True
+    if not changed:
+        return grid
+    return OccupancyGridMap(occ, res, grid.origin_x, grid.origin_y, frame_id=frame)
