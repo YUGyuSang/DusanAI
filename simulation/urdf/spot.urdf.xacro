@@ -24,7 +24,7 @@
            enable_thermal   (true)  - thermal camera only (needs the ogre2 thermal pipeline)
            depth_rate (10) inspection_rate (10) thermal_rate (5)       - camera update rates [Hz]
            inspection_width (800) inspection_height (600)              - inspection camera image size
-                            (bringup low_memory:=true: 640 x 480 @ 5 Hz, depth 5 Hz, thermal 2 Hz)
+                            (bringup low_memory:=true: 640 x 480 @ 5 Hz, depth 10 Hz, thermal 2 Hz)
 -->
 <robot name="spot" xmlns:xacro="http://www.ros.org/wiki/xacro">
 

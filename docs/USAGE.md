@@ -437,7 +437,7 @@ bash scripts/run_bringup.sh --low-memory     # 직접 운전 / t로 미션 시�
 | 항목 | 기본 | `low_memory` |
 |---|---|---|
 | 점검 카메라 | 800×600, 10 Hz | 640×480, 5 Hz (게이지 판독 속도와 같음) |
-| 깊이 카메라 / 열화상 카메라 | 10 Hz / 5 Hz | 5 Hz / 2 Hz |
+| 깊이 카메라 / 열화상 카메라 | 10 Hz / 5 Hz | 10 Hz / 2 Hz (깊이 카메라는 보행 검증 주기 그대로) |
 | 그림자 | 켬 | 끔 (그림자를 끈 월드 사본을 임시 폴더에 만들어 실행, 원본 월드는 그대로) |
 | Gazebo GUI | `gui.config` | `gui_lean.config`: 점검·열화상 카메라 패널, Component inspector, Entity tree 없음. 3D 화면, 키 입력, 추적 카메라, Robot HUD는 유지 |
 | RViz | `rviz:=true`면 실행 | 실행하지 않음 |
@@ -451,7 +451,9 @@ bash scripts/run_bringup.sh --low-memory     # 직접 운전 / t로 미션 시�
   전용 메모리 약 840 → 775 MiB, 공유 GPU 메모리(내장 그래픽에서는 시스템 RAM) 약 240 → 165 MiB로 서버만 약 140 MiB 줄었습니다.
   GUI(카메라 패널 2개와 Entity tree, GUI 화면의 그림자 맵)와 노드 약 18개의 `MALLOC_ARENA_MAX`·BLAS 스레드 효과는 이 방법으로 잴 수 없어 추정치입니다.
   GUI 약 0.1–0.25 GB, 노드들 약 0.1–0.35 GB로, 합계 약 0.35–0.75 GB가 줄어든다고 봅니다(RViz를 함께 띄우던 경우 RViz 몫 0.2–0.4 GB가 더 줄어듦).
-  카메라가 그리는 화소 수는 점검 카메라 약 3배, 깊이 2배, 열화상 2.5배 줄어 CPU·GPU 부하도 내려갑니다.
+  카메라가 그리는 화소 수는 점검 카메라 약 3배, 열화상 2.5배 줄어 CPU·GPU 부하도 내려갑니다.
+  깊이 카메라는 배관·잔해 위 보행(장애물 보폭, 발 디딤 계획, 배관 건너기)을 10 Hz 깊이 영상으로 맞추고 검증했기 때문에 10 Hz를 유지합니다.
+  깊이 영상은 212×120으로 작아서 주기를 낮춰도 아끼는 양이 적습니다.
   실제 사용량은 실행 중 `free -h`나 `ps -eo rss,comm --sort=-rss | head -20`으로 확인하세요.
 - 그래도 메모리가 모자라면(`dmesg`에 `Out of memory`, 노드가 `process has died [exit code -9]`로 죽음) 다른 프로그램(브라우저 탭 등)을 닫고,
   영상 촬영이 아니면 `gui:=false`로 Gazebo 창 없이 대시보드로만 보세요.

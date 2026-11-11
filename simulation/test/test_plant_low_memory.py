@@ -62,7 +62,8 @@ def test_bringup_low_memory_profile(tmp_path):
     actions, _ = run_setup("bringup.launch.py", stubs, {"low_memory": "true", "rviz": "true", "demo": "true"})
     sim = _sim_include(actions).launch_args
     assert (sim["inspection_width"], sim["inspection_height"], sim["inspection_rate"]) == ("640", "480", "5")
-    assert (sim["depth_rate"], sim["thermal_rate"], sim["shadows"]) == ("5", "2", "false")
+    # the depth camera keeps the 10 Hz the walking (pipe crossings, obstacle pace) was checked with
+    assert (sim["depth_rate"], sim["thermal_rate"], sim["shadows"]) == ("10", "2", "false")
     assert sim["gui_config"] == "gui_lean.config"
     env = _env(actions, cls)
     assert env["MALLOC_ARENA_MAX"] == os.environ.get("MALLOC_ARENA_MAX", "2")
@@ -76,7 +77,7 @@ def test_bringup_low_memory_profile(tmp_path):
     # sim.launch.py with those arguments: xacro camera arguments, a world copy without shadows, lean GUI
     sim_actions, _ = run_setup("sim.launch.py", stubs, sim)
     m = _xacro_mappings(sim_actions, cls)
-    assert m == {"enable_thermal": "true", "enable_cameras": "true", "depth_rate": "5", "inspection_rate": "5",
+    assert m == {"enable_thermal": "true", "enable_cameras": "true", "depth_rate": "10", "inspection_rate": "5",
                  "thermal_rate": "2", "inspection_width": "640", "inspection_height": "480"}
     gz = _gz_args(sim_actions)
     world = gz[3]

@@ -24,10 +24,12 @@ Demo mode (demo:=true, scripts/run_demo.sh) = the reference video: mission_autos
 factory -> gauges -> gas leak search -> return to the dock), follow camera and HUD on.
 
 Low-memory profile (low_memory:=true, for an 8 GB laptop; every item can still be overridden by its
-own argument): inspection camera 640 x 480 @ 5 Hz (gauge reading verified at this size), depth camera
-5 Hz, thermal camera 2 Hz, world without shadows, lean Gazebo GUI (config/gui_lean.config: no camera
-panels / component inspector / entity tree), no RViz, HUD at 3 Hz, MALLOC_ARENA_MAX=2 and one BLAS /
-OpenMP thread per process.  Dashboard, metrics and saved results are unchanged.
+own argument): inspection camera 640 x 480 @ 5 Hz (gauge reading verified at this size), thermal
+camera 2 Hz, world without shadows, lean Gazebo GUI (config/gui_lean.config: no camera panels /
+component inspector / entity tree), no RViz, HUD at 3 Hz, MALLOC_ARENA_MAX=2 and one BLAS / OpenMP
+thread per process.  The depth camera keeps its 10 Hz: the walking over pipes and debris (obstacle
+pace, foothold planner, crossing) was tuned and checked on 10 Hz depth frames, and the 212 x 120
+depth image costs little.  Dashboard, metrics and saved results are unchanged.
 
 Respawn (respawn:=true, default): cmd_vel_mux, mission_manager, monitor_dashboard and demo_hud are
 restarted when they die (3 s delay), as are the stateless nodes of sim.launch.py and Module 3 (see
@@ -67,12 +69,13 @@ MODULE_LAUNCHES = (
     ("module3_gas_safety", "gas_safety.launch.py"),
 )
 # low_memory:=true defaults of the sim.launch.py / demo_hud arguments ('' in the normal profile = the
-# xacro / node defaults: inspection 800 x 600 @ 10 Hz, depth 10 Hz, thermal 5 Hz, shadows as in the world)
+# xacro / node defaults: inspection 800 x 600 @ 10 Hz, depth 10 Hz, thermal 5 Hz, shadows as in the world;
+# the depth camera stays at the 10 Hz the walking was checked with, see the module docstring)
 LOW_MEMORY = {
     "inspection_rate": "5",
     "inspection_width": "640",
     "inspection_height": "480",
-    "depth_rate": "5",
+    "depth_rate": "10",
     "thermal_rate": "2",
     "shadows": "false",
     "gui_config": "gui_lean.config",
@@ -251,7 +254,7 @@ def generate_launch_description():
         DeclareLaunchArgument("headless_rendering", default_value="false",
                               description="with gui:=false render sensors via EGL"),
         DeclareLaunchArgument("low_memory", default_value="false",
-                              description="8 GB laptop: inspection camera 640x480 @ 5 Hz, depth 5 Hz, thermal 2 Hz, "
+                              description="8 GB laptop: inspection camera 640x480 @ 5 Hz, thermal 2 Hz, "
                                           "no shadows, lean Gazebo GUI, no RViz, HUD 3 Hz, MALLOC_ARENA_MAX=2"),
         DeclareLaunchArgument("respawn", default_value="true",
                               description="restart nodes that died where nothing important is lost"),
@@ -261,7 +264,7 @@ def generate_launch_description():
                               description="inspection camera width px ('' = 800, low_memory 640)"),
         DeclareLaunchArgument("inspection_height", default_value="",
                               description="inspection camera height px ('' = 600, low_memory 480)"),
-        DeclareLaunchArgument("depth_rate", default_value="", description="depth camera Hz ('' = 10, low_memory 5)"),
+        DeclareLaunchArgument("depth_rate", default_value="", description="depth camera Hz ('' = 10, low_memory 10)"),
         DeclareLaunchArgument("thermal_rate", default_value="",
                               description="thermal camera Hz ('' = 5, low_memory 2)"),
         DeclareLaunchArgument("shadows", default_value="",
