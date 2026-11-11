@@ -15,7 +15,8 @@ Subscribes
                      merged into the nav map of the local planner (obstacle_enabled)
 Publishes
   /cmd_vel/seek      geometry_msgs/Twist (only while enabled, seeking (not FOUND/FAILED) and no RTH;
-                     a single zero Twist when commanding stops)
+                     a single zero Twist when commanding stops); over a lying pipe of the layout the
+                     patrol's crossing governor applies (crossing_* parameters, source_seeking)
   /gas/seek_status   std_msgs/String JSON {state, concentration, gradient, estimate, error_m, path_length, elapsed, ...}
   /gas/source_estimate geometry_msgs/PointStamped
   /gas/seek_path     nav_msgs/Path (trajectory while seeking)
@@ -28,6 +29,7 @@ from nav_msgs.msg import OccupancyGrid, Odometry, Path
 from sensor_msgs.msg import PointCloud2
 from std_msgs.msg import Bool, Float32, Float32MultiArray, String
 
+from dusan_common.debris_crossing import CrossingParams
 from dusan_common.grid_map import OccupancyGridMap
 from dusan_common.obstacle_layer import EvidenceFrame, frame_accepted, organised_cloud_to_xyz
 from dusan_common.planning import path_to_msg
@@ -49,6 +51,7 @@ class SourceSeekerNode(Node):
         self.layout, grid = load_layout_and_map(self, p["layout_file"], p["map_yaml"])
         self._map_fp = map_fingerprint(grid)
         self.seeker = SourceSeeker(seeker_config(p), self._seek_grid(grid))
+        self.seeker.set_pipes(self.layout, CrossingParams.from_params(p))
         if p["ground_truth_override"]:
             self.truth = (float(p["ground_truth_x"]), float(p["ground_truth_y"]))
         else:

@@ -335,3 +335,62 @@ def test_resume_in_gradient_restarts_the_reference_dwell():
     assert sk.state == GRADIENT and sk.phase == "dwell_ref" and sk._l_ref is None
     assert sk._target is None and sk._dwell_until == pytest.approx(5.0 + sk.cfg.dwell_time)
     assert len(sk._poses) == 0                      # no lag interpolation across the pause
+
+
+PIPE = {"id": "P", "type": "pipe", "center": [0.0, 0.0], "yaw": math.radians(70.0), "length": 3.0,
+        "diameter": 0.12}
+
+
+def test_steps_over_a_pipe_are_walked_like_a_patrol_crossing():
+    """F-OBS3 in the partition doorway: a seek step over a lying pipe turns
+    square to it first, then crosses at the steady crossing pace without
+    turning or strafing (no 0.8 rad/s turns with a foot at the pipe)."""
+    from module3_gas_safety.sim_harness import RobotSim
+    g = _open_grid()
+    sk = SourceSeeker(SeekerConfig(), g)
+    sk.set_pipes([PIPE])
+    assert sk.crossing is not None
+    n = np.array([-math.sin(math.radians(70.0)), math.cos(math.radians(70.0))])
+    robot = RobotSim(1.6, -0.6, math.radians(110.0), max_speed=sk.cfg.max_speed)     # 50 deg off square
+    sk.state = GRADIENT
+    sk._go(0.0, np.array([-1.6, 0.6]), None)
+    t, states, over = 0.0, [], []
+    while t < 40.0 and not sk._arrived(t, np.array([robot.x, robot.y])):
+        p = np.array([robot.x, robot.y])
+        vx, vy, wz = sk._govern(robot.x, robot.y, robot.yaw, sk._track(t, p, robot.yaw))
+        states.append(sk.crossing.state)
+        if abs(float(p @ n)) < sk.crossing.p.zone:
+            over.append((vx, vy, wz))
+        robot.step((vx, vy, wz), 0.1, g)
+        sk._yaw = robot.yaw
+        t += 0.1
+    assert "align" in states and "cross" in states and states.index("align") < states.index("cross")
+    assert over and all(abs(v[1]) < 1e-9 and abs(v[2]) < 1e-9 and v[0] == pytest.approx(0.25) for v in over)
+    assert np.hypot(robot.x + 1.6, robot.y - 0.6) < 0.35 and sk.crossing.n_crossings == 1
+    assert sk.status(t)["crossing"] in ("", "near")
+    # without pipes nothing changes
+    sk2 = SourceSeeker(SeekerConfig(), g)
+    sk2.set_pipes(None)
+    assert sk2.crossing is None and sk2._govern(0.0, 0.0, 0.0, (0.3, 0.1, 0.8)) == (0.3, 0.1, 0.8)
+
+
+def test_step_targets_never_lie_on_a_pipe():
+    g = _open_grid()
+    sk = SourceSeeker(SeekerConfig(), g)
+    sk.set_pipes([PIPE])
+    n = np.array([-math.sin(math.radians(70.0)), math.cos(math.radians(70.0))])
+    zone = sk.crossing.p.zone
+    sk.path = [(2.0, 0.0)]                                    # robot on the -n side
+    for tgt, side in (((0.15, 0.1), None), ((-0.2, 0.0), None), ((0.0, 0.0), -1.0)):
+        sk._go(0.0, np.array(tgt), None)
+        s0 = float(np.asarray(tgt) @ n)
+        s1 = float(sk._target @ n)
+        assert abs(s1) == pytest.approx(zone, abs=1e-6)
+        assert np.sign(s1) == (side if side is not None else np.sign(s0))
+    # far from the pipe / beyond its end: unchanged
+    for tgt in ((2.0, 0.0), (0.0, 3.0)):
+        sk._go(0.0, np.array(tgt), None)
+        assert np.allclose(sk._target, tgt)
+    # route goal moved alike
+    sk._go(0.0, None, None, route=np.array([[1.0, -1.0], [0.1, 0.0]]))
+    assert np.allclose(sk._route[-1], sk._target) and abs(float(sk._target @ n)) == pytest.approx(zone, abs=1e-6)

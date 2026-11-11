@@ -249,6 +249,12 @@ python tools/eval_gas.py                         # 그림 -> docs/images, 수치
   - 그래서 위의 자유 길이, 국소 A* 우회, 속도 투영, 척력이 탐지 장애물도 그대로 피합니다. 별도의 감속·우회 단계는 없습니다.
   - 진행 중인 우회 경로나 스텝 직선이 새 장애물을 지나게 되면 다시 계획합니다.
   - 비활성(IDLE)일 때는 프레임을 1 Hz(`obstacle_idle_period`)로 메모리에만 넣고, enable할 때 격자를 다시 만듭니다.
+* **누운 배관 건너기**: 칸막이 출입구의 F-OBS3처럼 막을 수 없는 배관을 넘는 스텝은 순찰 경로와 같은
+  `dusan_common.debris_crossing.CrossingGovernor`를 거칩니다. 발이 배관에 닿기 전(배관 축에서 0.9 m)에 제자리에서
+  배관과 직각이 되게 돌고, 그다음 0.25 m/s로 곧게 넘습니다. 넘는 동안은 회전·옆걸음이 없고, 뒷발이 배관을 지날
+  때까지 멈추지 않습니다. 아직 배관에 닿기 전에 스텝 목표가 바뀌어 배관을 넘을 필요가 없어지면 건너기를 취소합니다.
+  배관 끝을 스쳐 지날 때는 0.25 m/s, 0.35 rad/s 이하로 줄입니다. 스텝 목표가 배관 축에서 0.6 m 안에 떨어지면
+  같은 쪽으로 0.6 m 밖까지 옮겨, 배관 위에 서서 측정하지 않습니다. 파라미터는 `crossing_*`(`seeker.yaml`)입니다.
 
 ---------------------------------------------------------------------------------------
 
@@ -378,6 +384,7 @@ C-OBS5 배관) 그대로 지나갑니다. 비용은 유한하므로 경로를 �
 | seeker | `detect_ppm`, `lost_ppm`, `found_ppm` | 2.5, 1.2, 600 | 임계값 |
 | seeker | `step_init/min/max`, `momentum`, `upwind_bias` | 0.8/0.25/1.6, 0.5, 0.5 | 경사 스텝 |
 | seeker | `detour_*` | 활성, 도달 거리 5 m, ±8 m 창 | 장애물 우회 |
+| seeker | `crossing_enabled`, `crossing_speed`, `crossing_zone` | true, 0.25, 0.6 | 누운 배관 건너기(순찰과 같은 값) |
 | seeker | `timeout` | 300 | 이 시간 [s] 뒤 FAILED |
 | seeker | `resume_window_s` | 45 | enable false → true가 이 시간 안이면 실행을 이어 감 (0 = 항상 새로 시작) |
 | battery | `capacity_wh`, `initial_pct` | 200, 80 | 팩 |

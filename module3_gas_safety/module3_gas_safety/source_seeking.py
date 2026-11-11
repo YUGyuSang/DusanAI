@@ -57,6 +57,16 @@ exists the step is shortened / rotated instead.  The velocity command is
 projected onto the free half-space of the distance-field gradient with a
 repulsive term near walls.
 
+Lying pipes (``set_pipes``, the layout obstacles of type pipe): a step over
+a pipe is walked like a patrol crossing - the velocity command goes through
+dusan_common.debris_crossing.CrossingGovernor (turn in place square to the
+pipe before the feet reach it, then straight over it at a steady 0.25 m/s
+without turning or strafing until the hind feet are clear; slower next to a
+pipe that is passed), and a step target never lies on a pipe: one within the
+governor's ``zone`` of a pipe axis moves out to that distance on its side
+(Gazebo mission check: the seeker turned at 0.8 rad/s over the F-OBS3 pipe in
+the partition doorway and fell there four times in one run).
+
 Source estimate: weighted centroid of the top-k samples
       x_hat = sum w_i p_i / sum w_i,   w_i = c_i - c_(k+1)  (excess over the
       (k+1)-th largest sample).
@@ -70,6 +80,7 @@ from typing import Deque, List, Optional, Sequence, Tuple
 
 import numpy as np
 
+from dusan_common.debris_crossing import CrossingGovernor, CrossingParams
 from dusan_common.grid_map import OccupancyGridMap
 from dusan_common.obstacle_layer import OBSTACLE_DEFAULTS, ObstacleMemory, ObstacleParams
 from dusan_common.planning import astar, path_length, smooth_path
@@ -241,6 +252,7 @@ class SourceSeeker:
         self._dyn_dirty = False
         self._t_rebuild = -math.inf
         self.reroutes = 0
+        self.crossing: Optional[CrossingGovernor] = None   # lying pipes (set_pipes)
         self.set_map(grid)
         offs = np.asarray(self.cfg.array_offsets, dtype=float).reshape(-1, 2)
         self._arr_offsets = offs
@@ -253,6 +265,13 @@ class SourceSeeker:
         self._reset_run(0.0)
 
     # ================================================================ setup
+    def set_pipes(self, source, params: Optional[CrossingParams] = None) -> None:
+        """Lying pipes of ``source`` (Layout / layout dict / obstacle list; None:
+        none) for the crossing governor and the off-pipe step targets (module
+        docstring); ``params``: CrossingParams (default: the patrol's)."""
+        gov = CrossingGovernor(source, params) if source is not None else None
+        self.crossing = gov if gov is not None and gov.enabled else None
+
     def set_map(self, grid) -> None:
         """Nav OccupancyGridMap used for obstacle-aware steps (None = free space).
         Detected (novel) obstacles already in memory are merged right away."""
@@ -804,7 +823,7 @@ class SourceSeeker:
             self._do_gradient(t, p, yaw, c, lost)
         if self.state in (FOUND, FAILED):
             return 0.0, 0.0, 0.0
-        return self._track(t, p, yaw)
+        return self._govern(x, y, yaw, self._track(t, p, yaw))
 
     # ============================================================ helpers
     def _upwind(self) -> Optional[np.ndarray]:
@@ -829,7 +848,9 @@ class SourceSeeker:
         the detour waypoints ``route`` (route[-1] == target)."""
         self._route = None if route is None else np.asarray(route, dtype=float).reshape(-1, 2)
         self._route_i = 0
-        self._target = np.asarray(target if route is None else self._route[-1], dtype=float)
+        self._target = self._off_pipe(np.asarray(target if route is None else self._route[-1], dtype=float))
+        if self._route is not None:
+            self._route[-1] = self._target
         self._yaw_des = yaw_des
         self._dwell_until = None
         self._progress_ref = (t, float("inf"))
@@ -1301,6 +1322,40 @@ class SourceSeeker:
         if not self._plan_step(t, p, yaw):
             self._set_state(SURGE, t, "weak local maximum")
 
+    def _off_pipe(self, target: np.ndarray) -> np.ndarray:
+        """``target`` moved out of the crossing zone of a lying pipe: to the
+        zone's edge along the pipe normal, on the target's side (on the axis:
+        on the robot's side), when that spot is free; else unchanged."""
+        gov = self.crossing
+        if gov is None:
+            return target
+        q = np.asarray(target, dtype=float).copy()
+        zone = float(gov.p.zone)
+        here = self.path[-1] if self.path else None
+        for pp in gov.pipes:
+            s = pp.side(q[0], q[1])
+            if abs(s) >= zone or abs(pp.along(q[0], q[1])) > pp.half + pp.r + gov.p.end_margin:
+                continue
+            ref = s if (abs(s) > 0.05 or here is None) else pp.side(here[0], here[1])
+            cand = q + ((zone if ref >= 0.0 else -zone) - s) * pp.n
+            if self.clearance(cand[0], cand[1]) >= self.cfg.robot_radius:
+                q = cand
+        return q
+
+    def _govern(self, x: float, y: float, yaw: float, cmd) -> Tuple[float, float, float]:
+        """The tracking command through the pipe crossing governor (module docstring)."""
+        gov = self.crossing
+        if gov is None:
+            return cmd
+        if self._target is None:
+            ahead = None
+        elif self._route is not None:
+            ahead = self._route[self._route_i:]
+        else:
+            ahead = self._target.reshape(1, 2)
+        vx, vy, wz = gov.govern(x, y, yaw, cmd, ahead, recheck=True)
+        return float(vx), float(vy), float(wz)
+
     # ============================================================= control
     def _track(self, t: float, p: np.ndarray, yaw: float) -> Tuple[float, float, float]:
         """Velocity command towards the current target with obstacle projection."""
@@ -1428,4 +1483,5 @@ class SourceSeeker:
             "detours": int(self.detours),
             "message": self.message,
             "obstacles": self.obstacles.confirmed_count,
+            "crossing": self.crossing.state if self.crossing is not None else "",
         }

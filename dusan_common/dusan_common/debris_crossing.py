@@ -29,6 +29,10 @@ pipe):
   Passing next to a pipe that is not crossed (its end, e.g. the north gap at
   C-OBS1 or the partition door end of F-OBS3): speed / yaw rate limited to
   ``near_vx`` / ``near_wz``, no strafing, within ``near_dist`` of the pipe.
+  The gas seeker (module3 ``source_seeking``) uses the same governor on its
+  steps, whose goal changes on the way: with ``recheck`` a crossing is given
+  up while the feet are still clear of the pipe when the path ahead no
+  longer crosses it; once over it the robot always walks on until clear.
 
 Parameters (mission_manager, ``crossing_*``; :data:`CROSSING_DEFAULTS`).
 """
@@ -284,9 +288,12 @@ class CrossingGovernor:
                              max_dist=self.p.zone + self.p.align_margin + 1.0, max_oblique=self.p.max_oblique)
         return crs[0] if crs else None
 
-    def govern(self, x: float, y: float, yaw: float, cmd, remaining=None) -> Tuple[float, float, float]:
+    def govern(self, x: float, y: float, yaw: float, cmd, remaining=None,
+               recheck: bool = False) -> Tuple[float, float, float]:
         """(vx, vy, wz) of the follower -> governed (vx, vy, wz).  ``remaining``:
-        the path still ahead (pure pursuit remaining_path)."""
+        the path still ahead (pure pursuit remaining_path).  ``recheck``: drop a
+        crossing that ``remaining`` no longer crosses as long as the robot is
+        still before the zone (a goal that changes on the way)."""
         vx, vy, wz = (float(v) for v in cmd)
         if not self.enabled:
             self.state = ""
@@ -297,7 +304,7 @@ class CrossingGovernor:
             s = cr.progress(x, y)
             if s > p.zone or abs(cr.pipe.along(x, y)) > cr.pipe.half + 1.0:
                 cr = self.active = None           # hind feet clear (or walked off along the pipe)
-            elif s < -(p.zone + p.align_margin + 0.3):
+            elif s < -(p.zone + p.align_margin + 0.3) or (recheck and s < -p.zone):
                 nxt = self._next_crossing(x, y, remaining)
                 if nxt is None or nxt.pipe is not cr.pipe:
                     cr = self.active = None       # re-planned away from it

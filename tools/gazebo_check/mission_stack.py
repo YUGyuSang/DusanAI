@@ -118,6 +118,8 @@ class MissionStack:
             from dusan_common.terrain_cost import debris_blocked_grid
             sgrid = debris_blocked_grid(grid, L, kinds, keep_passable=float(sp["robot_radius"]))
         self.seeker = SourceSeeker(seeker_config(sp), sgrid)
+        from dusan_common.debris_crossing import CrossingParams
+        self.seeker.set_pipes(L, CrossingParams.from_params(sp))      # = source_seeker_node
         src = L.gas_leak.get("source")
         self.leak = (float(src[0]), float(src[1]))
         self.seek_enabled = False

@@ -175,3 +175,22 @@ def test_debris_blocked_grid_keeps_passages_open():
     g0 = debris_blocked_grid(grid, [pipe, rub], kinds=("pipe", "rubble"))           # without the check
     ix, iy = g0.world_to_grid(4.0, 1.5)
     assert g0.occ[iy, ix] == 100
+
+
+def test_governor_recheck_drops_a_crossing_the_goal_no_longer_needs():
+    """A goal that changes on the way (gas seeker steps): before the feet reach
+    the pipe the crossing is given up when the path ahead no longer crosses
+    it; once over it the robot walks on until clear, whatever the goal."""
+    head = math.radians(-160.0)
+    for recheck, kept in ((False, True), (True, False)):
+        g = CrossingGovernor([PIPE], CrossingParams())
+        g.govern(0.8, 0.0, head, (0.3, 0.0, 0.0), [(-1.5, 0.0)], recheck=recheck)
+        assert g.state == "approach" and g.active is not None
+        out = g.govern(0.8, 0.0, head, (0.0, 0.0, 0.0), [(1.5, 0.0)], recheck=recheck)    # goal now behind
+        assert (g.active is not None) is kept
+        if not kept:
+            assert out == (0.0, 0.0, 0.0) and g.state == ""
+    g = CrossingGovernor([PIPE], CrossingParams())
+    g.govern(0.8, 0.0, head, (0.3, 0.0, 0.0), [(-1.5, 0.0)], recheck=True)
+    vx, vy, wz = g.govern(0.2, 0.0, head, (0.0, 0.0, 0.0), None, recheck=True)            # dwell on the pipe?
+    assert g.state == "cross" and vx == pytest.approx(0.25) and vy == 0.0 and wz == 0.0

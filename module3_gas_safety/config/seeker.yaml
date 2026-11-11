@@ -149,3 +149,23 @@ source_seeker:
     obstacle_shadow_depth: 1.0      # [m] assumed unseen back of an obstacle (line of sight)
     obstacle_idle_period: 1.0       # [s] frame period while not seeking (0 = every frame)
     obstacle_rebuild_period: 1.0    # [s] min. time between nav-grid rebuilds
+
+    # ---------------------------------------------------- lying pipes (layout obstacles of type pipe)
+    # a step over a pipe is walked like a patrol crossing (dusan_common/debris_crossing.py,
+    # same values as mission.yaml): turn in place square to the pipe before a foot can reach it,
+    # then straight over it at a steady pace (no turning / strafing); no step target on a pipe
+    crossing_enabled: true
+    crossing_approach: 0.9          # [m] (patrol path planning only)
+    crossing_depart: 0.8            # [m] (patrol path planning only)
+    crossing_max_angle: 0.35        # [rad] (patrol path planning only)
+    crossing_end_margin: 0.15       # [m] a step this close past a pipe end still crosses it ...
+    crossing_max_oblique: 1.05      # [rad] ... when it meets the pipe axis at most this far from square
+    crossing_zone: 0.6              # [m] centre to the pipe axis within which a foot can reach the pipe
+    crossing_align_margin: 0.3      # [m] before that zone: turn in place onto the crossing heading
+    crossing_align_tol: 0.2         # [rad] heading error that needs the turn in place
+    crossing_align_wz: 0.4          # [rad/s]
+    crossing_speed: 0.25            # [m/s] steady pace over the pipe
+    crossing_wz: 0.0                # [rad/s] yaw rate limit over the pipe
+    crossing_near_dist: 0.45        # [m] centre to a pipe that is passed (its end), not crossed: ...
+    crossing_near_vx: 0.25          # [m/s] ... slow
+    crossing_near_wz: 0.35          # [rad/s]

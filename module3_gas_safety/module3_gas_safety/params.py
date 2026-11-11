@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from typing import Dict
 
+from dusan_common.debris_crossing import CROSSING_DEFAULTS
 from dusan_common.obstacle_layer import OBSTACLE_DEFAULTS, OBSTACLE_NODE_KEYS
 
 from .battery_model import BatteryConfig
@@ -108,6 +109,8 @@ SEEKER_PARAMS: Dict[str, object] = dict(_COMMON, **{
     # partition doorway) stays free
     "debris_blocked_kinds": "rubble,pipe",
 })
+# lying-pipe crossings of the seek steps: the patrol's crossing governor (dusan_common.debris_crossing)
+SEEKER_PARAMS.update(CROSSING_DEFAULTS)
 for _k, _v in vars(_SEEKER_CFG).items():
     if _k == "nose_offset":
         SEEKER_PARAMS[_k] = [float(v) for v in _v]
