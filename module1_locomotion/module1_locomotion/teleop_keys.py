@@ -390,3 +390,101 @@ def format_status(state: TeleopState, now: float, loco_mode: Optional[str] = Non
         parts.append(f"gz {gz_keys}")
     line = " | ".join(parts)
     return line[:max(10, int(width))]
+
+
+class MissionCommandTracker:
+    """Reliable delivery of the mission keys (t p g h o) to mission_manager.
+
+    /mission/command is a VOLATILE topic: a key pressed before mission_manager
+    is up (start-up of a loaded 8 GB laptop, DDS discovery of a teleop started
+    later, a mission_manager restart) was lost, and a rejected command ('start'
+    while return_to_home keeps the robot on the charger, 'start' while a
+    mission runs ...) was only visible in the bringup log.  This tracker (ROS
+    free, wall clock):
+
+    * sends the key at once and keeps it until /mission/state acknowledges it
+      (``cmd_seq`` / ``recent_commands``); while mission_manager is silent the
+      key waits and is re-sent as soon as it answers again (expires after
+      ``max_age`` s, so an old key never starts a mission much later),
+    * re-sends up to ``max_sends`` times when no acknowledgement arrives within
+      ``ack_timeout`` s (a repeated 'start' is harmless: rejected as 'already
+      running' or ignored as a duplicate),
+    * reports the outcome: accepted + message, REJECTED + reason, or gave up.
+
+    A mission_manager without the acknowledgement fields (older build) gets
+    every key once, as before."""
+
+    def __init__(self, ack_timeout=2.0, max_sends=3, max_age=60.0, stale_after=MISSION_STALE_AFTER):
+        self.ack_timeout = float(ack_timeout)
+        self.max_sends = max(1, int(max_sends))
+        self.max_age = float(max_age)
+        self.stale_after = float(stale_after)
+        self.pending = None            # dict cmd, t_key, t_sent, sends, seq0
+        self.seq = None                # cmd_seq of the last /mission/state (None: unknown / old build)
+        self.recent = []
+        self.t_state = None
+
+    def alive(self, now):
+        return not mission_stale(self.t_state, now, self.stale_after)
+
+    def press(self, cmd, now):
+        """Key pressed -> (send_now, [messages])."""
+        self.pending = {"cmd": str(cmd), "t_key": now, "t_sent": None, "sends": 0, "seq0": None}
+        self._send(now)
+        if self.alive(now):
+            return True, []
+        return True, [f"   ! mission_manager is not answering (/mission/state "
+                      f"{'never received' if self.t_state is None else 'stale'}) - '{cmd}' is re-sent as soon "
+                      f"as it is up (for {self.max_age:.0f} s); if it never comes up, look for a Traceback / "
+                      "'process has died' in the bringup terminal"]
+
+    def _send(self, now):
+        p = self.pending
+        p["sends"] += 1
+        p["t_sent"] = now
+        p["seq0"] = self.seq
+
+    def on_state(self, d, now):
+        """/mission/state dict -> [messages] (acknowledgement of the pending key)."""
+        self.t_state = now
+        if not isinstance(d, dict):
+            return []
+        seq = d.get("cmd_seq")
+        self.seq = int(seq) if isinstance(seq, (int, float)) and not isinstance(seq, bool) else None
+        rc = d.get("recent_commands")
+        self.recent = [r for r in rc if isinstance(r, dict)] if isinstance(rc, list) else []
+        p = self.pending
+        if p is None:
+            return []
+        seq0 = p["seq0"] if p["seq0"] is not None else -1
+        for r in self.recent:
+            rs = r.get("seq")
+            if isinstance(rs, (int, float)) and rs > seq0 and str(r.get("cmd")) == p["cmd"]:
+                self.pending = None
+                msg = str(r.get("message") or "")
+                if r.get("accepted"):
+                    return [f"mission: '{p['cmd']}' accepted" + (f" - {msg}" if msg else "")]
+                return [f"   ! mission: '{p['cmd']}' REJECTED - {msg or 'see the bringup log'}"]
+        return []
+
+    def poll(self, now):
+        """Periodic -> (command to re-send or None, [messages])."""
+        p = self.pending
+        if p is None:
+            return None, []
+        if now - p["t_key"] > self.max_age:
+            self.pending = None
+            return None, [f"   ! '{p['cmd']}' dropped: mission_manager did not answer within {self.max_age:.0f} s"]
+        if not self.alive(now):
+            return None, []               # keep it until mission_manager answers again
+        if self.seq is None:
+            self.pending = None           # older mission_manager without acknowledgement fields: sent, done
+            return None, []
+        if now - p["t_sent"] >= self.ack_timeout:
+            if p["sends"] >= self.max_sends:
+                self.pending = None
+                return None, [f"   ! '{p['cmd']}' not acknowledged after {p['sends']} sends - check the "
+                              "bringup terminal of mission_manager"]
+            self._send(now)
+            return p["cmd"], [f"-> /mission/command  {p['cmd']}  (re-sent: no acknowledgement yet)"]
+        return None, []

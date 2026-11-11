@@ -29,7 +29,7 @@ from dusan_common.grid_map import scalar_field_to_occupancy_msg
 from dusan_common.ros_helpers import json_msg
 
 from .gas_model import GasDispersion2D, LaggedSensor
-from .node_common import (best_effort_qos, declare, latched_qos, load_layout_and_map, now_sec,
+from .node_common import (best_effort_qos, declare, guarded, latched_qos, load_layout_and_map, now_sec,
                           odom_pose_twist_finite, reliable_qos, run_node, stamp, warn_throttled)
 from .params import GAS_PARAMS, gas_config
 
@@ -76,9 +76,10 @@ class GasDispersionNode(Node):
         self.pub_sensor = self.create_publisher(Float32, "/gas/sensor", reliable_qos(10))
         self.pub_array = self.create_publisher(Float32MultiArray, "/gas/sensor_array", reliable_qos(10))
         self.pub_wind = self.create_publisher(Vector3Stamped, "/gas/wind", reliable_qos(10))
-        self.create_subscription(Odometry, p["odom_topic"], self._on_odom, best_effort_qos(5))
-        self.create_timer(1.0 / max(p["update_rate"], 0.1), self._on_update)
-        self.create_timer(1.0 / max(p["grid_rate"], 0.05), self._on_grid)
+        g = lambda fn: guarded(self, fn.__name__, fn)  # noqa: E731  (exceptions logged, node keeps running)
+        self.create_subscription(Odometry, p["odom_topic"], g(self._on_odom), best_effort_qos(5))
+        self.create_timer(1.0 / max(p["update_rate"], 0.1), g(self._on_update))
+        self.create_timer(1.0 / max(p["grid_rate"], 0.05), g(self._on_grid))
         self._publish_grid()   # latched snapshot of the spun-up plume right away
 
     # ------------------------------------------------------------ callbacks

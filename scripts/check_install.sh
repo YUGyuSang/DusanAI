@@ -114,12 +114,13 @@ if [ -f "$WS_DIR/install/setup.bash" ]; then
   done
   share="$(ros2 pkg prefix plant_simulation 2>/dev/null || true)/share/plant_simulation"
   for f in worlds/plant.sdf maps/plant_map.yaml urdf/spot.urdf.xacro config/ros_gz_bridge.yaml \
-           config/world_layout.yaml config/gui.config config/mission.yaml config/dashboard.yaml config/mux.yaml \
+           config/world_layout.yaml config/gui.config config/gui_lean.config config/mission.yaml \
+           config/dashboard.yaml config/mux.yaml \
            launch/sim.launch.py launch/bringup.launch.py rviz/plant.rviz web/index.html web/app.js; do
     if [ -e "$share/$f" ]; then pass "share/plant_simulation/$f"; else
       case "$f" in
         maps/*) warnc "share/plant_simulation/$f missing (map_server_lite will rasterise a fallback map)" ;;
-        config/gui.config) warnc "share/plant_simulation/$f missing (default Gazebo GUI layout)" ;;
+        config/gui.config|config/gui_lean.config) warnc "share/plant_simulation/$f missing (default Gazebo GUI layout)" ;;
         *) fail "share/plant_simulation/$f missing" ;;
       esac
     fi

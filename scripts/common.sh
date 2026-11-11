@@ -107,6 +107,33 @@ source_ros() {
   ROS_DISTRO="${ROS_DISTRO:-$(basename "$(dirname "$setup")")}"
 }
 
+# Script flags -> launch arguments (run_bringup.sh / run_demo.sh).  Sets the array LAUNCH_ARGS:
+#   --low-memory (--low-mem, --lowmem) or DUSAN_LOW_MEMORY=1  -> low_memory:=true  (8 GB laptop profile)
+#   an explicit low_memory:=... argument wins; everything else is passed through unchanged.
+# Without the profile on a PC with less than 12 GB RAM a hint is printed.
+parse_launch_flags() {
+  LAUNCH_ARGS=()
+  local low=0 explicit=0 a
+  case "${DUSAN_LOW_MEMORY:-}" in 1|true|TRUE|yes|on) low=1 ;; esac
+  for a in "$@"; do
+    case "$a" in
+      --low-memory|--low-mem|--lowmem) low=1 ;;
+      low_memory:=*) explicit=1; LAUNCH_ARGS+=("$a") ;;
+      *) LAUNCH_ARGS+=("$a") ;;
+    esac
+  done
+  if [ "$low" -eq 1 ] && [ "$explicit" -eq 0 ]; then
+    LAUNCH_ARGS+=("low_memory:=true")
+  fi
+  if [ "$low" -eq 0 ] && [ "$explicit" -eq 0 ]; then
+    local kb
+    kb="$(awk '/^MemTotal:/ {print $2}' "${DUSAN_MEMINFO:-/proc/meminfo}" 2>/dev/null || true)"
+    if [ -n "$kb" ] && [ "$kb" -lt 12582912 ]; then
+      warn "이 PC의 메모리는 약 $(( (kb + 524288) / 1048576 )) GB입니다 - 8 GB 노트북이면 --low-memory 를 붙여 실행하세요 (카메라 640x480 5 Hz, 그림자/RViz 끔, 대시보드 유지)"
+    fi
+  fi
+}
+
 # Source ROS + the built workspace overlay.
 source_ws() {
   source_ros

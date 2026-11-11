@@ -3,6 +3,7 @@
 mission_manager:
   ros__parameters:
     control_rate: 10.0            # Hz state machine + /cmd_vel/patrol
+    gazebo_mission_keys: true     # t/p/g/h/o typed in the Gazebo window while no keyboard_teleop runs
     state_publish_period: 0.5     # s /mission/state republish (also on every change)
     layout_file: ""               # '' -> installed world_layout.yaml
     map_yaml: ""                  # only used when /map never arrives
@@ -139,3 +140,4 @@ mission_manager:
     autostart: false              # bringup.launch.py mission_autostart:=true overrides
     autostart_delay: 15.0         # s (sim time); bringup passes autostart_delay
     plan_wait_timeout: 20.0       # s autostart waits for the patrol plan before falling back
+    start_plan_wait: 30.0         # s a manual start without a patrol plan yet waits for it (0 = off)

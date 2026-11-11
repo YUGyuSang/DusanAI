@@ -10,13 +10,16 @@
 #   bash scripts/run_demo.sh
 #   bash scripts/run_demo.sh autostart_delay:=15.0 follow_offset:="-3.0 0.0 1.8"
 #   bash scripts/run_demo.sh thermal_source:=synthetic rviz:=true
+#   bash scripts/run_demo.sh --low-memory           # 8 GB laptop (= low_memory:=true)
 #
 # All arguments are passed to: ros2 launch plant_simulation bringup.launch.py demo:=true
+# (--low-memory is translated to low_memory:=true, see parse_launch_flags in common.sh)
 set -e
 . "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+parse_launch_flags "$@"
 source_ws
-info "ros2 launch plant_simulation bringup.launch.py demo:=true $*"
+info "ros2 launch plant_simulation bringup.launch.py demo:=true ${LAUNCH_ARGS[*]}"
 info "Gazebo: the view follows the robot; panel 'Robot HUD' shows the robot camera with the gas ppm"
 info "HUD on ROS: ros2 run rqt_image_view rqt_image_view /demo/hud   (free camera: click the 3D view, press Esc)"
 info "dashboard: http://localhost:8080 (or the dashboard_port you passed)"
-exec ros2 launch plant_simulation bringup.launch.py demo:=true "$@"
+exec ros2 launch plant_simulation bringup.launch.py demo:=true "${LAUNCH_ARGS[@]}"

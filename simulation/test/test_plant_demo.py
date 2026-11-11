@@ -473,7 +473,9 @@ def test_run_demo_script():
     text = raw.decode("utf-8")
     assert text.startswith("#!/usr/bin/env bash\n")
     assert '. "$(dirname "${BASH_SOURCE[0]}")/common.sh"' in text and "source_ws" in text
-    assert 'exec ros2 launch plant_simulation bringup.launch.py demo:=true "$@"' in text
+    # every argument goes through parse_launch_flags (--low-memory -> low_memory:=true)
+    assert 'parse_launch_flags "$@"' in text
+    assert 'exec ros2 launch plant_simulation bringup.launch.py demo:=true "${LAUNCH_ARGS[@]}"' in text
 
 
 def test_gas_plume_is_green():

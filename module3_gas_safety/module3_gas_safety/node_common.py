@@ -47,6 +47,50 @@ def run_node(node_factory, args=None) -> None:
             pass
 
 
+def guarded(node, name: str, fn, every: int = 50):
+    """Wrap a subscription / timer callback so that an exception is logged
+    instead of leaving ``rclpy.spin``: ``run_node`` re-raises, so one malformed
+    message (a JSON list instead of an object, a grid whose data does not fit
+    its size, a NaN) or a logic error would otherwise kill the node for the rest
+    of the run - a dead return_to_home / battery_simulator / source_seeker stops
+    the safety supervision or the gas search without anything visible on the
+    dashboard.  The traceback is logged on the first failure and then every
+    ``every`` failures; the wrapper returns None after a failure."""
+    import traceback
+
+    count = [0]
+
+    def wrapper(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as exc:  # noqa: BLE001 - isolation is the point
+            count[0] += 1
+            if count[0] == 1 or count[0] % max(1, int(every)) == 0:
+                node.get_logger().error(f"{name} failed ({count[0]}x): {type(exc).__name__}: {exc}\n"
+                                        f"{traceback.format_exc()}")
+            return None
+
+    wrapper.failures = lambda: count[0]
+    wrapper.__name__ = getattr(fn, "__name__", name)
+    return wrapper
+
+
+def finite_or_none(v):
+    """float(v) when it is a finite number, else None (NaN / inf / garbage)."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return f if math.isfinite(f) else None
+
+
+def json_dict(msg) -> dict:
+    """std_msgs/String JSON -> dict ({} for malformed JSON, null, lists, strings ...)."""
+    from dusan_common.ros_helpers import parse_json_msg
+    d = parse_json_msg(msg, None)
+    return d if isinstance(d, dict) else {}
+
+
 def declare(node, defaults: dict) -> dict:
     """Declare every parameter of ``defaults`` (the default fixes the type)
     and return the current values, with ints promoted where a float is

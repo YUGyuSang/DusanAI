@@ -59,10 +59,12 @@ MISSION_COMMANDS = ("start", "patrol", "seek", "rth", "pause", "resume", "abort"
 SEEK_TERMINAL = ("FOUND", "FAILED")
 LOCO_READY = ("WALK", "STAND")
 SAFETY_DOCKED_STATES = ("DOCKED", "CHARGING")
+COMMAND_HISTORY = 5             # /mission/state recent_commands entries
 
 MISSION_DEFAULTS = {
     # node / io
     "control_rate": 10.0,          # Hz state machine + /cmd_vel/patrol
+    "gazebo_mission_keys": True,   # t/p/g/h/o in the Gazebo window while no keyboard_teleop runs
     "state_publish_period": 0.5,   # s, /mission/state republish period (also on change)
     "layout_file": "",
     "map_yaml": "",                # only used when /map never arrives
@@ -143,6 +145,7 @@ MISSION_DEFAULTS = {
     "autostart": False,
     "autostart_delay": 15.0,       # s after the node starts (sim time)
     "plan_wait_timeout": 20.0,     # s autostart waits for /patrol/plan_json before falling back
+    "start_plan_wait": 30.0,       # s a manual start / patrol without a patrol plan yet waits for it (0 = off)
 }
 
 
@@ -195,13 +198,18 @@ def _finite(v):
     return f if math.isfinite(f) else None
 
 
+def _seq(v):
+    """v when it is a list / tuple, else [] (a malformed plan must not raise)."""
+    return v if isinstance(v, (list, tuple)) else []
+
+
 def parse_patrol_plan(d, leg_match_radius=0.6):
     """/patrol/plan_json dict -> list of Viewpoint in visiting order."""
     if not isinstance(d, dict):
         return []
     vps = {}
     raw_order = []
-    for v in d.get("viewpoints") or []:
+    for v in _seq(d.get("viewpoints")):
         try:
             gid = str(v["gauge_id"])
             vp = Viewpoint(gid, float(v["x"]), float(v["y"]), float(v.get("yaw", 0.0)))
@@ -211,11 +219,11 @@ def parse_patrol_plan(d, leg_match_radius=0.6):
             continue
         vps[gid] = vp
         raw_order.append(gid)
-    order = [str(g) for g in (d.get("order") or []) if str(g) in vps]
+    order = [str(g) for g in _seq(d.get("order")) if str(g) in vps]
     order += [g for g in raw_order if g not in order]          # anything the order list forgot
     # associate pre-planned legs with the viewpoint they end at
-    for leg in d.get("legs") or []:
-        pts = [q for q in (_pt(p) for p in (leg or [])) if q is not None]
+    for leg in _seq(d.get("legs")):
+        pts = [q for q in (_pt(p) for p in _seq(leg)) if q is not None]
         if len(pts) < 2:
             continue
         end = pts[-1]
@@ -359,6 +367,10 @@ class MissionLogic:
         self._t_first = None
         self._autostarted = False
         self._start_pending = None
+        self._plan_wait = None         # (mode, t) of a start waiting for /patrol/plan_json
+        self._plan_waited = False      # waited once already (autostart / an earlier start): never again
+        self.cmd_seq = 0               # /mission/command counter (acknowledgement for keyboard_teleop / UI)
+        self.recent_commands = []      # last COMMAND_HISTORY {seq, cmd, accepted, message}
         self.gas_armed = True
         self._gas_rearm_t = None
         self.gas_alarm = False
@@ -417,6 +429,7 @@ class MissionLogic:
             return False
         self._plan_key = key
         self.viewpoints = vps
+        self._plan_waited = True
         self.plan_source = "patrol_planner"
         running = self.base in ("PATROL", "INSPECTING", "SEEK")
         self._emit("info", f"patrol plan: {len(vps)} viewpoints, order {[v.gauge_id for v in vps]}"
@@ -497,7 +510,34 @@ class MissionLogic:
 
     # ============================================================== commands
     def command(self, cmd, t):
-        """Handle a /mission/command string.  Returns True when accepted."""
+        """Handle a /mission/command string.  Returns True when accepted.
+
+        Every command is numbered (``cmd_seq``) and its outcome (accepted, the
+        message it produced) is kept in ``recent_commands`` and reported on
+        /mission/state, so a sender can tell 'received and accepted',
+        'received but rejected' and 'never arrived' apart."""
+        self.cmd_seq += 1
+        n0 = len(self._out.events)
+        ok = bool(self._command(cmd, t))
+        c = str(cmd or "").strip().lower()
+        if ok and self._plan_wait is not None and c in ("rth", "dock", "seek"):
+            # another task was asked for while a start waited for the patrol plan: the waiting
+            # start must not fire later in the middle of it
+            self._plan_wait = None
+            self._emit("info", f"start waiting for the patrol plan cancelled by '{c}'")
+        new = self._out.events[n0:]
+        # the most telling event of this command: a warning / error, else the first that is not
+        # a bare state transition ('full mission started: [...]', 'waiting for return_to_home ...')
+        text = (next((x for lv, x in new if lv in ("warn", "alarm", "error")), None)
+                or next((x for _lv, x in new if not x.startswith("state ")), None)
+                or (new[0][1] if new else ""))
+        self.recent_commands = (self.recent_commands + [{
+            "seq": self.cmd_seq, "cmd": str(cmd or "").strip().lower(), "accepted": ok,
+            "message": text}])[-COMMAND_HISTORY:]
+        self._out.state_changed = True
+        return ok
+
+    def _command(self, cmd, t):
         c = str(cmd or "").strip().lower()
         if c not in MISSION_COMMANDS:
             self._emit("warn", f"unknown mission command '{cmd}'")
@@ -578,6 +618,13 @@ class MissionLogic:
             self._phase_time += dt
 
         self._autostart(t)
+        if self._plan_wait is not None and t < self._plan_wait[1]:
+            self._plan_wait = (self._plan_wait[0], t)      # sim clock reset: wait from now
+        if self._plan_wait is not None and (self.viewpoints or t - self._plan_wait[1]
+                                            >= float(self.p.get("start_plan_wait", 0.0) or 0.0)):
+            mode, self._plan_waited = self._plan_wait[0], True
+            self._plan_wait = None
+            self._begin_mission(mode, t)
         self._update_gas(t)
         self._check_rth(t)
         self._watch_fallen(t)
@@ -642,6 +689,8 @@ class MissionLogic:
             "mission_elapsed": (round((self.mission_t_end if self.mission_t_end is not None else t)
                                       - self.mission_t0, 1)
                                 if (t is not None and self.mission_t0 is not None) else None),
+            "cmd_seq": self.cmd_seq,
+            "recent_commands": list(self.recent_commands),
             "t": t,
         }
 
@@ -740,6 +789,7 @@ class MissionLogic:
         if not self.viewpoints and waited < float(self.p["autostart_delay"]) + float(self.p["plan_wait_timeout"]):
             return
         self._autostarted = True
+        self._plan_waited = True          # autostart waited for the plan above
         self._emit("info", "autostart: starting the full mission")
         self.command("start", t)
 
@@ -937,6 +987,7 @@ class MissionLogic:
         self.mode = None
         self.paused = False
         self._start_pending = None
+        self._plan_wait = None
         if self.mission_t0 is not None and self.mission_t_end is None:
             self.mission_t_end = t
         self._set_base("IDLE")
@@ -963,6 +1014,20 @@ class MissionLogic:
         return []
 
     def _begin_mission(self, mode, t):
+        wait = float(self.p.get("start_plan_wait", 0.0) or 0.0)
+        if (not self.viewpoints and not self._plan_waited and wait > 0.0 and self.p["fallback_viewpoints"]
+                and self.layout is not None):
+            # patrol_planner needs ~12 s (desktop) .. 30+ s (loaded laptop) after start-up: a 't'
+            # pressed before would silently take the layout fallback route instead of the planned one
+            if self._plan_wait is None:
+                self._plan_wait = (mode, float(t))
+                self._emit("info", f"{mode} accepted - waiting up to {wait:.0f} s for the patrol plan "
+                                   "(patrol_planner still computing)")
+            else:
+                self._plan_wait = (mode, self._plan_wait[1])
+            self._out.state_changed = True
+            return True
+        self._plan_wait = None
         vps = self._mission_viewpoints()
         if not vps:
             self._emit("error", f"cannot {mode}: no patrol plan / viewpoints available")

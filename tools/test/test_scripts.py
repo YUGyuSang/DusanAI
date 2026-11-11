@@ -255,3 +255,60 @@ def test_demo_hud_dependencies_are_installed_and_checked():
     for line in check.splitlines():
         if "python3-pil" in line or "fonts-noto-cjk" in line:
             assert "fail " not in line, line
+
+
+# ---------------------------------------------------------------------------
+# --low-memory flag of run_bringup.sh / run_demo.sh (parse_launch_flags in common.sh)
+# ---------------------------------------------------------------------------
+def _launch_flags(tmp_path, args, env=None, meminfo_kb=None):
+    """Source common.sh, run parse_launch_flags <args>; -> (LAUNCH_ARGS list, stderr)."""
+    meminfo = tmp_path / "meminfo"
+    meminfo.write_text("MemTotal:       %d kB\nMemFree:        1000 kB\n" % (meminfo_kb or 32 * 1048576))
+    quoted = " ".join("'%s'" % a for a in args)
+    script = "\n".join([
+        "set -e",
+        'export HOME="$PWD"',
+        'export DUSAN_MEMINFO="%s"' % str(meminfo).replace("\\", "/"),
+        '. "%s/common.sh"' % SCRIPTS.replace("\\", "/"),
+        "parse_launch_flags %s" % quoted,
+        'for a in "${LAUNCH_ARGS[@]}"; do printf "ARG=%s\\n" "$a"; done',
+    ])
+    e = {k: v for k, v in os.environ.items() if k not in ("DUSAN_WS", "DUSAN_LOW_MEMORY")}
+    e.update(env or {})
+    r = subprocess.run([_bash(), "-c", script], cwd=str(tmp_path), env=e, capture_output=True, text=True,
+                       encoding="utf-8", timeout=60)
+    assert r.returncode == 0, r.stderr
+    return [line[4:] for line in r.stdout.splitlines() if line.startswith("ARG=")], r.stderr
+
+
+@needs_bash
+def test_low_memory_flag_becomes_a_launch_argument(tmp_path):
+    out, _ = _launch_flags(tmp_path, ["--low-memory", "rviz:=false", "follow_offset:=-3.0 0.0 1.8"])
+    assert out == ["rviz:=false", "follow_offset:=-3.0 0.0 1.8", "low_memory:=true"]
+    out, _ = _launch_flags(tmp_path, ["--lowmem"])
+    assert out == ["low_memory:=true"]
+    out, _ = _launch_flags(tmp_path, ["demo:=true"], env={"DUSAN_LOW_MEMORY": "1"})
+    assert out == ["demo:=true", "low_memory:=true"]
+    # an explicit launch argument wins over the flag / the environment
+    out, _ = _launch_flags(tmp_path, ["--low-memory", "low_memory:=false"], env={"DUSAN_LOW_MEMORY": "1"})
+    assert out == ["low_memory:=false"]
+    out, err = _launch_flags(tmp_path, [])
+    assert out == [] and "--low-memory" not in err                         # 32 GB: no hint
+
+
+@needs_bash
+def test_small_ram_without_the_profile_prints_a_hint(tmp_path):
+    _, err = _launch_flags(tmp_path, ["demo:=true"], meminfo_kb=7_800_000)  # an "8 GB" laptop
+    assert "--low-memory" in err and "8 GB" in err
+    _, err = _launch_flags(tmp_path, ["--low-memory"], meminfo_kb=7_800_000)
+    assert "--low-memory" not in err
+
+
+def test_run_scripts_pass_the_translated_arguments():
+    for name, fixed in (("run_bringup.sh", ""), ("run_demo.sh", "demo:=true ")):
+        text = _read(name)
+        assert 'parse_launch_flags "$@"' in text
+        assert text.index('parse_launch_flags "$@"') < text.index("source_ws")
+        assert ('exec ros2 launch plant_simulation bringup.launch.py %s"${LAUNCH_ARGS[@]}"' % fixed) in text
+        assert '"$@"' not in text.split('parse_launch_flags "$@"', 1)[1]      # nothing bypasses the translation
+        assert "--low-memory" in text

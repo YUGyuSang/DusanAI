@@ -35,9 +35,9 @@ from dusan_common.ros_helpers import json_msg
 from dusan_common.terrain_cost import debris_blocked_grid
 
 from .layout_map import map_fingerprint
-from .node_common import (best_effort_qos, declare, latched_qos, load_layout_and_map, now_sec,
-                          odom_pose_twist_finite, reliable_qos, run_node, stamp, subscribe_latched, twist_msg,
-                          warn_throttled)
+from .node_common import (best_effort_qos, declare, finite_or_none, guarded, latched_qos, load_layout_and_map,
+                          now_sec, odom_pose_twist_finite, reliable_qos, run_node, stamp, subscribe_latched,
+                          twist_msg, warn_throttled)
 from .params import SEEKER_PARAMS, seeker_config
 from .source_seeking import IDLE, SourceSeeker
 
@@ -73,29 +73,31 @@ class SourceSeekerNode(Node):
 
         # mission_manager latches /gas/seek/enable: a late-joining seeker must
         # still receive the current request (callback is idempotent)
-        subscribe_latched(self, Bool, "/gas/seek/enable", self._on_enable)
-        self.create_subscription(Odometry, p["odom_topic"], self._on_odom, best_effort_qos(5))
-        self.create_subscription(Float32, "/gas/sensor", self._on_sensor, best_effort_qos(10))
-        self.create_subscription(Float32MultiArray, "/gas/sensor_array", self._on_array, best_effort_qos(10))
-        self.create_subscription(Vector3Stamped, "/gas/wind", self._on_wind, best_effort_qos(10))
-        self.create_subscription(Bool, "/safety/rth_active", self._on_rth, best_effort_qos(10))
+        # every callback is guarded: an exception is logged and the node keeps running
+        g = lambda fn: guarded(self, fn.__name__, fn)  # noqa: E731
+        subscribe_latched(self, Bool, "/gas/seek/enable", g(self._on_enable))
+        self.create_subscription(Odometry, p["odom_topic"], g(self._on_odom), best_effort_qos(5))
+        self.create_subscription(Float32, "/gas/sensor", g(self._on_sensor), best_effort_qos(10))
+        self.create_subscription(Float32MultiArray, "/gas/sensor_array", g(self._on_array), best_effort_qos(10))
+        self.create_subscription(Vector3Stamped, "/gas/wind", g(self._on_wind), best_effort_qos(10))
+        self.create_subscription(Bool, "/safety/rth_active", g(self._on_rth), best_effort_qos(10))
         if p["use_map_topic"]:
-            subscribe_latched(self, OccupancyGrid, "/map", self._on_map)
+            subscribe_latched(self, OccupancyGrid, "/map", g(self._on_map))
         # novel obstacles from terrain_mapper (best effort depth 1 = latest frame of a reliable publisher)
         self.obstacle_topic = None
         if p["obstacle_enabled"]:
             if str(p["obstacle_source"]).strip().lower() == "traversability":
                 self.obstacle_topic = p["obstacle_traversability_topic"]
-                self.create_subscription(OccupancyGrid, self.obstacle_topic, self._on_obstacle_grid,
+                self.create_subscription(OccupancyGrid, self.obstacle_topic, g(self._on_obstacle_grid),
                                          best_effort_qos(1))
             else:
                 self.obstacle_topic = p["obstacle_elevation_topic"]
-                self.create_subscription(PointCloud2, self.obstacle_topic, self._on_obstacle_cloud,
+                self.create_subscription(PointCloud2, self.obstacle_topic, g(self._on_obstacle_cloud),
                                          best_effort_qos(1))
 
-        self.create_timer(1.0 / max(p["control_rate"], 0.5), self._on_control)
-        self.create_timer(1.0 / max(p["status_rate"], 0.1), self._on_status)
-        self.create_timer(1.0 / max(p["path_rate"], 0.1), self._on_path)
+        self.create_timer(1.0 / max(p["control_rate"], 0.5), g(self._on_control))
+        self.create_timer(1.0 / max(p["status_rate"], 0.1), g(self._on_status))
+        self.create_timer(1.0 / max(p["path_rate"], 0.1), g(self._on_path))
 
     # ------------------------------------------------------------ callbacks
     def _on_enable(self, msg: Bool) -> None:
@@ -124,16 +126,26 @@ class SourceSeekerNode(Node):
         self.pose = (x, y, yaw)
 
     def _on_sensor(self, msg: Float32) -> None:
-        self.c_nose = float(msg.data)
+        c = finite_or_none(msg.data)
+        if c is None:                 # a NaN reading would poison the gradient estimate
+            warn_throttled(self, "sensor", "non-finite /gas/sensor sample ignored")
+            return
+        self.c_nose = c
         self.t_nose = now_sec(self)
 
     def _on_array(self, msg: Float32MultiArray) -> None:
         if len(msg.data) >= 4:
-            self.c_array = [float(v) for v in msg.data[:4]]
+            vals = [finite_or_none(v) for v in msg.data[:4]]
+            if None in vals:
+                warn_throttled(self, "sensor_array", "non-finite /gas/sensor_array sample ignored")
+                return
+            self.c_array = vals
             self.t_array = now_sec(self)
 
     def _on_wind(self, msg: Vector3Stamped) -> None:
-        self.wind = (float(msg.vector.x), float(msg.vector.y))
+        wx, wy = finite_or_none(msg.vector.x), finite_or_none(msg.vector.y)
+        if wx is not None and wy is not None:
+            self.wind = (wx, wy)
 
     def _on_rth(self, msg: Bool) -> None:
         if msg.data and not self.rth_active and self._was_commanding:

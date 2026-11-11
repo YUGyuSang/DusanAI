@@ -57,8 +57,8 @@ from std_msgs.msg import Bool, Float32, Int32, String
 
 from dusan_common.ros_helpers import latched_qos, sensor_qos
 
-from .teleop_keys import (HELP_TEXT, CommandStreamer, KeyDecoder, TeleopConfig, TeleopState,
-                          format_status, mission_label, mission_stale, qt_key_to_token)
+from .teleop_keys import (HELP_TEXT, CommandStreamer, KeyDecoder, MissionCommandTracker, TeleopConfig,
+                          TeleopState, format_status, mission_label, qt_key_to_token)
 
 
 def _reliable_qos(depth=10):
@@ -148,6 +148,10 @@ class KeyboardTeleop(Node):
         self._t_mission = None         # wall time of the last /mission/state (stale -> mission_manager down?)
         self.gz_key_count = 0
         self.streamer = CommandStreamer(self.publish_rate)
+        # mission keys: kept while mission_manager is down, re-sent until /mission/state acknowledges
+        self.mission_tracker = MissionCommandTracker(
+            ack_timeout=float(P("mission_ack_timeout", 2.0)), max_sends=int(P("mission_max_sends", 3)),
+            max_age=float(P("mission_key_max_age", 60.0)))
         self._last_active = None
         self._next_active = 0.0
         self._next_status = 0.0
@@ -236,6 +240,7 @@ class KeyboardTeleop(Node):
             self.battery_pct = p * 100.0 if p <= 1.0 else p
 
     def _on_mission_state(self, msg: String):
+        d = None
         try:
             d = json.loads(msg.data)
             st = d.get("state") if isinstance(d, dict) else str(d)
@@ -245,6 +250,9 @@ class KeyboardTeleop(Node):
         self._t_mission = time.monotonic()
         with self.lock:
             self.state.mission_state = st
+            notes = self.mission_tracker.on_state(d if isinstance(d, dict) else None, self._t_mission)
+        for text in notes:
+            self.say(text)
 
     def _on_gz_key(self, msg: Int32):
         tok = qt_key_to_token(msg.data)
@@ -265,12 +273,13 @@ class KeyboardTeleop(Node):
             self.pub_loco.publish(String(data=str(ev.value)))
             self.say(f"-> /locomotion/command  {ev.value}")
         elif ev.kind == "mission":
-            self.pub_mission.publish(String(data=str(ev.value)))
-            self.say(f"-> /mission/command  {ev.value}")
-            if mission_stale(self._t_mission, time.monotonic()):
-                # nobody answers: the command goes nowhere - say so instead of silence
-                self.say("   ! no /mission/state from mission_manager - it is not running (or crashed): "
-                         "look for a Traceback / 'process has died' in the bringup terminal, restart bringup")
+            with self.lock:
+                send, notes = self.mission_tracker.press(str(ev.value), time.monotonic())
+            if send:
+                self.pub_mission.publish(String(data=str(ev.value)))
+                self.say(f"-> /mission/command  {ev.value}")
+            for text in notes:
+                self.say(text)
         elif ev.kind == "battery":
             self.pub_batt.publish(Float32(data=float(ev.value)))
             self.say(f"-> /battery/set_level  {ev.value:.0f} %")
@@ -304,6 +313,12 @@ class KeyboardTeleop(Node):
             vel = self.state.velocity(now)
             streaming = self.state.streaming(now)
             override = self.state.manual_override
+        with self.lock:
+            resend, notes = self.mission_tracker.poll(now)
+        if resend is not None:
+            self.pub_mission.publish(String(data=resend))
+        for text in notes:
+            self.say(text)
         cmd = self.streamer.step(now, streaming, vel)   # 20 Hz while active, one zero on stop
         if cmd is not None:
             self._publish_twist(*cmd)
