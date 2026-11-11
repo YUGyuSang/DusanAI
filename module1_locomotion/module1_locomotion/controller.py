@@ -174,8 +174,10 @@ DEFAULT_PARAMS: Dict[str, Any] = {
     "fall_angle_deg": 55.0,
     "fall_height": 0.12,
     "fall_detect_time": 0.3,
+    "fall_lean_deg": 30.0,               # |roll| or |pitch| beyond for fall_lean_time -> fall (leaning on a wall)
+    "fall_lean_time": 2.0,               # [s] 0 = off
     "max_recovery_attempts": 3,
-    "assisted_reset": True,
+    "assisted_reset": False,             # True: gz set_pose (teleport) after the attempts; False: physical only
     "reset_height_offset": 0.5,
     "reset_settle_time": 1.0,
     "reset_confirm_timeout": 8.0,        # longest wait for the gz set_pose answer (2 x gz_timeout + margin)
@@ -624,6 +626,7 @@ class LocomotionController:
             "fall_angle_deg": p["fall_angle_deg"], "fall_angle_exit_deg": float(p["fall_angle_deg"]) - 5.0,
             "fall_height": p["fall_height"], "fall_height_exit": float(p["fall_height"]) + 0.02,
             "detect_time": p["fall_detect_time"], "max_attempts": int(p["max_recovery_attempts"]),
+            "lean_deg": p["fall_lean_deg"], "lean_time": p["fall_lean_time"],
             "assisted_reset": bool(p["assisted_reset"]), "reset_height_offset": p["reset_height_offset"],
             "reset_settle_time": p["reset_settle_time"], "reset_confirm_timeout": p["reset_confirm_timeout"],
             "failed_retry_time": float(p["recovery_retry_time"]) if bool(p["auto_recover"]) else 0.0,

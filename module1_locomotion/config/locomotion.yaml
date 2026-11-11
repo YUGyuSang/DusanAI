@@ -154,8 +154,11 @@ locomotion_controller:
     fall_angle_deg: 55.0           # |roll| or |pitch|
     fall_height: 0.12              # [m] body height above ground
     fall_detect_time: 0.3          # [s]
+    fall_lean_deg: 30.0            # |roll| or |pitch| beyond this for fall_lean_time -> fall too
+    fall_lean_time: 2.0            # [s] (leaning against a wall / propped up: never reaches 55 deg), 0 = off
     max_recovery_attempts: 3
-    assisted_reset: true           # gz set_pose after the attempts are exhausted
+    assisted_reset: false          # true: gz set_pose (teleport) after the attempts are exhausted;
+                                   #   false: the robot always gets up with its own legs (retry below)
     reset_height_offset: 0.5       # [m] above the current position, upright, current yaw
     reset_settle_time: 1.0         # [s] wait after a reset before standing up
     reset_confirm_timeout: 8.0     # [s] longest wait for the gz set_pose answer (settle starts at the answer)

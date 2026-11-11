@@ -1,0 +1,7776 @@
+{
+ "runs": {
+  "latest": {
+   "config": {
+    "cases": [
+     "side",
+     "back",
+     "trot",
+     "roll",
+     "push",
+     "wall",
+     "ramp_walk",
+     "ramp_push",
+     "mission"
+    ],
+    "seeds": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9
+    ],
+    "params": {},
+    "latency": 0.01,
+    "map": "",
+    "duration": null
+   },
+   "summary": {
+    "side": {
+     "runs": 10,
+     "fell": 10,
+     "ok": 10,
+     "rate": 1.0,
+     "first_try": 5,
+     "ttr_mean": 10.12,
+     "ttr_max": 32.33,
+     "teleports": 0,
+     "retries": 1,
+     "falls_after_rec": 0,
+     "errors": 0
+    },
+    "back": {
+     "runs": 10,
+     "fell": 10,
+     "ok": 10,
+     "rate": 1.0,
+     "first_try": 10,
+     "ttr_mean": 9.133,
+     "ttr_max": 10.69,
+     "teleports": 0,
+     "retries": 0,
+     "falls_after_rec": 0,
+     "errors": 0
+    },
+    "trot": {
+     "runs": 10,
+     "fell": 10,
+     "ok": 10,
+     "rate": 1.0,
+     "first_try": 6,
+     "ttr_mean": 8.282,
+     "ttr_max": 11.0,
+     "teleports": 0,
+     "retries": 0,
+     "falls_after_rec": 0,
+     "errors": 0
+    },
+    "roll": {
+     "runs": 10,
+     "fell": 10,
+     "ok": 10,
+     "rate": 1.0,
+     "first_try": 9,
+     "ttr_mean": 8.971,
+     "ttr_max": 12.13,
+     "teleports": 0,
+     "retries": 0,
+     "falls_after_rec": 0,
+     "errors": 0
+    },
+    "push": {
+     "runs": 10,
+     "fell": 10,
+     "ok": 10,
+     "rate": 1.0,
+     "first_try": 8,
+     "ttr_mean": 8.683,
+     "ttr_max": 11.0,
+     "teleports": 0,
+     "retries": 0,
+     "falls_after_rec": 0,
+     "errors": 0
+    },
+    "wall": {
+     "runs": 10,
+     "fell": 10,
+     "ok": 10,
+     "rate": 1.0,
+     "first_try": 9,
+     "ttr_mean": 6.843,
+     "ttr_max": 9.71,
+     "teleports": 0,
+     "retries": 0,
+     "falls_after_rec": 0,
+     "errors": 0
+    },
+    "ramp_walk": {
+     "runs": 10,
+     "fell": 10,
+     "ok": 9,
+     "rate": 0.9,
+     "first_try": 3,
+     "ttr_mean": 15.2722,
+     "ttr_max": 29.4,
+     "teleports": 0,
+     "retries": 7,
+     "falls_after_rec": 0,
+     "errors": 0
+    },
+    "ramp_push": {
+     "runs": 10,
+     "fell": 10,
+     "ok": 10,
+     "rate": 1.0,
+     "first_try": 5,
+     "ttr_mean": 11.079,
+     "ttr_max": 16.45,
+     "teleports": 0,
+     "retries": 0,
+     "falls_after_rec": 1,
+     "errors": 0
+    },
+    "mission": {
+     "runs": 10,
+     "fell": 10,
+     "ok": 10,
+     "rate": 1.0,
+     "first_try": 6,
+     "ttr_mean": 14.403,
+     "ttr_max": 62.62,
+     "teleports": 0,
+     "retries": 3,
+     "falls_after_rec": 1,
+     "errors": 0
+    }
+   },
+   "cases": {
+    "side": {
+     "0": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 7.38,
+      "ttr": 6.55,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        0.83,
+        89.5,
+        0.0
+       ],
+       [
+        "recovered",
+        7.38,
+        0.1,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.339,
+      "final_roll": 2.5778,
+      "final_pitch": 1.0085,
+      "sim_t": 18.0,
+      "fall_rpy": [
+       89.5,
+       0.0,
+       -53.4
+      ],
+      "walk_after_dist": 1.9153,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "side",
+      "seed": 0,
+      "error": null,
+      "wall_s": 24.7,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       -0.948
+      ],
+      "spawn_rp_deg": [
+       86.3,
+       -2.0
+      ],
+      "pushes": []
+     },
+     "1": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 7.34,
+      "ttr": 6.51,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        0.83,
+        -89.5,
+        0.0
+       ],
+       [
+        "recovered",
+        7.34,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3389,
+      "final_roll": 2.2285,
+      "final_pitch": 1.0625,
+      "sim_t": 18.0,
+      "fall_rpy": [
+       -89.5,
+       0.0,
+       110.1
+      ],
+      "walk_after_dist": 1.9143,
+      "walk_after_frac": 0.9967,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "side",
+      "seed": 1,
+      "error": null,
+      "wall_s": 24.7,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       1.939
+      ],
+      "spawn_rp_deg": [
+       -94.1,
+       -1.5
+      ],
+      "pushes": []
+     },
+     "4": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 7.18,
+      "ttr": 6.35,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        0.83,
+        89.6,
+        0.0
+       ],
+       [
+        "recovered",
+        7.18,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3389,
+      "final_roll": 3.5488,
+      "final_pitch": 1.2112,
+      "sim_t": 18.0,
+      "fall_rpy": [
+       89.6,
+       0.0,
+       -170.2
+      ],
+      "walk_after_dist": 1.8984,
+      "walk_after_frac": 0.9967,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "side",
+      "seed": 4,
+      "error": null,
+      "wall_s": 24.7,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       -2.99
+      ],
+      "spawn_rp_deg": [
+       86.7,
+       5.9
+      ],
+      "pushes": []
+     },
+     "2": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 10.44,
+      "ttr": 9.61,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        0.83,
+        89.5,
+        0.0
+       ],
+       [
+        "recovered",
+        10.44,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3391,
+      "final_roll": 3.1313,
+      "final_pitch": 1.2699,
+      "sim_t": 21.0,
+      "fall_rpy": [
+       89.5,
+       0.0,
+       -83.4
+      ],
+      "walk_after_dist": 1.8492,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "side",
+      "seed": 2,
+      "error": null,
+      "wall_s": 28.6,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       -1.484
+      ],
+      "spawn_rp_deg": [
+       95.8,
+       10.3
+      ],
+      "pushes": []
+     },
+     "6": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 7.18,
+      "ttr": 6.35,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        0.83,
+        89.5,
+        0.0
+       ],
+       [
+        "recovered",
+        7.18,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3388,
+      "final_roll": 1.2198,
+      "final_pitch": 0.7362,
+      "sim_t": 18.0,
+      "fall_rpy": [
+       89.5,
+       0.0,
+       -164.1
+      ],
+      "walk_after_dist": 1.9259,
+      "walk_after_frac": 0.9967,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "side",
+      "seed": 6,
+      "error": null,
+      "wall_s": 24.7,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       -2.888
+      ],
+      "spawn_rp_deg": [
+       100.1,
+       -3.2
+      ],
+      "pushes": []
+     },
+     "7": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 7.18,
+      "ttr": 6.35,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        0.83,
+        -89.4,
+        -0.0
+       ],
+       [
+        "recovered",
+        7.18,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3389,
+      "final_roll": 3.3805,
+      "final_pitch": 1.5495,
+      "sim_t": 18.0,
+      "fall_rpy": [
+       -89.4,
+       -0.0,
+       -13.5
+      ],
+      "walk_after_dist": 1.9237,
+      "walk_after_frac": 0.9967,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "side",
+      "seed": 7,
+      "error": null,
+      "wall_s": 24.8,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       -0.224
+      ],
+      "spawn_rp_deg": [
+       -102.2,
+       11.3
+      ],
+      "pushes": []
+     },
+     "5": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 9.1,
+      "ttr": 8.27,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        0.83,
+        -89.6,
+        -0.0
+       ],
+       [
+        "recovered",
+        9.1,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3388,
+      "final_roll": 2.1557,
+      "final_pitch": 1.036,
+      "sim_t": 20.0,
+      "fall_rpy": [
+       -89.6,
+       -0.0,
+       -166.2
+      ],
+      "walk_after_dist": 1.9095,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "side",
+      "seed": 5,
+      "error": null,
+      "wall_s": 27.4,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       -2.891
+      ],
+      "spawn_rp_deg": [
+       -84.8,
+       2.6
+      ],
+      "pushes": []
+     },
+     "3": {
+      "falls": 1,
+      "attempts": 4,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 1,
+      "series_failed": 1,
+      "t_fall": 0.83,
+      "t_rec": 33.16,
+      "ttr": 32.33,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        0.83,
+        -89.7,
+        0.0
+       ],
+       [
+        "recovery_failed",
+        21.62,
+        -32.9,
+        -2.9
+       ],
+       [
+        "recovery_retry",
+        26.62,
+        -49.7,
+        -2.4
+       ],
+       [
+        "recovered",
+        33.16,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "DAMP",
+       "TUCK",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "DAMP",
+       "TUCK",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "FAILED",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3388,
+      "final_roll": 1.3089,
+      "final_pitch": 0.8086,
+      "sim_t": 44.0,
+      "fall_rpy": [
+       -89.7,
+       0.0,
+       149.0
+      ],
+      "walk_after_dist": 1.9266,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "side",
+      "seed": 3,
+      "error": null,
+      "wall_s": 56.4,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       2.653
+      ],
+      "spawn_rp_deg": [
+       -80.6,
+       -7.1
+      ],
+      "pushes": []
+     },
+     "8": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 10.23,
+      "ttr": 9.4,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        0.83,
+        89.8,
+        0.0
+       ],
+       [
+        "recovered",
+        10.23,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3388,
+      "final_roll": 2.1989,
+      "final_pitch": 0.9159,
+      "sim_t": 21.0,
+      "fall_rpy": [
+       89.8,
+       0.0,
+       89.7
+      ],
+      "walk_after_dist": 1.9182,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "side",
+      "seed": 8,
+      "error": null,
+      "wall_s": 28.6,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       1.556
+      ],
+      "spawn_rp_deg": [
+       103.3,
+       0.1
+      ],
+      "pushes": []
+     },
+     "9": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 10.31,
+      "ttr": 9.48,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        0.83,
+        -89.7,
+        0.0
+       ],
+       [
+        "recovered",
+        10.31,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.339,
+      "final_roll": 1.9289,
+      "final_pitch": 0.8705,
+      "sim_t": 21.0,
+      "fall_rpy": [
+       -89.7,
+       0.0,
+       -88.9
+      ],
+      "walk_after_dist": 1.9259,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "side",
+      "seed": 9,
+      "error": null,
+      "wall_s": 28.8,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       -1.512
+      ],
+      "spawn_rp_deg": [
+       -79.9,
+       -2.6
+      ],
+      "pushes": []
+     }
+    },
+    "back": {
+     "0": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 10.13,
+      "ttr": 9.3,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        0.83,
+        180.0,
+        0.0
+       ],
+       [
+        "recovered",
+        10.13,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3387,
+      "final_roll": 2.8767,
+      "final_pitch": 1.0152,
+      "sim_t": 21.0,
+      "fall_rpy": [
+       180.0,
+       -0.0,
+       160.9
+      ],
+      "walk_after_dist": 1.9214,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "back",
+      "seed": 0,
+      "error": null,
+      "wall_s": 28.7,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       2.812
+      ],
+      "spawn_rp_deg": [
+       194.1,
+       -2.0
+      ],
+      "pushes": []
+     },
+     "1": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 9.87,
+      "ttr": 9.04,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        0.83,
+        -180.0,
+        -0.0
+       ],
+       [
+        "recovered",
+        9.87,
+        -0.1,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3394,
+      "final_roll": 3.217,
+      "final_pitch": 1.1807,
+      "sim_t": 20.0,
+      "fall_rpy": [
+       -180.0,
+       -0.0,
+       -10.0
+      ],
+      "walk_after_dist": 1.9301,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "back",
+      "seed": 1,
+      "error": null,
+      "wall_s": 27.6,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       -0.158
+      ],
+      "spawn_rp_deg": [
+       198.3,
+       3.9
+      ],
+      "pushes": []
+     },
+     "2": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 9.85,
+      "ttr": 9.02,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        0.83,
+        -180.0,
+        -0.0
+       ],
+       [
+        "recovered",
+        9.85,
+        0.1,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3394,
+      "final_roll": 2.7119,
+      "final_pitch": 1.0201,
+      "sim_t": 20.0,
+      "fall_rpy": [
+       -180.0,
+       -0.0,
+       1.3
+      ],
+      "walk_after_dist": 1.9221,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "back",
+      "seed": 2,
+      "error": null,
+      "wall_s": 27.4,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       0.031
+      ],
+      "spawn_rp_deg": [
+       173.0,
+       10.8
+      ],
+      "pushes": []
+     },
+     "3": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 11.15,
+      "ttr": 10.32,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        0.83,
+        180.0,
+        -0.0
+       ],
+       [
+        "recovered",
+        11.15,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3388,
+      "final_roll": 2.9785,
+      "final_pitch": 0.9924,
+      "sim_t": 22.0,
+      "fall_rpy": [
+       180.0,
+       -0.0,
+       -138.1
+      ],
+      "walk_after_dist": 1.8936,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "back",
+      "seed": 3,
+      "error": null,
+      "wall_s": 30.0,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       -2.407
+      ],
+      "spawn_rp_deg": [
+       194.0,
+       1.8
+      ],
+      "pushes": []
+     },
+     "4": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 8.81,
+      "ttr": 7.98,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        0.83,
+        -180.0,
+        -0.0
+       ],
+       [
+        "recovered",
+        8.81,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3393,
+      "final_roll": 3.1109,
+      "final_pitch": 1.0732,
+      "sim_t": 19.0,
+      "fall_rpy": [
+       -180.0,
+       -0.0,
+       166.7
+      ],
+      "walk_after_dist": 1.9263,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "back",
+      "seed": 4,
+      "error": null,
+      "wall_s": 26.1,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       2.899
+      ],
+      "spawn_rp_deg": [
+       184.1,
+       9.1
+      ],
+      "pushes": []
+     },
+     "5": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 8.55,
+      "ttr": 7.72,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        0.83,
+        180.0,
+        -0.0
+       ],
+       [
+        "recovered",
+        8.55,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.339,
+      "final_roll": 2.5079,
+      "final_pitch": 0.9289,
+      "sim_t": 19.0,
+      "fall_rpy": [
+       180.0,
+       -0.0,
+       -26.4
+      ],
+      "walk_after_dist": 1.9221,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "back",
+      "seed": 5,
+      "error": null,
+      "wall_s": 26.1,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       -0.46
+      ],
+      "spawn_rp_deg": [
+       174.1,
+       9.2
+      ],
+      "pushes": []
+     },
+     "6": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 8.68,
+      "ttr": 7.85,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        0.83,
+        178.1,
+        0.0
+       ],
+       [
+        "recovered",
+        8.68,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3394,
+      "final_roll": 2.3211,
+      "final_pitch": 0.9304,
+      "sim_t": 19.0,
+      "fall_rpy": [
+       178.2,
+       0.0,
+       167.1
+      ],
+      "walk_after_dist": 1.8985,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "back",
+      "seed": 6,
+      "error": null,
+      "wall_s": 26.3,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       2.924
+      ],
+      "spawn_rp_deg": [
+       187.7,
+       6.3
+      ],
+      "pushes": []
+     },
+     "7": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 11.02,
+      "ttr": 10.19,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        0.83,
+        180.0,
+        0.0
+       ],
+       [
+        "recovered",
+        11.02,
+        0.1,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3386,
+      "final_roll": 1.9126,
+      "final_pitch": 0.804,
+      "sim_t": 22.0,
+      "fall_rpy": [
+       179.9,
+       0.0,
+       27.7
+      ],
+      "walk_after_dist": 1.9051,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "back",
+      "seed": 7,
+      "error": null,
+      "wall_s": 29.9,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       0.472
+      ],
+      "spawn_rp_deg": [
+       164.8,
+       -9.5
+      ],
+      "pushes": []
+     },
+     "8": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 11.52,
+      "ttr": 10.69,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        0.83,
+        -179.9,
+        0.0
+       ],
+       [
+        "recovered",
+        11.52,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.339,
+      "final_roll": 3.1984,
+      "final_pitch": 1.1738,
+      "sim_t": 22.0,
+      "fall_rpy": [
+       180.0,
+       -0.0,
+       136.0
+      ],
+      "walk_after_dist": 1.9099,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "back",
+      "seed": 8,
+      "error": null,
+      "wall_s": 29.9,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       2.374
+      ],
+      "spawn_rp_deg": [
+       189.3,
+       1.6
+      ],
+      "pushes": []
+     },
+     "9": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 0.83,
+      "t_rec": 10.05,
+      "ttr": 9.22,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        0.83,
+        180.0,
+        0.0
+       ],
+       [
+        "recovered",
+        10.05,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3386,
+      "final_roll": 1.4106,
+      "final_pitch": 0.6958,
+      "sim_t": 21.0,
+      "fall_rpy": [
+       180.0,
+       -0.0,
+       -107.6
+      ],
+      "walk_after_dist": 1.9206,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "back",
+      "seed": 9,
+      "error": null,
+      "wall_s": 28.7,
+      "spawn": [
+       0.0,
+       0.0,
+       0.3,
+       -1.882
+      ],
+      "spawn_rp_deg": [
+       165.1,
+       4.8
+      ],
+      "pushes": []
+     }
+    },
+    "trot": {
+     "0": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 7.82,
+      "t_rec": 15.6,
+      "ttr": 7.78,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        7.82,
+        172.7,
+        -1.5
+       ],
+       [
+        "recovered",
+        15.6,
+        0.1,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.339,
+      "final_roll": 2.878,
+      "final_pitch": 1.098,
+      "sim_t": 26.0,
+      "fall_rpy": [
+       173.3,
+       -1.4,
+       -115.9
+      ],
+      "walk_after_dist": 1.8854,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "trot",
+      "seed": 0,
+      "error": null,
+      "wall_s": 34.9,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -2.911
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        7.34,
+        [
+         101.1,
+         -431.3,
+         0.0
+        ],
+        null
+       ]
+      ]
+     },
+     "1": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 7.54,
+      "t_rec": 15.76,
+      "ttr": 8.22,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        7.54,
+        -129.1,
+        0.6
+       ],
+       [
+        "recovered",
+        15.76,
+        -0.1,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3394,
+      "final_roll": 3.2096,
+      "final_pitch": 1.1333,
+      "sim_t": 26.0,
+      "fall_rpy": [
+       -128.0,
+       0.6,
+       -165.2
+      ],
+      "walk_after_dist": 1.8951,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "trot",
+      "seed": 1,
+      "error": null,
+      "wall_s": 35.1,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -1.898
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        7.05,
+        [
+         -415.4,
+         140.9,
+         0.0
+        ],
+        null
+       ]
+      ]
+     },
+     "2": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 7.72,
+      "t_rec": 15.95,
+      "ttr": 8.23,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        7.72,
+        132.8,
+        0.7
+       ],
+       [
+        "recovered",
+        15.95,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3396,
+      "final_roll": 2.2511,
+      "final_pitch": 0.8196,
+      "sim_t": 26.0,
+      "fall_rpy": [
+       132.3,
+       0.6,
+       69.1
+      ],
+      "walk_after_dist": 1.8879,
+      "walk_after_frac": 1.0,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "trot",
+      "seed": 2,
+      "error": null,
+      "wall_s": 35.0,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -0.114
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        7.23,
+        [
+         47.8,
+         418.4,
+         0.0
+        ],
+        null
+       ]
+      ]
+     },
+     "3": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 7.74,
+      "t_rec": 16.76,
+      "ttr": 9.02,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        7.74,
+        -83.2,
+        -4.1
+       ],
+       [
+        "recovered",
+        16.76,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3393,
+      "final_roll": 3.4746,
+      "final_pitch": 1.3783,
+      "sim_t": 27.0,
+      "fall_rpy": [
+       -80.5,
+       -4.3,
+       -122.3
+      ],
+      "walk_after_dist": 1.8991,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "trot",
+      "seed": 3,
+      "error": null,
+      "wall_s": 36.2,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -1.49
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        7.26,
+        [
+         -443.7,
+         -36.0,
+         0.0
+        ],
+        null
+       ]
+      ]
+     },
+     "4": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 7.63,
+      "t_rec": 13.04,
+      "ttr": 5.41,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        7.63,
+        97.6,
+        -0.4
+       ],
+       [
+        "recovered",
+        13.04,
+        0.0,
+        -0.2
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3385,
+      "final_roll": 3.4767,
+      "final_pitch": 1.5986,
+      "sim_t": 24.0,
+      "fall_rpy": [
+       94.4,
+       -0.3,
+       -24.9
+      ],
+      "walk_after_dist": 1.8755,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "trot",
+      "seed": 4,
+      "error": null,
+      "wall_s": 32.8,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -1.039
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        7.14,
+        [
+         363.9,
+         214.1,
+         0.0
+        ],
+        null
+       ]
+      ]
+     },
+     "5": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 7.74,
+      "t_rec": 18.74,
+      "ttr": 11.0,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        7.74,
+        -32.8,
+        -0.1
+       ],
+       [
+        "recovered",
+        18.74,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3392,
+      "final_roll": 3.2302,
+      "final_pitch": 1.2387,
+      "sim_t": 29.0,
+      "fall_rpy": [
+       -30.0,
+       0.6,
+       -17.1
+      ],
+      "walk_after_dist": 1.8936,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "trot",
+      "seed": 5,
+      "error": null,
+      "wall_s": 38.6,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       0.261
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        7.26,
+        [
+         128.9,
+         -482.1,
+         0.0
+        ],
+        null
+       ]
+      ]
+     },
+     "6": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 7.76,
+      "t_rec": 17.24,
+      "ttr": 9.48,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        7.76,
+        96.3,
+        1.7
+       ],
+       [
+        "recovered",
+        17.24,
+        0.1,
+        -0.2
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3388,
+      "final_roll": 2.5149,
+      "final_pitch": 1.0158,
+      "sim_t": 28.0,
+      "fall_rpy": [
+       94.8,
+       1.9,
+       176.1
+      ],
+      "walk_after_dist": 1.8946,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "trot",
+      "seed": 6,
+      "error": null,
+      "wall_s": 37.3,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       1.881
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        7.28,
+        [
+         -465.3,
+         -149.1,
+         0.0
+        ],
+        null
+       ]
+      ]
+     },
+     "7": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 7.74,
+      "t_rec": 17.39,
+      "ttr": 9.65,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        7.74,
+        -57.6,
+        2.8
+       ],
+       [
+        "recovered",
+        17.39,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.339,
+      "final_roll": 2.095,
+      "final_pitch": 0.766,
+      "sim_t": 28.0,
+      "fall_rpy": [
+       -55.4,
+       3.3,
+       -62.9
+      ],
+      "walk_after_dist": 1.8915,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "trot",
+      "seed": 7,
+      "error": null,
+      "wall_s": 37.4,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -0.541
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        7.25,
+        [
+         -218.5,
+         -363.7,
+         0.0
+        ],
+        null
+       ]
+      ]
+     },
+     "8": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 7.86,
+      "t_rec": 15.12,
+      "ttr": 7.26,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        7.86,
+        46.1,
+        -4.2
+       ],
+       [
+        "recovered",
+        15.12,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3388,
+      "final_roll": 1.7739,
+      "final_pitch": 0.7149,
+      "sim_t": 26.0,
+      "fall_rpy": [
+       43.1,
+       -3.4,
+       -27.5
+      ],
+      "walk_after_dist": 1.8727,
+      "walk_after_frac": 0.9967,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "trot",
+      "seed": 8,
+      "error": null,
+      "wall_s": 35.1,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -0.49
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        7.38,
+        [
+         229.6,
+         430.1,
+         0.0
+        ],
+        null
+       ]
+      ]
+     },
+     "9": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 7.84,
+      "t_rec": 14.61,
+      "ttr": 6.77,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        7.84,
+        -72.4,
+        -3.0
+       ],
+       [
+        "recovered",
+        14.61,
+        0.0,
+        -0.4
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3392,
+      "final_roll": 2.9148,
+      "final_pitch": 1.1936,
+      "sim_t": 25.0,
+      "fall_rpy": [
+       -69.7,
+       -2.2,
+       173.9
+      ],
+      "walk_after_dist": 1.8859,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "trot",
+      "seed": 9,
+      "error": null,
+      "wall_s": 33.8,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -2.733
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        7.36,
+        [
+         -194.0,
+         448.3,
+         0.0
+        ],
+        null
+       ]
+      ]
+     }
+    },
+    "roll": {
+     "0": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.41,
+      "t_rec": 11.1,
+      "ttr": 5.69,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.41,
+        -123.7,
+        17.6
+       ],
+       [
+        "recovered",
+        11.1,
+        -0.1,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3387,
+      "final_roll": 2.6164,
+      "final_pitch": 0.8993,
+      "sim_t": 22.0,
+      "fall_rpy": [
+       -123.3,
+       17.7,
+       167.9
+      ],
+      "walk_after_dist": 1.8774,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "roll",
+      "seed": 0,
+      "error": null,
+      "wall_s": 29.8,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       2.646
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         -204.1,
+         -377.1,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "1": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.41,
+      "t_rec": 16.33,
+      "ttr": 10.92,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.41,
+        98.9,
+        26.7
+       ],
+       [
+        "recovered",
+        16.33,
+        0.1,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.339,
+      "final_roll": 1.7226,
+      "final_pitch": 0.869,
+      "sim_t": 27.0,
+      "fall_rpy": [
+       98.3,
+       26.9,
+       -146.2
+      ],
+      "walk_after_dist": 1.8863,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "roll",
+      "seed": 1,
+      "error": null,
+      "wall_s": 35.9,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -2.431
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         -299.6,
+         348.2,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "2": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.4,
+      "t_rec": 14.93,
+      "ttr": 9.53,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.4,
+        -56.2,
+        38.5
+       ],
+       [
+        "recovered",
+        14.93,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3396,
+      "final_roll": 2.7893,
+      "final_pitch": 0.9951,
+      "sim_t": 25.0,
+      "fall_rpy": [
+       -54.8,
+       38.9,
+       -172.9
+      ],
+      "walk_after_dist": 1.8888,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "roll",
+      "seed": 2,
+      "error": null,
+      "wall_s": 33.5,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -2.983
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         77.4,
+         -483.3,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "3": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.4,
+      "t_rec": 13.85,
+      "ttr": 8.45,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.4,
+        85.0,
+        33.1
+       ],
+       [
+        "recovered",
+        13.85,
+        -0.1,
+        -0.2
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3395,
+      "final_roll": 2.7339,
+      "final_pitch": 1.1078,
+      "sim_t": 24.0,
+      "fall_rpy": [
+       84.1,
+       33.4,
+       -45.6
+      ],
+      "walk_after_dist": 1.8952,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "roll",
+      "seed": 3,
+      "error": null,
+      "wall_s": 32.2,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -0.773
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         -331.4,
+         -339.7,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "4": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.41,
+      "t_rec": 11.31,
+      "ttr": 5.9,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.41,
+        -112.1,
+        20.1
+       ],
+       [
+        "recovered",
+        11.31,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3389,
+      "final_roll": 2.8373,
+      "final_pitch": 1.148,
+      "sim_t": 22.0,
+      "fall_rpy": [
+       -111.6,
+       20.2,
+       88.9
+      ],
+      "walk_after_dist": 1.8688,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "roll",
+      "seed": 4,
+      "error": null,
+      "wall_s": 30.1,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       1.316
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         -425.2,
+         111.0,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "5": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.41,
+      "t_rec": 16.44,
+      "ttr": 11.03,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.41,
+        126.8,
+        18.3
+       ],
+       [
+        "recovered",
+        16.44,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3392,
+      "final_roll": 3.5981,
+      "final_pitch": 1.3812,
+      "sim_t": 27.0,
+      "fall_rpy": [
+       126.5,
+       18.4,
+       36.4
+      ],
+      "walk_after_dist": 1.8846,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "roll",
+      "seed": 5,
+      "error": null,
+      "wall_s": 35.9,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       0.932
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         342.0,
+         -253.9,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "6": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.4,
+      "t_rec": 14.38,
+      "ttr": 8.98,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        5.4,
+        -90.9,
+        29.1
+       ],
+       [
+        "recovered",
+        14.38,
+        0.1,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.339,
+      "final_roll": 3.3648,
+      "final_pitch": 1.3115,
+      "sim_t": 25.0,
+      "fall_rpy": [
+       -90.1,
+       29.3,
+       67.5
+      ],
+      "walk_after_dist": 1.8917,
+      "walk_after_frac": 1.0,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "roll",
+      "seed": 6,
+      "error": null,
+      "wall_s": 33.6,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       1.11
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         -419.0,
+         207.9,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "7": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.41,
+      "t_rec": 13.87,
+      "ttr": 8.46,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.41,
+        109.9,
+        22.7
+       ],
+       [
+        "recovered",
+        13.87,
+        0.1,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3395,
+      "final_roll": 2.6363,
+      "final_pitch": 0.9565,
+      "sim_t": 24.0,
+      "fall_rpy": [
+       109.3,
+       22.8,
+       46.0
+      ],
+      "walk_after_dist": 1.8897,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "roll",
+      "seed": 7,
+      "error": null,
+      "wall_s": 32.2,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       1.03
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         379.3,
+         -227.8,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "8": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.4,
+      "t_rec": 14.02,
+      "ttr": 8.62,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.4,
+        -51.3,
+        40.9
+       ],
+       [
+        "recovered",
+        14.02,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3387,
+      "final_roll": 2.2892,
+      "final_pitch": 0.8854,
+      "sim_t": 25.0,
+      "fall_rpy": [
+       -49.8,
+       41.3,
+       -137.7
+      ],
+      "walk_after_dist": 1.8869,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "roll",
+      "seed": 8,
+      "error": null,
+      "wall_s": 33.7,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -2.317
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         364.1,
+         -336.8,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "9": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.4,
+      "t_rec": 17.53,
+      "ttr": 12.13,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.4,
+        62.5,
+        37.9
+       ],
+       [
+        "recovered",
+        17.53,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3392,
+      "final_roll": 3.3036,
+      "final_pitch": 1.3403,
+      "sim_t": 28.0,
+      "fall_rpy": [
+       61.2,
+       38.3,
+       -125.6
+      ],
+      "walk_after_dist": 1.8902,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "roll",
+      "seed": 9,
+      "error": null,
+      "wall_s": 37.2,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -2.226
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         -386.2,
+         296.5,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     }
+    },
+    "push": {
+     "0": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.44,
+      "t_rec": 16.44,
+      "ttr": 11.0,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        5.44,
+        0.3,
+        -1.1
+       ],
+       [
+        "recovered",
+        16.44,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3391,
+      "final_roll": 3.3164,
+      "final_pitch": 1.3156,
+      "sim_t": 27.0,
+      "fall_rpy": [
+       0.1,
+       -4.9,
+       -33.9
+      ],
+      "walk_after_dist": 1.8888,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "push",
+      "seed": 0,
+      "error": null,
+      "wall_s": 36.0,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -0.657
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         -370.4,
+         285.8,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "1": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.44,
+      "t_rec": 14.2,
+      "ttr": 8.76,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        5.44,
+        -3.7,
+        1.1
+       ],
+       [
+        "recovered",
+        14.2,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3388,
+      "final_roll": 1.5338,
+      "final_pitch": 0.7005,
+      "sim_t": 25.0,
+      "fall_rpy": [
+       -3.8,
+       -2.6,
+       -19.3
+      ],
+      "walk_after_dist": 1.8995,
+      "walk_after_frac": 1.0,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "push",
+      "seed": 1,
+      "error": null,
+      "wall_s": 33.7,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -0.424
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         -427.0,
+         192.9,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "2": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.44,
+      "t_rec": 11.1,
+      "ttr": 5.66,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.44,
+        -1.4,
+        -1.3
+       ],
+       [
+        "recovered",
+        11.1,
+        -0.0,
+        -0.2
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3389,
+      "final_roll": 2.5065,
+      "final_pitch": 0.927,
+      "sim_t": 22.0,
+      "fall_rpy": [
+       -1.6,
+       -5.2,
+       -26.6
+      ],
+      "walk_after_dist": 1.8874,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "push",
+      "seed": 2,
+      "error": null,
+      "wall_s": 30.0,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -0.546
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         -405.7,
+         246.6,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "3": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.44,
+      "t_rec": 13.51,
+      "ttr": 8.07,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.44,
+        1.6,
+        -1.2
+       ],
+       [
+        "recovered",
+        13.51,
+        0.1,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3392,
+      "final_roll": 3.5294,
+      "final_pitch": 1.3778,
+      "sim_t": 24.0,
+      "fall_rpy": [
+       1.9,
+       -5.0,
+       -176.7
+      ],
+      "walk_after_dist": 1.8791,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "push",
+      "seed": 3,
+      "error": null,
+      "wall_s": 32.4,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -3.0
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         467.4,
+         66.4,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "4": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.44,
+      "t_rec": 16.33,
+      "ttr": 10.89,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.44,
+        0.7,
+        -1.1
+       ],
+       [
+        "recovered",
+        16.33,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.339,
+      "final_roll": 2.6693,
+      "final_pitch": 1.2325,
+      "sim_t": 27.0,
+      "fall_rpy": [
+       0.3,
+       -4.9,
+       0.4
+      ],
+      "walk_after_dist": 1.8803,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "push",
+      "seed": 4,
+      "error": null,
+      "wall_s": 35.9,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -0.088
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         -474.9,
+         42.1,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "6": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.46,
+      "t_rec": 13.11,
+      "ttr": 7.65,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.46,
+        7.7,
+        6.8
+       ],
+       [
+        "recovered",
+        13.11,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3388,
+      "final_roll": 2.2011,
+      "final_pitch": 0.9915,
+      "sim_t": 24.0,
+      "fall_rpy": [
+       7.5,
+       3.5,
+       49.0
+      ],
+      "walk_after_dist": 1.8939,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "push",
+      "seed": 6,
+      "error": null,
+      "wall_s": 32.1,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       0.783
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         -283.6,
+         -282.2,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "5": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.82,
+      "t_rec": 15.29,
+      "ttr": 9.47,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.82,
+        -102.8,
+        81.9
+       ],
+       [
+        "recovered",
+        15.29,
+        -0.1,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3391,
+      "final_roll": 1.9354,
+      "final_pitch": 0.6637,
+      "sim_t": 26.0,
+      "fall_rpy": [
+       -87.6,
+       82.2,
+       -84.9
+      ],
+      "walk_after_dist": 1.8933,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "push",
+      "seed": 5,
+      "error": null,
+      "wall_s": 34.7,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       0.279
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         -430.8,
+         -123.5,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "7": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.82,
+      "t_rec": 14.99,
+      "ttr": 9.17,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.82,
+        30.3,
+        71.1
+       ],
+       [
+        "recovered",
+        14.99,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3397,
+      "final_roll": 2.9092,
+      "final_pitch": 1.207,
+      "sim_t": 25.0,
+      "fall_rpy": [
+       25.6,
+       69.0,
+       -51.4
+      ],
+      "walk_after_dist": 1.8973,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "push",
+      "seed": 7,
+      "error": null,
+      "wall_s": 33.3,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -1.682
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         49.9,
+         445.9,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "8": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.45,
+      "t_rec": 13.87,
+      "ttr": 8.42,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.45,
+        4.6,
+        -0.6
+       ],
+       [
+        "recovered",
+        13.87,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3392,
+      "final_roll": 3.2531,
+      "final_pitch": 1.3608,
+      "sim_t": 24.0,
+      "fall_rpy": [
+       4.2,
+       -4.0,
+       7.9
+      ],
+      "walk_after_dist": 1.875,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "push",
+      "seed": 8,
+      "error": null,
+      "wall_s": 32.4,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       0.061
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         -431.2,
+         -26.1,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "9": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 5.44,
+      "t_rec": 13.18,
+      "ttr": 7.74,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        5.44,
+        -2.9,
+        2.7
+       ],
+       [
+        "recovered",
+        13.18,
+        0.1,
+        -0.2
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3388,
+      "final_roll": 1.7175,
+      "final_pitch": 0.7422,
+      "sim_t": 24.0,
+      "fall_rpy": [
+       -2.8,
+       -1.0,
+       -79.7
+      ],
+      "walk_after_dist": 1.8944,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "push",
+      "seed": 9,
+      "error": null,
+      "wall_s": 33.1,
+      "spawn": [
+       0.0,
+       0.0,
+       0.56,
+       -1.394
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        5.0,
+        [
+         -81.2,
+         453.9,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     }
+    },
+    "wall": {
+     "0": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 6.42,
+      "t_rec": 12.74,
+      "ttr": 6.32,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        6.42,
+        103.7,
+        13.7
+       ],
+       [
+        "recovered",
+        12.74,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3388,
+      "final_roll": 0.4214,
+      "final_pitch": 0.1777,
+      "sim_t": 23.0,
+      "fall_rpy": [
+       103.8,
+       13.8,
+       170.6
+      ],
+      "walk_after_dist": 0.1997,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "wall",
+      "seed": 0,
+      "error": null,
+      "wall_s": 40.0,
+      "spawn": [
+       57.0,
+       1.3,
+       -0.323,
+       3.415
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        6.0,
+        [
+         0.0,
+         366.9,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "1": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 6.41,
+      "t_rec": 12.78,
+      "ttr": 6.37,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        6.41,
+        52.9,
+        0.3
+       ],
+       [
+        "recovered",
+        12.78,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3387,
+      "final_roll": 0.5567,
+      "final_pitch": 0.1902,
+      "sim_t": 23.0,
+      "fall_rpy": [
+       53.3,
+       0.5,
+       -177.3
+      ],
+      "walk_after_dist": 0.1933,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "wall",
+      "seed": 1,
+      "error": null,
+      "wall_s": 39.8,
+      "spawn": [
+       57.0,
+       1.3,
+       -0.323,
+       3.037
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        6.0,
+        [
+         0.0,
+         397.2,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "2": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 6.42,
+      "t_rec": 12.87,
+      "ttr": 6.45,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        6.42,
+        100.3,
+        12.6
+       ],
+       [
+        "recovered",
+        12.87,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3389,
+      "final_roll": 2.0608,
+      "final_pitch": 0.808,
+      "sim_t": 23.0,
+      "fall_rpy": [
+       100.3,
+       12.7,
+       168.7
+      ],
+      "walk_after_dist": 0.2273,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "wall",
+      "seed": 2,
+      "error": null,
+      "wall_s": 39.8,
+      "spawn": [
+       57.0,
+       1.3,
+       -0.323,
+       3.351
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        6.0,
+        [
+         0.0,
+         357.8,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "3": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 6.42,
+      "t_rec": 12.91,
+      "ttr": 6.49,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        6.42,
+        83.8,
+        6.8
+       ],
+       [
+        "recovered",
+        12.91,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3386,
+      "final_roll": 0.219,
+      "final_pitch": 0.2028,
+      "sim_t": 23.0,
+      "fall_rpy": [
+       85.1,
+       7.0,
+       -177.7
+      ],
+      "walk_after_dist": 0.2052,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "wall",
+      "seed": 3,
+      "error": null,
+      "wall_s": 40.1,
+      "spawn": [
+       57.0,
+       1.3,
+       -0.323,
+       3.203
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        6.0,
+        [
+         0.0,
+         389.6,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "4": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 6.41,
+      "t_rec": 12.84,
+      "ttr": 6.43,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        6.41,
+        67.1,
+        1.3
+       ],
+       [
+        "recovered",
+        12.84,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3388,
+      "final_roll": 0.4417,
+      "final_pitch": 0.0819,
+      "sim_t": 23.0,
+      "fall_rpy": [
+       67.8,
+       1.4,
+       -177.0
+      ],
+      "walk_after_dist": 0.1912,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "wall",
+      "seed": 4,
+      "error": null,
+      "wall_s": 40.2,
+      "spawn": [
+       57.0,
+       1.3,
+       -0.323,
+       3.054
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        6.0,
+        [
+         0.0,
+         390.2,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "5": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 6.42,
+      "t_rec": 12.87,
+      "ttr": 6.45,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        6.42,
+        84.3,
+        8.6
+       ],
+       [
+        "recovered",
+        12.87,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3388,
+      "final_roll": 1.8699,
+      "final_pitch": 0.7248,
+      "sim_t": 23.0,
+      "fall_rpy": [
+       85.6,
+       9.1,
+       -175.0
+      ],
+      "walk_after_dist": 0.2213,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "wall",
+      "seed": 5,
+      "error": null,
+      "wall_s": 40.2,
+      "spawn": [
+       57.0,
+       1.3,
+       -0.323,
+       3.257
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        6.0,
+        [
+         0.0,
+         377.6,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "7": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 6.42,
+      "t_rec": 13.2,
+      "ttr": 6.78,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        6.42,
+        88.2,
+        8.3
+       ],
+       [
+        "recovered",
+        13.2,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3394,
+      "final_roll": 0.1837,
+      "final_pitch": 0.0788,
+      "sim_t": 24.0,
+      "fall_rpy": [
+       89.4,
+       8.8,
+       -177.4
+      ],
+      "walk_after_dist": 0.2533,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "wall",
+      "seed": 7,
+      "error": null,
+      "wall_s": 41.6,
+      "spawn": [
+       57.0,
+       1.3,
+       -0.323,
+       3.28
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        6.0,
+        [
+         0.0,
+         357.0,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "6": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 6.43,
+      "t_rec": 16.14,
+      "ttr": 9.71,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        6.43,
+        52.1,
+        -5.0
+       ],
+       [
+        "recovered",
+        16.14,
+        0.0,
+        -0.2
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "DAMP",
+       "TUCK",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3394,
+      "final_roll": 0.3104,
+      "final_pitch": 0.084,
+      "sim_t": 27.0,
+      "fall_rpy": [
+       52.4,
+       -4.9,
+       -178.1
+      ],
+      "walk_after_dist": 0.1871,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "wall",
+      "seed": 6,
+      "error": null,
+      "wall_s": 45.9,
+      "spawn": [
+       57.0,
+       1.3,
+       -0.323,
+       2.914
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        6.0,
+        [
+         0.0,
+         308.3,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "8": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 8.09,
+      "t_rec": 15.02,
+      "ttr": 6.93,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        8.09,
+        41.2,
+        -11.6
+       ],
+       [
+        "recovered",
+        15.02,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3395,
+      "final_roll": 0.1386,
+      "final_pitch": 0.0271,
+      "sim_t": 26.0,
+      "fall_rpy": [
+       41.2,
+       -11.6,
+       -178.6
+      ],
+      "walk_after_dist": 0.2226,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "wall",
+      "seed": 8,
+      "error": null,
+      "wall_s": 45.0,
+      "spawn": [
+       57.0,
+       1.3,
+       -0.323,
+       2.919
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        6.0,
+        [
+         0.0,
+         371.1,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "9": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 6.43,
+      "t_rec": 12.93,
+      "ttr": 6.5,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        6.43,
+        84.9,
+        14.8
+       ],
+       [
+        "recovered",
+        12.93,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3389,
+      "final_roll": 0.5883,
+      "final_pitch": 0.2675,
+      "sim_t": 23.0,
+      "fall_rpy": [
+       85.6,
+       15.1,
+       -174.8
+      ],
+      "walk_after_dist": 0.2357,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "wall",
+      "seed": 9,
+      "error": null,
+      "wall_s": 40.4,
+      "spawn": [
+       57.0,
+       1.3,
+       -0.323,
+       3.314
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        6.0,
+        [
+         0.0,
+         328.9,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     }
+    },
+    "ramp_walk": {
+     "1": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 13.87,
+      "t_rec": 20.87,
+      "ttr": 7.0,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        13.87,
+        -175.3,
+        63.6
+       ],
+       [
+        "recovered",
+        20.87,
+        -8.3,
+        -9.5
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3403,
+      "final_roll": 2.7208,
+      "final_pitch": 10.1728,
+      "sim_t": 31.0,
+      "fall_rpy": [
+       -175.4,
+       64.0,
+       173.2
+      ],
+      "walk_after_dist": 0.0932,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_walk",
+      "seed": 1,
+      "error": null,
+      "wall_s": 55.6,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.138
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        13.47,
+        [
+         1.0,
+         309.6,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "3": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 13.87,
+      "t_rec": 20.26,
+      "ttr": 6.39,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        13.87,
+        76.5,
+        26.9
+       ],
+       [
+        "recovered",
+        20.26,
+        -2.7,
+        -12.1
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.341,
+      "final_roll": 0.4704,
+      "final_pitch": 11.5084,
+      "sim_t": 31.0,
+      "fall_rpy": [
+       75.4,
+       25.9,
+       -177.6
+      ],
+      "walk_after_dist": 0.0445,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_walk",
+      "seed": 3,
+      "error": null,
+      "wall_s": 55.9,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.09
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        13.47,
+        [
+         15.1,
+         294.8,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "2": {
+      "falls": 1,
+      "attempts": 3,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 13.61,
+      "t_rec": 28.71,
+      "ttr": 15.1,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        13.61,
+        82.3,
+        59.2
+       ],
+       [
+        "recovered",
+        28.71,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.339,
+      "final_roll": 0.7828,
+      "final_pitch": 0.0367,
+      "sim_t": 39.0,
+      "fall_rpy": [
+       79.5,
+       59.6,
+       155.6
+      ],
+      "walk_after_dist": 0.1976,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_walk",
+      "seed": 2,
+      "error": null,
+      "wall_s": 68.1,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.284
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        13.19,
+        [
+         37.3,
+         -259.8,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "0": {
+      "falls": 1,
+      "attempts": 4,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 1,
+      "series_failed": 1,
+      "t_fall": 14.27,
+      "t_rec": 38.8,
+      "ttr": 24.53,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        14.27,
+        -102.1,
+        47.4
+       ],
+       [
+        "recovery_failed",
+        25.97,
+        -150.5,
+        -1.3
+       ],
+       [
+        "recovery_retry",
+        30.97,
+        179.8,
+        0.0
+       ],
+       [
+        "recovered",
+        38.8,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "FAILED",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3389,
+      "final_roll": 0.3408,
+      "final_pitch": 0.2173,
+      "sim_t": 49.0,
+      "fall_rpy": [
+       -100.7,
+       46.2,
+       58.3
+      ],
+      "walk_after_dist": 0.2001,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_walk",
+      "seed": 0,
+      "error": null,
+      "wall_s": 84.8,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.025
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        13.43,
+        [
+         -32.0,
+         -274.4,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "4": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 13.65,
+      "t_rec": 25.96,
+      "ttr": 12.31,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        13.65,
+        99.5,
+        8.1
+       ],
+       [
+        "recovered",
+        25.96,
+        -0.0,
+        -0.2
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3383,
+      "final_roll": 0.5477,
+      "final_pitch": 0.7232,
+      "sim_t": 36.0,
+      "fall_rpy": [
+       97.1,
+       6.5,
+       121.8
+      ],
+      "walk_after_dist": 0.1423,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_walk",
+      "seed": 4,
+      "error": null,
+      "wall_s": 64.7,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.157
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        13.25,
+        [
+         4.4,
+         -290.6,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "6": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 13.78,
+      "t_rec": 21.51,
+      "ttr": 7.73,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        13.78,
+        141.4,
+        -46.4
+       ],
+       [
+        "recovered",
+        21.51,
+        -0.1,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3377,
+      "final_roll": 0.5819,
+      "final_pitch": 0.3103,
+      "sim_t": 32.0,
+      "fall_rpy": [
+       139.5,
+       -46.3,
+       -73.7
+      ],
+      "walk_after_dist": 0.1864,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_walk",
+      "seed": 6,
+      "error": null,
+      "wall_s": 57.1,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.216
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        13.37,
+        [
+         24.0,
+         -322.0,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "7": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 13.6,
+      "t_rec": 22.89,
+      "ttr": 9.29,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        13.6,
+        -64.6,
+        -62.4
+       ],
+       [
+        "recovered",
+        22.89,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.336,
+      "final_roll": 0.501,
+      "final_pitch": 2.0538,
+      "sim_t": 33.0,
+      "fall_rpy": [
+       -65.7,
+       -62.4,
+       43.5
+      ],
+      "walk_after_dist": 0.2297,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_walk",
+      "seed": 7,
+      "error": null,
+      "wall_s": 58.4,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.284
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        13.2,
+        [
+         -43.4,
+         303.5,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "5": {
+      "falls": 1,
+      "attempts": 4,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 1,
+      "series_failed": 1,
+      "t_fall": 13.58,
+      "t_rec": 42.98,
+      "ttr": 29.4,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        13.58,
+        95.7,
+        -25.3
+       ],
+       [
+        "recovery_failed",
+        26.14,
+        -179.8,
+        0.1
+       ],
+       [
+        "recovery_retry",
+        31.14,
+        -168.4,
+        2.5
+       ],
+       [
+        "recovered",
+        42.98,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "FAILED",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.339,
+      "final_roll": 4.3102,
+      "final_pitch": 1.8869,
+      "sim_t": 53.0,
+      "fall_rpy": [
+       95.5,
+       -24.6,
+       -149.5
+      ],
+      "walk_after_dist": 0.1815,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_walk",
+      "seed": 5,
+      "error": null,
+      "wall_s": 90.0,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.01
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        13.18,
+        [
+         42.7,
+         322.9,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "9": {
+      "falls": 1,
+      "attempts": 5,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 1,
+      "series_failed": 1,
+      "t_fall": 13.67,
+      "t_rec": 39.37,
+      "ttr": 25.7,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        13.67,
+        -26.8,
+        -35.0
+       ],
+       [
+        "recovery_failed",
+        20.66,
+        -150.5,
+        2.5
+       ],
+       [
+        "recovery_retry",
+        25.66,
+        170.6,
+        0.0
+       ],
+       [
+        "recovered",
+        39.37,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "FAILED",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3389,
+      "final_roll": 0.4423,
+      "final_pitch": 1.4016,
+      "sim_t": 50.0,
+      "fall_rpy": [
+       -27.5,
+       -34.4,
+       37.0
+      ],
+      "walk_after_dist": 0.0937,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_walk",
+      "seed": 9,
+      "error": null,
+      "wall_s": 84.6,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.281
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        13.26,
+        [
+         -39.0,
+         276.9,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "8": {
+      "falls": 1,
+      "attempts": 14,
+      "recoveries": 0,
+      "assisted": 0,
+      "retries": 4,
+      "series_failed": 4,
+      "t_fall": 13.93,
+      "t_rec": null,
+      "ttr": null,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        13.93,
+        12.3,
+        -5.3
+       ],
+       [
+        "recovery_failed",
+        26.98,
+        -63.5,
+        -0.2
+       ],
+       [
+        "recovery_retry",
+        31.98,
+        -60.0,
+        0.0
+       ],
+       [
+        "recovery_failed",
+        45.5,
+        -60.6,
+        1.1
+       ],
+       [
+        "recovery_retry",
+        50.5,
+        -49.8,
+        -0.0
+       ],
+       [
+        "recovery_failed",
+        65.81,
+        -64.9,
+        2.8
+       ],
+       [
+        "recovery_retry",
+        70.81,
+        -75.1,
+        -0.0
+       ],
+       [
+        "recovery_failed",
+        86.99,
+        -77.2,
+        -1.4
+       ],
+       [
+        "recovery_retry",
+        91.99,
+        -72.6,
+        0.0
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "FAILED",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "FAILED",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "FAILED",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "FAILED",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "DAMP"
+      ],
+      "final_mode": "RECOVERING",
+      "final_h": 0.1649,
+      "final_roll": 113.6454,
+      "final_pitch": 1.9102,
+      "sim_t": 100.0,
+      "fall_rpy": [
+       11.5,
+       -2.4,
+       -106.6
+      ],
+      "fell": true,
+      "ok": false,
+      "reason": "not recovered within the run",
+      "case": "ramp_walk",
+      "seed": 8,
+      "error": null,
+      "wall_s": 161.3,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.04
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        13.5,
+        [
+         -26.3,
+         -258.0,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     }
+    },
+    "ramp_push": {
+     "0": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 19.29,
+      "t_rec": 25.65,
+      "ttr": 6.36,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        19.29,
+        102.6,
+        -8.2
+       ],
+       [
+        "recovered",
+        25.65,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3391,
+      "final_roll": 1.1934,
+      "final_pitch": 0.226,
+      "sim_t": 36.0,
+      "fall_rpy": [
+       101.1,
+       -7.7,
+       -126.7
+      ],
+      "walk_after_dist": 0.0687,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_push",
+      "seed": 0,
+      "error": null,
+      "wall_s": 62.7,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.101
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        18.87,
+        [
+         16.8,
+         -301.3,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "1": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 18.53,
+      "t_rec": 24.85,
+      "ttr": 6.32,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        18.53,
+        116.3,
+        -20.1
+       ],
+       [
+        "recovered",
+        24.85,
+        -10.6,
+        -6.9
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3392,
+      "final_roll": 0.7346,
+      "final_pitch": 6.5831,
+      "sim_t": 35.0,
+      "fall_rpy": [
+       115.4,
+       -19.7,
+       -156.9
+      ],
+      "walk_after_dist": 0.1214,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_push",
+      "seed": 1,
+      "error": null,
+      "wall_s": 61.5,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.206
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        18.11,
+        [
+         -1.2,
+         374.0,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "2": {
+      "falls": 1,
+      "attempts": 3,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 19.63,
+      "t_rec": 35.76,
+      "ttr": 16.13,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        19.63,
+        -132.9,
+        -27.0
+       ],
+       [
+        "recovered",
+        35.76,
+        -0.0,
+        -0.2
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.339,
+      "final_roll": 0.7875,
+      "final_pitch": 0.4594,
+      "sim_t": 46.0,
+      "fall_rpy": [
+       -132.5,
+       -27.2,
+       -146.7
+      ],
+      "walk_after_dist": 0.171,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_push",
+      "seed": 2,
+      "error": null,
+      "wall_s": 78.8,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.026
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        19.22,
+        [
+         -18.6,
+         -397.2,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "3": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 18.81,
+      "t_rec": 33.7,
+      "ttr": 14.89,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        18.81,
+        153.4,
+        -30.3
+       ],
+       [
+        "recovered",
+        33.7,
+        12.2,
+        -3.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3394,
+      "final_roll": 0.5316,
+      "final_pitch": 3.4222,
+      "sim_t": 44.0,
+      "fall_rpy": [
+       153.3,
+       -29.8,
+       -161.1
+      ],
+      "walk_after_dist": 0.1459,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_push",
+      "seed": 3,
+      "error": null,
+      "wall_s": 75.7,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.122
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        18.39,
+        [
+         -33.7,
+         312.6,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "5": {
+      "falls": 1,
+      "attempts": 3,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 19.06,
+      "t_rec": 35.51,
+      "ttr": 16.45,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        19.06,
+        173.0,
+        -30.9
+       ],
+       [
+        "recovered",
+        35.51,
+        11.6,
+        4.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.341,
+      "final_roll": 0.3488,
+      "final_pitch": 4.1019,
+      "sim_t": 46.0,
+      "fall_rpy": [
+       173.1,
+       -31.0,
+       -170.6
+      ],
+      "walk_after_dist": 0.1676,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_push",
+      "seed": 5,
+      "error": null,
+      "wall_s": 78.8,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.071
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        18.64,
+        [
+         5.6,
+         305.7,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "4": {
+      "falls": 2,
+      "attempts": 4,
+      "recoveries": 2,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 19.43,
+      "t_rec": 35.87,
+      "ttr": 16.44,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        19.43,
+        167.2,
+        -24.3
+       ],
+       [
+        "recovered",
+        35.87,
+        3.3,
+        -10.1
+       ],
+       [
+        "fall",
+        39.06,
+        93.9,
+        13.8
+       ],
+       [
+        "recovered",
+        49.7,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3387,
+      "final_roll": 0.4414,
+      "final_pitch": 0.1919,
+      "sim_t": 60.0,
+      "fall_rpy": [
+       166.9,
+       -24.1,
+       -117.1
+      ],
+      "walk_after_dist": 0.1851,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 1,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_push",
+      "seed": 4,
+      "error": null,
+      "wall_s": 100.1,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.016
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        19.02,
+        [
+         6.7,
+         -349.8,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "6": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 19.52,
+      "t_rec": 26.01,
+      "ttr": 6.49,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        19.52,
+        -166.6,
+        -25.3
+       ],
+       [
+        "recovered",
+        26.01,
+        -0.1,
+        -0.2
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3393,
+      "final_roll": 0.1448,
+      "final_pitch": 0.0454,
+      "sim_t": 37.0,
+      "fall_rpy": [
+       -166.7,
+       -25.4,
+       -136.7
+      ],
+      "walk_after_dist": 0.1945,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_push",
+      "seed": 6,
+      "error": null,
+      "wall_s": 64.4,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       2.993
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        19.1,
+        [
+         -13.2,
+         -359.1,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "7": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 19.22,
+      "t_rec": 25.64,
+      "ttr": 6.42,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        19.22,
+        98.4,
+        -27.0
+       ],
+       [
+        "recovered",
+        25.64,
+        -5.0,
+        -11.4
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3405,
+      "final_roll": 1.1732,
+      "final_pitch": 11.4385,
+      "sim_t": 36.0,
+      "fall_rpy": [
+       97.6,
+       -26.4,
+       -169.3
+      ],
+      "walk_after_dist": 0.0651,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_push",
+      "seed": 7,
+      "error": null,
+      "wall_s": 62.8,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.061
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        18.81,
+        [
+         -3.5,
+         382.2,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "8": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 19.2,
+      "t_rec": 25.64,
+      "ttr": 6.44,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        19.2,
+        125.9,
+        -10.3
+       ],
+       [
+        "recovered",
+        25.64,
+        0.1,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3421,
+      "final_roll": 1.5112,
+      "final_pitch": 0.5237,
+      "sim_t": 36.0,
+      "fall_rpy": [
+       124.9,
+       -9.9,
+       -109.3
+      ],
+      "walk_after_dist": 0.0835,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_push",
+      "seed": 8,
+      "error": null,
+      "wall_s": 63.0,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.272
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        18.78,
+        [
+         19.2,
+         -321.3,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "9": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 18.63,
+      "t_rec": 33.48,
+      "ttr": 14.85,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        18.63,
+        152.1,
+        -21.6
+       ],
+       [
+        "recovered",
+        33.48,
+        11.8,
+        -4.6
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3386,
+      "final_roll": 0.3769,
+      "final_pitch": 4.2898,
+      "sim_t": 44.0,
+      "fall_rpy": [
+       151.4,
+       -21.3,
+       -168.4
+      ],
+      "walk_after_dist": 0.1266,
+      "walk_after_frac": 0.9983,
+      "falls_after_rec": 0,
+      "fell": true,
+      "ok": true,
+      "reason": "recovered physically",
+      "case": "ramp_push",
+      "seed": 9,
+      "error": null,
+      "wall_s": 74.6,
+      "spawn": [
+       52.6,
+       0.8,
+       -0.323,
+       3.258
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        18.21,
+        [
+         -10.5,
+         342.3,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     }
+    },
+    "mission": {
+     "0": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 14.67,
+      "t_rec": 21.14,
+      "ttr": 6.47,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        14.67,
+        83.6,
+        -36.8
+       ],
+       [
+        "recovered",
+        21.14,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3396,
+      "final_roll": 0.0205,
+      "final_pitch": 0.0408,
+      "sim_t": 35.0,
+      "fall_rpy": [
+       82.5,
+       -36.7,
+       -174.1
+      ],
+      "walk_after_dist": 2.2441,
+      "walk_after_frac": 1.0,
+      "falls_after_rec": 0,
+      "fell": true,
+      "mission": {
+       "reached": 1.0,
+       "t_reach": 30.73,
+       "final_state": "DONE",
+       "events": [
+        [
+         14.73,
+         "warn",
+         "locomotion not ready (FALLEN) - holding"
+        ],
+        [
+         21.23,
+         "info",
+         "locomotion ready again (STAND) - re-planning"
+        ],
+        [
+         31.13,
+         "info",
+         "state PATROL -> DONE"
+        ]
+       ]
+      },
+      "ok": true,
+      "reason": "recovered physically, mission continued",
+      "case": "mission",
+      "seed": 0,
+      "error": null,
+      "wall_s": 68.7,
+      "spawn": [
+       46.5,
+       0.72,
+       0.557,
+       3.142
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        14.31,
+        [
+         0.0,
+         529.8,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "2": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 14.57,
+      "t_rec": 21.19,
+      "ttr": 6.62,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        14.57,
+        73.4,
+        59.6
+       ],
+       [
+        "recovered",
+        21.19,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3391,
+      "final_roll": 0.0991,
+      "final_pitch": 0.2048,
+      "sim_t": 35.0,
+      "fall_rpy": [
+       72.8,
+       59.5,
+       172.1
+      ],
+      "walk_after_dist": 2.333,
+      "walk_after_frac": 1.0,
+      "falls_after_rec": 0,
+      "fell": true,
+      "mission": {
+       "reached": 1.0,
+       "t_reach": 31.51,
+       "final_state": "DONE",
+       "events": [
+        [
+         14.61,
+         "warn",
+         "locomotion not ready (FALLEN) - holding"
+        ],
+        [
+         21.21,
+         "info",
+         "locomotion ready again (STAND) - re-planning"
+        ],
+        [
+         31.91,
+         "info",
+         "state PATROL -> DONE"
+        ]
+       ]
+      },
+      "ok": true,
+      "reason": "recovered physically, mission continued",
+      "case": "mission",
+      "seed": 2,
+      "error": null,
+      "wall_s": 67.7,
+      "spawn": [
+       46.49,
+       0.709,
+       0.557,
+       3.161
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        14.2,
+        [
+         0.0,
+         529.9,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "3": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 14.79,
+      "t_rec": 22.92,
+      "ttr": 8.13,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        14.79,
+        -170.8,
+        7.7
+       ],
+       [
+        "recovered",
+        22.92,
+        0.0,
+        -0.2
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3393,
+      "final_roll": 0.114,
+      "final_pitch": 0.1817,
+      "sim_t": 38.0,
+      "fall_rpy": [
+       -172.5,
+       7.9,
+       173.3
+      ],
+      "walk_after_dist": 2.4031,
+      "walk_after_frac": 1.0,
+      "falls_after_rec": 0,
+      "fell": true,
+      "mission": {
+       "reached": 1.0,
+       "t_reach": 34.05,
+       "final_state": "DONE",
+       "events": [
+        [
+         14.85,
+         "warn",
+         "locomotion not ready (FALLEN) - holding"
+        ],
+        [
+         22.95,
+         "info",
+         "locomotion ready again (STAND) - re-planning"
+        ],
+        [
+         34.45,
+         "info",
+         "state PATROL -> DONE"
+        ]
+       ]
+      },
+      "ok": true,
+      "reason": "recovered physically, mission continued",
+      "case": "mission",
+      "seed": 3,
+      "error": null,
+      "wall_s": 74.1,
+      "spawn": [
+       46.475,
+       0.701,
+       0.557,
+       3.141
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        14.13,
+        [
+         0.0,
+         -521.3,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "1": {
+      "falls": 1,
+      "attempts": 3,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 14.65,
+      "t_rec": 30.33,
+      "ttr": 15.68,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        14.65,
+        -111.2,
+        14.5
+       ],
+       [
+        "recovered",
+        30.33,
+        0.0,
+        -0.2
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3393,
+      "final_roll": 0.0433,
+      "final_pitch": 0.1315,
+      "sim_t": 48.0,
+      "fall_rpy": [
+       -110.6,
+       13.0,
+       86.0
+      ],
+      "walk_after_dist": 1.5227,
+      "walk_after_frac": 1.0,
+      "falls_after_rec": 0,
+      "fell": true,
+      "mission": {
+       "reached": 1.0,
+       "t_reach": 44.27,
+       "final_state": "DONE",
+       "events": [
+        [
+         14.67,
+         "warn",
+         "locomotion not ready (FALLEN) - holding"
+        ],
+        [
+         30.37,
+         "info",
+         "locomotion ready again (STAND) - re-planning"
+        ],
+        [
+         44.67,
+         "info",
+         "state PATROL -> DONE"
+        ]
+       ]
+      },
+      "ok": true,
+      "reason": "recovered physically, mission continued",
+      "case": "mission",
+      "seed": 1,
+      "error": null,
+      "wall_s": 93.8,
+      "spawn": [
+       46.509,
+       0.681,
+       0.557,
+       3.117
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        14.29,
+        [
+         0.0,
+         -543.2,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "5": {
+      "falls": 1,
+      "attempts": 2,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 14.49,
+      "t_rec": 22.1,
+      "ttr": 7.61,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        14.49,
+        149.0,
+        87.7
+       ],
+       [
+        "recovered",
+        22.1,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.339,
+      "final_roll": 0.3628,
+      "final_pitch": 0.1291,
+      "sim_t": 39.0,
+      "fall_rpy": [
+       179.9,
+       88.0,
+       -41.5
+      ],
+      "walk_after_dist": 1.7413,
+      "walk_after_frac": 1.0,
+      "falls_after_rec": 0,
+      "fell": true,
+      "mission": {
+       "reached": 1.0,
+       "t_reach": 35.52,
+       "final_state": "DONE",
+       "events": [
+        [
+         14.52,
+         "warn",
+         "locomotion not ready (FALLEN) - holding"
+        ],
+        [
+         22.12,
+         "info",
+         "locomotion ready again (STAND) - re-planning"
+        ],
+        [
+         35.92,
+         "info",
+         "state PATROL -> DONE"
+        ]
+       ]
+      },
+      "ok": true,
+      "reason": "recovered physically, mission continued",
+      "case": "mission",
+      "seed": 5,
+      "error": null,
+      "wall_s": 76.0,
+      "spawn": [
+       46.467,
+       0.754,
+       0.557,
+       3.125
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        14.12,
+        [
+         0.0,
+         -525.2,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "6": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 14.4,
+      "t_rec": 20.98,
+      "ttr": 6.58,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        14.4,
+        83.4,
+        65.4
+       ],
+       [
+        "recovered",
+        20.98,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3392,
+      "final_roll": 0.2338,
+      "final_pitch": 0.1113,
+      "sim_t": 34.0,
+      "fall_rpy": [
+       83.3,
+       65.4,
+       179.1
+      ],
+      "walk_after_dist": 2.2817,
+      "walk_after_frac": 1.0,
+      "falls_after_rec": 0,
+      "fell": true,
+      "mission": {
+       "reached": 1.0,
+       "t_reach": 30.36,
+       "final_state": "DONE",
+       "events": [
+        [
+         14.46,
+         "warn",
+         "locomotion not ready (FALLEN) - holding"
+        ],
+        [
+         21.06,
+         "info",
+         "locomotion ready again (STAND) - re-planning"
+        ],
+        [
+         30.76,
+         "info",
+         "state PATROL -> DONE"
+        ]
+       ]
+      },
+      "ok": true,
+      "reason": "recovered physically, mission continued",
+      "case": "mission",
+      "seed": 6,
+      "error": null,
+      "wall_s": 66.1,
+      "spawn": [
+       46.487,
+       0.728,
+       0.557,
+       3.125
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        14.03,
+        [
+         0.0,
+         525.9,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "8": {
+      "falls": 1,
+      "attempts": 3,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 14.5,
+      "t_rec": 29.33,
+      "ttr": 14.83,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        14.5,
+        54.7,
+        56.8
+       ],
+       [
+        "recovered",
+        29.33,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "DAMP",
+       "TUCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3395,
+      "final_roll": 0.1044,
+      "final_pitch": 0.1866,
+      "sim_t": 45.0,
+      "fall_rpy": [
+       54.3,
+       56.6,
+       178.1
+      ],
+      "walk_after_dist": 2.1024,
+      "walk_after_frac": 1.0,
+      "falls_after_rec": 0,
+      "fell": true,
+      "mission": {
+       "reached": 1.0,
+       "t_reach": 41.03,
+       "final_state": "DONE",
+       "events": [
+        [
+         14.53,
+         "warn",
+         "locomotion not ready (FALLEN) - holding"
+        ],
+        [
+         29.43,
+         "info",
+         "locomotion ready again (STAND) - re-planning"
+        ],
+        [
+         41.43,
+         "info",
+         "state PATROL -> DONE"
+        ]
+       ]
+      },
+      "ok": true,
+      "reason": "recovered physically, mission continued",
+      "case": "mission",
+      "seed": 8,
+      "error": null,
+      "wall_s": 84.6,
+      "spawn": [
+       46.473,
+       0.745,
+       0.557,
+       3.119
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        14.13,
+        [
+         0.0,
+         488.0,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "7": {
+      "falls": 2,
+      "attempts": 3,
+      "recoveries": 2,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 14.9,
+      "t_rec": 22.1,
+      "ttr": 7.2,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        14.9,
+        -178.2,
+        83.1
+       ],
+       [
+        "recovered",
+        22.1,
+        0.0,
+        -0.2
+       ],
+       [
+        "fall",
+        26.92,
+        155.1,
+        -1.2
+       ],
+       [
+        "recovered",
+        44.49,
+        0.1,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3394,
+      "final_roll": 0.2556,
+      "final_pitch": 0.0523,
+      "sim_t": 60.0,
+      "fall_rpy": [
+       179.9,
+       83.2,
+       92.3
+      ],
+      "walk_after_dist": 1.5353,
+      "walk_after_frac": 1.0,
+      "falls_after_rec": 1,
+      "fell": true,
+      "mission": {
+       "reached": 1.0,
+       "t_reach": 56.49,
+       "final_state": "DONE",
+       "events": [
+        [
+         14.99,
+         "warn",
+         "locomotion not ready (FALLEN) - holding"
+        ],
+        [
+         22.19,
+         "info",
+         "locomotion ready again (STAND) - re-planning"
+        ],
+        [
+         26.99,
+         "warn",
+         "locomotion not ready (FALLEN) - holding"
+        ],
+        [
+         44.59,
+         "info",
+         "locomotion ready again (STAND) - re-planning"
+        ],
+        [
+         56.89,
+         "info",
+         "state PATROL -> DONE"
+        ]
+       ]
+      },
+      "ok": true,
+      "reason": "recovered physically, mission continued",
+      "case": "mission",
+      "seed": 7,
+      "error": null,
+      "wall_s": 112.5,
+      "spawn": [
+       46.466,
+       0.745,
+       0.557,
+       3.153
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        14.26,
+        [
+         0.0,
+         -458.7,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "9": {
+      "falls": 1,
+      "attempts": 1,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 0,
+      "series_failed": 0,
+      "t_fall": 14.61,
+      "t_rec": 22.9,
+      "ttr": 8.29,
+      "first_try": true,
+      "events": [
+       [
+        "fall",
+        14.61,
+        -121.5,
+        -38.8
+       ],
+       [
+        "recovered",
+        22.9,
+        0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3394,
+      "final_roll": 0.37,
+      "final_pitch": 0.0937,
+      "sim_t": 41.0,
+      "fall_rpy": [
+       -122.3,
+       -37.2,
+       -104.0
+      ],
+      "walk_after_dist": 1.5176,
+      "walk_after_frac": 1.0,
+      "falls_after_rec": 0,
+      "fell": true,
+      "mission": {
+       "reached": 1.0,
+       "t_reach": 37.27,
+       "final_state": "DONE",
+       "events": [
+        [
+         14.67,
+         "warn",
+         "locomotion not ready (FALLEN) - holding"
+        ],
+        [
+         22.97,
+         "info",
+         "locomotion ready again (STAND) - re-planning"
+        ],
+        [
+         37.67,
+         "info",
+         "state PATROL -> DONE"
+        ]
+       ]
+      },
+      "ok": true,
+      "reason": "recovered physically, mission continued",
+      "case": "mission",
+      "seed": 9,
+      "error": null,
+      "wall_s": 75.9,
+      "spawn": [
+       46.465,
+       0.706,
+       0.557,
+       3.106
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        14.24,
+        [
+         0.0,
+         -534.8,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     },
+     "4": {
+      "falls": 1,
+      "attempts": 10,
+      "recoveries": 1,
+      "assisted": 0,
+      "retries": 3,
+      "series_failed": 3,
+      "t_fall": 14.65,
+      "t_rec": 77.27,
+      "ttr": 62.62,
+      "first_try": false,
+      "events": [
+       [
+        "fall",
+        14.65,
+        41.8,
+        55.1
+       ],
+       [
+        "recovery_failed",
+        34.53,
+        -0.0,
+        62.9
+       ],
+       [
+        "recovery_retry",
+        39.53,
+        -0.0,
+        -0.0
+       ],
+       [
+        "recovery_failed",
+        48.86,
+        174.4,
+        -5.6
+       ],
+       [
+        "recovery_retry",
+        53.86,
+        -180.0,
+        -0.0
+       ],
+       [
+        "recovery_failed",
+        64.59,
+        151.5,
+        5.9
+       ],
+       [
+        "recovery_retry",
+        69.59,
+        -180.0,
+        0.0
+       ],
+       [
+        "recovered",
+        77.27,
+        -0.0,
+        -0.3
+       ]
+      ],
+      "seq": [
+       "NORMAL",
+       "DAMP",
+       "TUCK",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "DAMP",
+       "TUCK",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "DAMP",
+       "TUCK",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "FAILED",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "FAILED",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "ROCK",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "FAILED",
+       "DAMP",
+       "TUCK",
+       "ROCK",
+       "SELF_RIGHT",
+       "PREPARE",
+       "STAND_UP",
+       "VERIFY",
+       "NORMAL"
+      ],
+      "final_mode": "STAND",
+      "final_h": 0.3396,
+      "final_roll": 0.1069,
+      "final_pitch": 0.0846,
+      "sim_t": 96.0,
+      "fall_rpy": [
+       41.1,
+       54.7,
+       -179.4
+      ],
+      "walk_after_dist": 1.4516,
+      "walk_after_frac": 1.0,
+      "falls_after_rec": 0,
+      "fell": true,
+      "mission": {
+       "reached": 1.0,
+       "t_reach": 91.68,
+       "final_state": "DONE",
+       "events": [
+        [
+         14.68,
+         "warn",
+         "locomotion not ready (FALLEN) - holding"
+        ],
+        [
+         77.28,
+         "info",
+         "locomotion ready again (STAND) - re-planning"
+        ],
+        [
+         92.08,
+         "info",
+         "state PATROL -> DONE"
+        ]
+       ]
+      },
+      "ok": true,
+      "reason": "recovered physically, mission continued",
+      "case": "mission",
+      "seed": 4,
+      "error": null,
+      "wall_s": 169.8,
+      "spawn": [
+       46.46,
+       0.69,
+       0.557,
+       3.113
+      ],
+      "spawn_rp_deg": [
+       0.0,
+       0.0
+      ],
+      "pushes": [
+       [
+        14.28,
+        [
+         0.0,
+         475.2,
+         0.0
+        ],
+        [
+         0.0,
+         0.0,
+         0.3
+        ]
+       ]
+      ]
+     }
+    }
+   },
+   "created": "2026-11-11 18:13:00"
+  }
+ },
+ "tool": "tools/fall_check.py",
+ "engine": "gz-sim 8 (Harmonic) + DART, headless, gz-transport lock-step"
+}

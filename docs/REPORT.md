@@ -5,7 +5,7 @@
 | 대상 플랫폼 | Ubuntu 26.04 + ROS 2 Lyrical + Gazebo Jetty (gz-sim 10). Ubuntu 24.04 + Jazzy + Harmonic 도 지원 |
 | 저장소 구조 | `module1_locomotion/`, `module2_inspection/`, `module3_gas_safety/`, `simulation/` (ROS 패키지 `plant_simulation`), `dusan_common/`, `docs/`, `tools/`, `scripts/` |
 | 함께 볼 문서 | [README](../README.md) (개요·설치), [USAGE](USAGE.md) (실행·사용), [SETUP_GUIDE](SETUP_GUIDE.md), [DESIGN_SPEC](DESIGN_SPEC.md) (인터페이스 계약), 모듈별 README (부록 A) |
-| 수치 출처 | `docs/results/*.json`: 오프라인 평가 6종(2026-10-12 릴리스 재실행본. `locomotion_eval.json`만 2026-10-13 최종 점검에서 다시 실행), MuJoCo 물리 검증 `physics_check.json`과 파라미터 탐색 `tuning.json`(2026-10-13), **Gazebo 헤드리스 검증 `gazebo_check.json`(2026-10-13, Gazebo Harmonic. MPC 최종 검증 `mpc_final2`와 stable 회귀 `stable_regress2`는 2026-10-26)**. 릴리스 테스트 요약, 오프라인 대시보드 데모의 `summary.json`. 지도에 없는 장애물의 Gazebo 점검(`tools/obstacle_check.py`, 2026-10-26)은 결과 JSON을 커밋하지 않았고 수치는 §7.8에 옮겼다 |
+| 수치 출처 | `docs/results/*.json`: 오프라인 평가 6종(2026-10-12 릴리스 재실행본. `locomotion_eval.json`만 2026-10-13 최종 점검에서 다시 실행), MuJoCo 물리 검증 `physics_check.json`과 파라미터 탐색 `tuning.json`(2026-10-13), **Gazebo 헤드리스 검증 `gazebo_check.json`(2026-10-13, Gazebo Harmonic. MPC 최종 검증 `mpc_final2`와 stable 회귀 `stable_regress2`는 2026-10-26)**, Gazebo 넘어짐 복구 검증 `fall_check.json`(2026-11-11). 릴리스 테스트 요약, 오프라인 대시보드 데모의 `summary.json`. 지도에 없는 장애물의 Gazebo 점검(`tools/obstacle_check.py`, 2026-10-26)은 결과 JSON을 커밋하지 않았고 수치는 §7.8에 옮겼다 |
 
 > [!IMPORTANT]
 > **검증 범위.** 이 보고서의 수치는 모두 ROS가 없는 Windows 개발 PC에서 나왔다.
@@ -66,7 +66,7 @@
 |---|---|---|---|
 | M1-1 지형 인지: Depth로 Elevation Map 실시간 생성, 발 디딤 결정 | `module1_locomotion/elevation_map.py`, `foothold_planner.py`, `terrain_classifier.py`, 노드 `terrain_mapper` | 비가장자리 RMSE 0.20 cm(평지) ~ 1.73 cm(하행 계단). 지형 분류 7/7. 위험 디딤 비율(명목 → 계획): 계단 25.0 → 0.0 %, 잔해 40.7 → 8.8 %. 25k 점 통합 중앙값 3.86 ms | 구현·오프라인 검증 |
 | M1-2 MPC: 외란에도 안정 보행, 5초간 발 위치·토크 예측, 튜닝 | `mpc.py` (13상태 단일 강체, 10×0.05 s + 18×0.25 s = 5.0 s), 자체 ADMM QP `qp.py`, `controller.py`, 튜닝 도구 `tools/tune_locomotion.py` | 강체: 트롯 속도 RMS 오차 vx 0.0120 m/s. 넘어지지 않는 최대 충격량 횡 20 N·s, 전방 30 N·s. +20 % 하중 시 높이 오차 −53.1 mm → 관측기 사용 시 +2.4 mm. 풀이 시간 중앙값 10.85 ms, p95 14.71 ms, 30 ms 미만 100 %. MuJoCo 물리: trot 0.4 m/s·crawl 0.2 m/s·회전·+3 kg 탑재 모두 3/3 시드, 15 N·s 측면 밀기 2/3, 배관 + 단차 0/3. 자동 탐색: 채택 후보 없음(기본값 유지) | 구현·오프라인·물리 검증 (일부 시나리오 실패) |
-| M1-3 Fall Recovery | `fall_recovery.py` (DAMP → TUCK → SELF_RIGHT → PREPARE → STAND_UP → VERIFY, 3회 실패 시 gz 보조 리셋) | MuJoCo 물리: 옆으로 누운 상태 / 60 N·s 밀기로 넘어진 경우 3/3 시드 모두 첫 시도에 자가 복구(6.07 / 5.16 s, 보조 리셋 0). 등으로 떨어지면 실패 → 보조 리셋 | 옆으로 넘어짐은 물리 검증, 등으로 떨어짐은 미해결, Gazebo 검증 필요 |
+| M1-3 Fall Recovery | `fall_recovery.py` (DAMP → TUCK → [등 굴리기 ROCK] → SELF_RIGHT → PREPARE → STAND_UP → VERIFY, 순간이동 없는 물리 복구가 기본, 3회 실패하면 5 s 쉬고 다시 시도) | Gazebo 헤드리스(`tools/fall_check.py`, 9개 케이스 × 시드 10개): 89/90 자기 다리로 복구, 순간이동 0, 미션 중 넘어짐 10/10 복구 후 미션 계속. MuJoCo: 옆 / 60 N·s / 등 / 100 N·s 각 3/3 첫 시도 | 물리 복구 검증(Gazebo·MuJoCo). 경사로 가장자리 밖으로 떨어진 1회는 미해결 |
 | M1 시나리오: 미끄러운 철판 → 보행 전환 | `friction_map.py`(레이아웃 마찰 사전정보 → `/terrain/info` `slippery`), `slip_detector.py`(온라인 슬립 감지), `controller.py` 슬립 모드 | MuJoCo 물리, trot 명령 0.4 m/s: μ 0.15 철판 0/3 → 3/3, μ 0.2 철판 1/3 → 3/3 (넘어짐 13 → 0) | 구현·물리 검증 |
 | M2-1 게이지 판독 (오차 5 % 이내) | `gauge_reader.py`, `gauge_ocr.py`, `gauge_association.py` | 필수 조건 480프레임: 검출 100 %, 평균 0.111 %FS, p95 0.401 %FS, 최대 2.224 %FS, 5 %FS 이내 100 % | 목표 충족 (합성 영상) |
 | M2-2 열화상 퓨전 | `thermal_fusion.py`, `synthetic_thermal.py` | 정밀도 1.000, 재현율 0.9845, ID 정확도 1.000. 검출별 평면 정합 오차 중앙값 0.645 px, p95 5.451 px | 구현·오프라인 검증 |
@@ -651,13 +651,15 @@ stateDiagram-v2
   DAMP --> TUCK : 관절 속도 1 rad/s 미만 (0.5~2 s)
   TUCK --> ROCK : 등으로 누움 (roll 120도 초과)
   TUCK --> SELF_RIGHT
-  ROCK --> SELF_RIGHT
+  ROCK --> SELF_RIGHT : roll 135도 미만 (옆으로 넘어감)
+  SELF_RIGHT --> ROCK : 등 쪽으로 넘어감 (다음 시도)
   SELF_RIGHT --> PREPARE
   PREPARE --> STAND_UP
   STAND_UP --> VERIFY
   VERIFY --> NORMAL : 직립 0.3 s 유지 (recovered)
   VERIFY --> DAMP : 실패, 다음 시도
-  DAMP --> ASSISTED_RESET : 3회 실패 (recovery_failed)
+  DAMP --> FAILED : 3회 실패 (recovery_failed)
+  DAMP --> ASSISTED_RESET : 3회 실패, assisted_reset true일 때만
   ASSISTED_RESET --> STAND_UP : gz set_pose 후 1 s 안정화
   ASSISTED_RESET --> FAILED : set_pose 실패
   FAILED --> NORMAL : 다리로 서 있음 0.3 s (recovered, 일어서기)
@@ -668,17 +670,19 @@ stateDiagram-v2
 |---|---|---|
 | DAMP | 측정 관절값을 따라감 | 충격에 맞서지 않음 |
 | TUCK (0.8 s) | (0, 1.25, −2.70) 모든 다리 | 몸을 작게 말아 자유롭게 구르게 함 |
-| ROCK | hip_x ±0.7을 같은 위상으로, 진폭 증가 | 등으로 누웠을 때 옆으로 넘김 |
+| ROCK (시도당 최대 6 s) | 열기 0.6 s: 낮게 남을 쪽 다리를 곧게 펴서(hip_y 0, knee −0.25) 몸통 가장자리 바깥으로 기울이고(hip_x 0.7), 올라갈 쪽 다리는 접은 채 다리 평면을 바깥으로. 이어서 올라갈 쪽 다리를 등 너머로 넘겨 지면을 짚기(앞 hip_y −1.6 / knee −1.5, 뒤 2.6 / −0.2, 0.4 s) → 거두기(0.35 s) → 유지(0.5 s) 반복 | 등으로 누웠을 때 옆으로 넘김. 낮은 쪽 다리가 무게중심을 회전축 쪽으로 옮겨 넘어가는 데 필요한 roll을 약 58°에서 29°로 줄이고, 짚은 다리를 roll이 가장 클 때 떼면 몸이 넘어간다. 시간이 다 되면 다음 시도는 반대 방향(벽·오르막이 한쪽을 막는 경우) |
 | SELF_RIGHT | 지면 쪽 다리: 앞 (−0.25 → 0.6, −1.5, −1.5), 뒤 (−0.25 → 0.6, 2.4, −0.6). 반대쪽 다리는 접음 | 지면 반력이 CoM의 위쪽에 작용하게 해서 배 쪽으로 굴림 |
-| PREPARE (1 s) | (0, 1.20, −2.55) | 배를 대고 발을 엉덩이 아래로 |
+| PREPARE (1.3 s) | 무릎 접기 + hip_x 가운데(0.35 s) → 무릎을 접은 채 hip_y 1.25(0.6 s) → (0, 1.20, −2.55)(0.35 s) | 배를 대고 발을 엉덩이 아래로. 편 다리를 땅에 댄 채 hip_y를 돌리면 45 N·m 한계에 걸려 다시 옆으로 넘어가므로 무릎부터 접는다 |
 | STAND_UP (2.5 s) | 스탠드 자세까지 smoothstep 보간 | |
 | VERIFY | 1.5 s 안에 roll·pitch 절댓값 25° 미만, 높이 0.22 m 초과가 0.3 s 유지 | 성공 시 `recovered` |
 
 - FAILED는 영구 상태가 아니다. 로봇이 이미 다리로 서 있으면 복구로 보고 일어서기로 넘어가고, 아니면 `recovery_retry_time`(5 s) 뒤에 다시 시도한다. 복구 중 직립 판정의 높이는 지도 기준 높이와 측정한 발 기준 높이(다리 기구학) 중 큰 값이다. 넘어지는 동안 몸 아래 지도 칸이 틀어질 수 있기 때문이다. 미션 관리자도 로봇이 FALLEN 상태로 20 s(`recover_after`) 넘게 머물면 `recover`를 보낸다(§7.2). 로봇이 일어서면 미션은 현재 위치에서 경로를 다시 계획해 이어 간다. 이렇게 고친 계기는 Ubuntu 실행에서 "넘어졌다 일어났는데 미션이 멈춤"이 보고된 것이다.
 - 감지 임계값에는 히스테리시스가 있다(진입 55° / 0.12 m, 해제 50° / 0.14 m). 이벤트 `fall`, `recovered`, `recovery_failed`, `recovery_retry`, `assisted_reset`은 `/locomotion/fall_event`로 나가고, 카운터는 `/locomotion/state`에 실린다. 메트릭 로거가 이를 집계한다(§8.4).
 - 보조 리셋과 푸시 시험은 `gz` CLI로 한다(`gz_tools.py`). `gz service -s /world/plant/set_pose ...`는 응답 확인 후 `reset_settle_time`만큼 기다린다. 푸시는 `/world/plant/wrench/persistent`로 걸고 `/world/plant/wrench/clear`로 해제한다. 모든 호출은 데몬 스레드에서 타임아웃을 걸고 실행하므로 제어 루프를 막지 않는다.
-- **물리 검증**: MuJoCo(§4.7)에서 옆으로 누운 상태로 시작한 경우(h1)와 서 있다가 60 N·s로 밀려 옆으로 넘어진 경우(h2)는 3개 시드 모두 첫 시도에 STAND로 돌아왔다(넘어짐 → STAND 6.07 s / 5.16 s, 보조 리셋 0).
-- **한계**: 등으로 떨어진 경우(h3 등을 대고 시작, h4 100 N·s 밀기)는 ROCK 키프레임의 hip_x(±0.7 rad)로는 평평한 등 위에서 구르지 못해 시도 횟수를 다 쓰고 보조 리셋으로 넘어간다. 뒷다리를 hip_y 약 2.4 rad로 짚어 굴리는 동작이 필요하다. Gazebo(DART) 접촉에서의 효과는 §8.4 표 8-4로 확인해야 한다.
+- **기본은 물리 복구**: 순간이동(`assisted_reset`)은 기본으로 꺼져 있다. 3회 시도가 실패하면 FAILED에서 5 s 힘을 뺀 뒤(걸쳐 있던 몸이 미끄러져 자세가 바뀜) 처음부터 다시 시도하고, 일어설 때까지 반복한다. 벽에 기대 30°를 넘는 기울기로 2 s 서 있어도(55°에 닿지 않음) 넘어짐으로 보고 복구한다.
+- **Gazebo 검증** (`tools/fall_check.py`, 실제 gz-sim + DART 헤드리스, 시드 10개씩): 옆으로 누운 채 시작, 등을 대고 시작, trot 중 측면 밀기, 서서 측면·뒤로 밀기, 복도 벽 쪽으로 밀기, 경사로를 오르다 밀기, 경사로에 서서 밀기, 미션 중 밀기 9개 케이스에서 넘어진 90회 중 89회를 순간이동 없이 일으켜 세웠다(같은 도구로 잰 이전 키프레임은 12/45). 넘어짐 → STAND는 케이스 평균 6.8–15.3 s이고, 미션 중 넘어진 10회는 모두 일어선 뒤 경로를 다시 계획해 목표에 도착했다. 결과: `docs/results/fall_check.json`, [module1 README §4.9](../module1_locomotion/README.md#49-gazebo-넘어짐-복구-검증-toolsfall_checkpy).
+- **물리 검증**: MuJoCo(§4.7)에서 옆으로 누운 상태로 시작(h1), 60 N·s 밀기로 옆으로 넘어짐(h2), 등을 대고 시작(h3), 100 N·s 밀기로 등으로 떨어짐(h4)이 3개 시드 모두 첫 시도에 STAND로 돌아왔다(6.4 / 6.3 / 7.5 / 7.7 s, 보조 리셋 0). 이전 ROCK 키프레임(다리를 편 채 hip_x를 같은 위상으로 흔듦)으로는 h3·h4가 실패했다.
+- **한계**: 경사로 남쪽 가장자리 밖으로 떨어져 경사로 옆면에 등을 댄 채 누운 경우(Gazebo 1회)는 SELF_RIGHT의 발이 디딜 곳이 없어 100 s 동안 일어서지 못했다. 몸 앞쪽이 벽에 들린 앉은 자세나 몸 아래에 낀 다리는 FAILED에서 힘을 뺀 뒤의 다음 시도로 풀려서 30–60 s가 걸렸다. 경사면을 가로질러 다시 걷다가 또 넘어지는 경우도 있다(보행 쪽 약점).
 
 ### 4.5 결과 (오프라인 평가)
 
@@ -1977,11 +1981,11 @@ MPC 모드, 시드 0·1·2 (2026-10-26, MPC 안정화 최종 코드, 실측 MPC 
 | 미끄러운 철판, 배포 설정 | (k) μ 0.15, μ 0.2 (각 3) | 0 / 0 | 처리 없을 때는 μ 0.15 3 / 7, μ 0.2 2 / 6 |
 | best effort | (i) μ 0.15 crawl 강제, (j) 계단, (j) 경사로 (각 1) | 3 / 12 (2, 6, 4) | (i) trot 강제는 넘어짐 0이지만 목표 미달 |
 | 자가 복구 (옆) | (h1) 옆으로 누워 시작, (h2) 60 N·s 밀기 (각 3) | 일부러 넘어뜨림 | **6/6 복구**, 모두 첫 시도, 평균 6.07 / 5.16 s, 보조 리셋 0 |
-| 자가 복구 (등) | (h3) 등을 대고 시작, (h4) 100 N·s 밀기 (각 1) | 일부러 넘어뜨림 | 0/2, 시도 6 / 5회 뒤 보조 리셋 |
+| 자가 복구 (등) | (h3) 등을 대고 시작, (h4) 100 N·s 밀기 (각 1) | 일부러 넘어뜨림 | 0/2, 시도 6 / 5회 뒤 보조 리셋. 등 굴리기 키프레임 이후 시드 0/1/2 각 3/3, 첫 시도 7.5 / 7.7 s (§4.4) |
 
 - 필수 시나리오 33회 실행 중 의도하지 않은 넘어짐이 있었던 실행은 4회((e) 3회, (f) 1회)다. 강체 평가와 달리 넘어짐의 원인이 서보·접촉 쪽(착지 충격, 이른 접지, 보행 전환 순간의 지지 여유)이라는 점이 드러났다.
 - 원래 URDF(속도 모드 서보)와 원래 module1로는 (a) 서기를 뺀 모든 시나리오가 실패했다. 서보 구조를 고친 것이 가장 큰 개선이었다(§4.7).
-- 자가 복구는 옆으로 넘어진 경우에는 모든 시드에서 성공했고, 등으로 떨어진 경우에는 실패했다. Gazebo(DART)에서의 결과는 표 8-4로 확인한다.
+- 자가 복구는 옆으로 넘어진 경우에는 모든 시드에서 성공했고, 등으로 떨어진 경우에는 이 표의 실행 당시 키프레임으로는 실패했다. 지금의 등 굴리기 키프레임과 Gazebo(DART) 헤드리스 결과는 §4.4에 있고, Ubuntu GUI 실측은 표 8-4로 기록한다.
 
 ### 8.2 점검 정확도
 

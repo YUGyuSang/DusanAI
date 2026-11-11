@@ -174,6 +174,8 @@ class SimTimeMPCWorker:
 class HarnessConfig:
     terrain: str = "flat"
     spawn: Tuple[float, float, float, float] = (0.0, 0.0, 0.56, 0.0)
+    spawn_rp: Tuple[float, float] = (0.0, 0.0)        # spawn roll / pitch [rad] (lying robot); the gz IMU
+    #                                                   orientation is relative to the spawn attitude
     params: Dict = field(default_factory=dict)        # controller / node parameter overrides
     latency: float = 0.01                             # [s] command delay tick -> cmd_pos publication
     mpc_latency: object = "measured"                  # "measured" (rtf x wall solve time) | float [s]
@@ -208,7 +210,7 @@ class GzHarness:
         out = cfg.out_dir or os.path.join(os.path.dirname(os.path.abspath(__file__)), "_build")
         tag = f"_{os.getpid()}_{id(self) & 0xffff:x}"
         self.world_path, self.urdf_path = W.build(out, cfg.terrain, cfg.spawn, cfg.servo, cfg.foot_mu, tag=tag,
-                                                  extra=cfg.extra_objects)
+                                                  extra=cfg.extra_objects, spawn_rp=cfg.spawn_rp)
         import xml.etree.ElementTree as ET
         self.servo = W.servo_params(ET.parse(self.urdf_path).getroot())
         # ground truth terrain (map stand-in, fall metric) and the optional depth camera / mapper
@@ -259,7 +261,8 @@ class GzHarness:
         self.ctrl_every = max(1, int(round(1.0 / (rate * GZ_DT))))
         self.cmd_fn: Callable[[float], Tuple[float, float, float]] = lambda t: (0.0, 0.0, 0.0)
         self.commands: List[Tuple[float, str]] = []
-        self.wrenches: List[Tuple[float, float, Tuple[float, float, float]]] = []   # (t0, t1, world force)
+        # (t0, t1, world force[, application point in the base link frame, default its origin])
+        self.wrenches: List[Tuple] = []
         self._cmd_done = set()
         self._queue: deque = deque()             # (due time, q)
         self._first_data_t = None
@@ -398,9 +401,14 @@ class GzHarness:
         return float(self.height_fn(float(x), float(y)))
 
     def _apply_wrench(self, ecm, t: float) -> None:
-        for (t0, t1, f) in self.wrenches:
+        V = self.gz.math.Vector3d
+        for w in self.wrenches:
+            t0, t1, f = w[0], w[1], w[2]
             if t0 <= t < t1 and self._link is not None:
-                self._link.add_world_force(ecm, self.gz.math.Vector3d(*f))
+                if len(w) > 3 and w[3] is not None:
+                    self._link.add_world_force(ecm, V(*f), V(*w[3]))
+                else:
+                    self._link.add_world_force(ecm, V(*f))
 
     # ------------------------------------------------------------------ pre-update (server thread)
     def _pre(self, info, ecm) -> None:

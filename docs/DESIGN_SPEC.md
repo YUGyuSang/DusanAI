@@ -299,9 +299,11 @@ re-plans stay in its own counters). No new topic exists for novel obstacles: the
   The stable mode is not affected by these keys. Default `locomotion_mode` stays `stable`: the MPC mode
   needs a solve delay ≤ ~30 ms on the 11.8° ramp with the depth map (module1 README §4.8).
 * `fall_recovery.py`: state machine NORMAL → FALL_DETECTED (|roll| or |pitch| > 55° or body
-  height < 0.12 m for 0.3 s) → DAMP → TUCK → SELF_RIGHT (roll back using the legs on the
-  ground side) → PREPARE (belly, feet under hips) → STAND_UP (interpolated) → NORMAL; 3
-  attempts then optional assisted reset (`reset_pose` via gz CLI, counted separately); FAILED is not terminal: an
+  height < 0.12 m for 0.3 s) → DAMP → TUCK → [ROCK: back roll onto a side when lying on the back,
+  the other direction after a timed-out roll] → SELF_RIGHT (roll back using the legs on the
+  ground side) → PREPARE (belly: knees folded first, then feet under hips) → STAND_UP (interpolated) → NORMAL;
+  physical only by default: 3 attempts, then FAILED (`assisted_reset: true` = optional gz set_pose
+  teleport, counted separately); FAILED is not terminal: an
   upright robot (0.3 s) counts as recovered and stands up, otherwise the 3 attempts restart after
   `recovery_retry_time` (5 s, event `recovery_retry`; 0 or `auto_recover: false` = stay FAILED); the upright height
   check uses max(map-based, foot-kinematics) height (the map under the body can be wrong right after a fall).

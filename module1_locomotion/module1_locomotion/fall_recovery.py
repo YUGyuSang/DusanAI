@@ -3,12 +3,20 @@ Fall detection and self-righting state machine (ROS free).
 
 States (DESIGN_SPEC §5)::
 
-    NORMAL --(|roll| or |pitch| > 55 deg, or body height < 0.12 m, for 0.3 s)--> FALL_DETECTED
+    NORMAL --(|roll| or |pitch| > 55 deg, or body height < 0.12 m, for 0.3 s;
+              or |roll| or |pitch| > 30 deg for 2 s: leaning, e.g. against a wall)--> FALL_DETECTED
     FALL_DETECTED -> DAMP -> TUCK -> [ROCK] -> SELF_RIGHT -> PREPARE -> STAND_UP -> NORMAL
                                     (any failure)  -> next attempt (DAMP) ... 3 attempts
-                                    -> FAILED  (or ASSISTED_RESET via gz set_pose, counted separately)
+                                    -> FAILED  (or ASSISTED_RESET via gz set_pose when
+                                                assisted_reset is enabled, counted separately)
+    SELF_RIGHT --(rolled over onto the back)--> ROCK (counted as the next attempt)
     FAILED --(upright for 0.3 s, e.g. held up by the stand posture of a failed assisted reset)--> NORMAL
            --(failed_retry_time > 0: after that long)--> DAMP (new series of attempts)
+
+The recovery is physical by default (``assisted_reset`` False): the robot
+gets up with its own legs, and a failed series of attempts is followed by a
+pause (``failed_retry_time``, set by the controller) and a new series - it
+never gives up for good while the controller runs with ``auto_recover``.
 
 Joint-space keyframes are designed for this leg geometry (hip_x +-0.70 rad,
 hip_y -1.6..2.6 rad, knee -2.8..-0.2 rad, thigh 0.226 m, shank 0.300 m):
@@ -17,9 +25,18 @@ hip_y -1.6..2.6 rad, knee -2.8..-0.2 rad, thigh 0.226 m, shank 0.300 m):
   the body has come to rest.
 * TUCK: all legs folded (hip_y 1.25, knee -2.70: foot 0.11 m below and 0.08 m
   in front of the hip) so the body can roll freely.
-* ROCK (only when lying on the back, |roll| > 120 deg): the legs swing
-  sideways in phase (hip_x +-0.7) with growing amplitude to tip the body onto
-  a side.
+* ROCK (back roll, only when lying on the back, |roll| > 120 deg): "open" -
+  the legs of the side that stays low are stretched straight and tilted out
+  over the low edge of the trunk (hip_x 0.7), which moves the CoM towards
+  that edge and halves the roll needed to tip over (~58 -> ~29 deg); the legs
+  of the side that has to rise tilt their leg plane outwards.  Then cycles
+  of "push" (those legs swing over the dorsal side, their feet meet the
+  ground beside the trunk and lift the high side) - "retract" (the pushing
+  legs leave the ground at the peak of the roll, the CoM falls back towards
+  the low edge and the body tips over onto its side) - "hold".  Ends at
+  |roll| < 135 deg (on a side -> SELF_RIGHT) or after ``rock_time``; the
+  next attempt then rolls the other way (a wall or the uphill side of a
+  slope can block one direction).
 * SELF_RIGHT: lying on a side, the legs on the *ground side* are swung into
   the leg plane towards the robot's top side (front leg forward-up
   hip_y -1.5 / knee -1.5, rear leg backward-up hip_y 2.4 / knee -0.6; the leg
@@ -27,8 +44,13 @@ hip_y -1.6..2.6 rad, knee -2.8..-0.2 rad, thigh 0.226 m, shank 0.300 m):
   (hip_x 0.6 towards the ground).  The feet press on the ground on the *top*
   side of the CoM, so the ground reaction produces a moment that rolls the
   body back onto its belly (pressing on the belly side would roll it further
-  over).  The high-side legs stay tucked.
-* PREPARE: on the belly, feet under the hips with deeply bent knees.
+  over).  The high-side legs stay tucked.  If the body rolls over onto its
+  back instead, the back roll starts right away (no new DAMP / TUCK).
+* PREPARE: on the belly, in three phases - fold every knee and centre hip_x
+  without moving hip_y, swing hip_y to the tuck angle with the knee folded
+  (the hip lifts the body over a foot 0.14 m away with ~5-10 N m instead of
+  jamming an extended 0.5 m leg against the ground at the 45 N m limit),
+  then open to the feet-under-the-hips pose with deeply bent knees.
 * STAND_UP: smooth (smoothstep) joint interpolation to the stand posture.
 * Verification: upright (|roll|, |pitch| < 25 deg, height > 0.22 m) for 0.3 s
   -> NORMAL ("recovered" event); otherwise the attempt failed.
@@ -80,26 +102,35 @@ class FallParams:
     fall_height: float = 0.12             # body height above ground [m]
     fall_height_exit: float = 0.14
     detect_time: float = 0.3              # condition must persist [s]
+    lean_deg: float = 30.0                # |roll| or |pitch| beyond for lean_time -> fall (leaning on a wall,
+    lean_time: float = 2.0                #   propped up on an obstacle: not standing, never 55 deg either)
     damp_min_time: float = 0.5
     damp_max_time: float = 2.0
     damp_rest_rate: float = 1.0           # |omega| [rad/s] considered at rest
     tuck_time: float = 0.8
-    rock_time: float = 3.0
-    rock_period: float = 0.8
+    rock_time: float = 6.0                # back roll: longest time per attempt [s]
+    rock_open_time: float = 0.6           # back roll phases [s]: open (once), then push / retract / hold cycles
+    rock_push_time: float = 0.4
+    rock_retract_time: float = 0.35
+    rock_hold_time: float = 0.5
+    rock_exit_deg: float = 135.0          # back roll done: |roll| below -> on a side -> SELF_RIGHT
     self_right_reach_time: float = 0.7
     self_right_push_time: float = 0.6
     self_right_timeout: float = 3.0
     self_right_done_deg: float = 35.0     # |roll| below -> on the belly
     self_right_skip_deg: float = 35.0     # already on the belly -> skip SELF_RIGHT
+    self_right_over_deg: float = 150.0    # SELF_RIGHT rolled the body onto its back -> back roll
     upside_down_deg: float = 120.0
-    prepare_time: float = 1.0
+    prepare_fold_time: float = 0.35       # PREPARE phases [s]: fold knees / swing hip_y / open
+    prepare_swing_time: float = 0.6
+    prepare_set_time: float = 0.35
     stand_up_time: float = 2.5
     verify_time: float = 0.3
     verify_timeout: float = 1.5
     upright_deg: float = 25.0
     upright_height: float = 0.22
     max_attempts: int = 3
-    assisted_reset: bool = True
+    assisted_reset: bool = False          # gz set_pose (teleport) after the attempts - off: physical only
     reset_settle_time: float = 2.0
     reset_height_offset: float = 0.5
     reset_confirm_timeout: float = 8.0    # longest wait for confirm_reset() [s] (2 x gz_timeout + margin)
@@ -135,6 +166,10 @@ class FallRecovery:
     REACH_FRONT = (-1.50, -1.50)          # (hip_y, knee): foot forward and towards the top side
     REACH_REAR = (2.40, -0.60)            # foot backward and towards the top side
     PUSH_HIP_X = 0.60
+    BACK_FRONT = (-1.60, -1.50)           # back roll (hip_y, knee), front leg: foot forward, far onto the dorsal side
+    BACK_REAR = (2.60, -0.20)             # rear leg: straight, backward over the dorsal side
+    BACK_LOW = (0.00, -0.25)              # low-side legs: straight, pointing up (away from the back)
+    BACK_HIP_X = 0.70                     # |hip_x| of the back roll: leg planes tilted outwards
 
     def __init__(self, params: Optional[FallParams] = None,
                  reset_fn: Optional[Callable[[float, float, float, float], None]] = None):
@@ -148,10 +183,12 @@ class FallRecovery:
         self.assisted_resets = 0
         self.attempt = 0
         self._cand_since: Optional[float] = None
+        self._lean_since: Optional[float] = None
         self._t_state = 0.0
         self._q_from = np.zeros(12)
         self._q_last = np.zeros(12)
         self._roll_dir = 1.0
+        self._rock_failed_dir: Optional[float] = None   # direction of the last back roll that timed out
         self._verify_since: Optional[float] = None
         self._reset_done = False
         self._reset_wait = False              # ASSISTED_RESET waiting for confirm_reset()
@@ -212,16 +249,24 @@ class FallRecovery:
         Returns True once a fall is confirmed (state -> FALL_DETECTED)."""
         if self.state != NORMAL:
             return False
+        p = self.p
+        lean = p.lean_time > 0.0 and (abs(roll) > p.lean_deg * DEG or abs(pitch) > p.lean_deg * DEG)
+        if not lean:
+            self._lean_since = None
+        elif self._lean_since is None:
+            self._lean_since = t
+        leaning = lean and t - self._lean_since >= p.lean_time - 1e-9
         cond = self.is_fall_condition(roll, pitch, body_height, self._cand_since is not None)
         if not cond:
             self._cand_since = None
-            return False
-        if self._cand_since is None:
+        elif self._cand_since is None:
             self._cand_since = t
-        if t - self._cand_since >= self.p.detect_time - 1e-9:
+        if leaning or (cond and t - self._cand_since >= p.detect_time - 1e-9):
             self._cand_since = None
+            self._lean_since = None
             self.fall_count += 1
             self.attempt = 0
+            self._rock_failed_dir = None
             self._event("fall", t, (x, y, roll, pitch))
             self._enter(FALL_DETECTED, t, q_meas)
             return True
@@ -237,6 +282,7 @@ class FallRecovery:
         """Back to NORMAL without events (e.g. controller restart)."""
         self.state = NORMAL
         self._cand_since = None
+        self._lean_since = None
         self._verify_since = None
         self._reset_wait = False
 
@@ -284,12 +330,79 @@ class FallRecovery:
             push[leg] = [self.PUSH_HIP_X * sgn, hy, kn]
         return _legs(*reach), _legs(*push)
 
+    def back_roll_poses(self, roll_dir: float):
+        """(open, push) keyframes of the back roll.  roll_dir=+1 (roll ~ +180
+        deg): the LEFT side has to rise (roll -> +90 deg, then lying on the
+        right side); roll_dir=-1 mirrored.
+
+        * low-side legs (right for roll_dir +1): straight, pointing up and
+          tilted outwards over the low edge of the trunk (hip_x -0.7 for a right
+          leg) - moves the CoM towards the pivot edge, which halves the roll
+          needed to tip over (~58 -> ~29 deg);
+        * high-side legs: leg plane tilted outwards (hip_x -0.7 for a left leg
+          lying on its back), tucked in the open pose, swung over the dorsal
+          side in the push pose: the feet meet the ground beside the trunk and
+          lift the high side."""
+        tuck = self.TUCK_LEG
+        if roll_dir >= 0:
+            push_legs, low_legs, sgn = (0, 2), (1, 3), -1.0
+        else:
+            push_legs, low_legs, sgn = (1, 3), (0, 2), 1.0
+        hx = sgn * self.BACK_HIP_X
+        opn = [list(tuck) for _ in range(4)]
+        push = [list(tuck) for _ in range(4)]
+        for leg in push_legs:
+            hy, kn = self.BACK_FRONT if leg in (0, 1) else self.BACK_REAR
+            opn[leg] = [hx, tuck[1], tuck[2]]
+            push[leg] = [hx, hy, kn]
+        for leg in low_legs:
+            opn[leg] = [hx, *self.BACK_LOW]
+            push[leg] = [hx, *self.BACK_LOW]
+        return _legs(*opn), _legs(*push)
+
     def rock_pose(self, t_rel: float) -> np.ndarray:
-        """Sideways leg swing (all hip_x in phase) with growing amplitude."""
-        amp = min(1.0, 0.4 + 0.6 * t_rel / max(self.p.rock_time, 1e-3)) * kin.JOINT_UPPER_3[0]
-        hx = amp * math.sin(2.0 * math.pi * t_rel / self.p.rock_period)
-        leg = (hx, 0.3, -0.6)        # legs fairly extended to maximise the swinging mass
-        return _legs(leg, leg, leg, leg)
+        """Back roll (ROCK) targets ``t_rel`` s after entering: open (from the
+        entry posture, ``rock_open_time``) -> cycles of push (high-side legs
+        over the dorsal side) -> retract to open (the pushing legs leave the
+        ground at the peak of the roll, the CoM moves back towards the low
+        edge and the body tips over) -> hold open."""
+        p = self.p
+        opn, push = self.back_roll_poses(self._roll_dir)
+        if t_rel < p.rock_open_time:
+            return kin.clamp_joints(self._interp(self._q_from, opn, t_rel / p.rock_open_time))
+        u = (t_rel - p.rock_open_time) % (p.rock_push_time + p.rock_retract_time + p.rock_hold_time)
+        if u < p.rock_push_time:
+            return self._interp(opn, push, u / p.rock_push_time)
+        if u < p.rock_push_time + p.rock_retract_time:
+            return self._interp(push, opn, (u - p.rock_push_time) / p.rock_retract_time)
+        return opn
+
+    def prepare_time(self) -> float:
+        """Duration of PREPARE [s]."""
+        return self.p.prepare_fold_time + self.p.prepare_swing_time + self.p.prepare_set_time
+
+    def prepare_traj(self, t_rel: float) -> np.ndarray:
+        """PREPARE targets ``t_rel`` s after entering (on the belly): (1) fold
+        every knee and centre hip_x without moving hip_y (an extended leg left
+        over from SELF_RIGHT stays in the air or only short-levers the body),
+        (2) swing hip_y to the tuck angle with the knee folded, (3) open to the
+        PREPARE pose."""
+        p = self.p
+        q0 = np.asarray(self._q_from, dtype=float)
+        fold = q0.copy()
+        fold[0::3] = 0.0
+        fold[2::3] = self.TUCK_LEG[2]
+        swing = fold.copy()
+        swing[1::3] = self.TUCK_LEG[1]
+        t1 = p.prepare_fold_time
+        t2 = t1 + p.prepare_swing_time
+        if t_rel < t1:
+            q = self._interp(q0, fold, t_rel / t1)
+        elif t_rel < t2:
+            q = self._interp(fold, swing, (t_rel - t1) / p.prepare_swing_time)
+        else:
+            q = self._interp(swing, self.prepare_pose(), (t_rel - t2) / p.prepare_set_time)
+        return kin.clamp_joints(q)
 
     # ------------------------------------------------------------------ update
     def update(self, t: float, q_meas, roll: float, pitch: float, body_height: float,
@@ -322,6 +435,7 @@ class FallRecovery:
             q = self._interp(self._q_from, self.tuck_pose(), dt_s / p.tuck_time)
             if dt_s >= p.tuck_time:
                 if abs(roll) > p.upside_down_deg * DEG:
+                    self._roll_dir = self._back_roll_dir(roll)
                     self._enter(ROCK, t, q)
                 elif abs(roll) < p.self_right_skip_deg * DEG:
                     self._enter(PREPARE, t, q)
@@ -331,12 +445,14 @@ class FallRecovery:
                 dt_s = 0.0
 
         if self.state == ROCK:
-            q = self._interp(self._q_from, self.rock_pose(dt_s), dt_s / 0.3)
-            if abs(roll) < p.upside_down_deg * DEG - 10 * DEG:
+            q = self.rock_pose(dt_s)
+            if abs(roll) < p.rock_exit_deg * DEG and dt_s >= p.rock_open_time:
                 self._roll_dir = 1.0 if roll > 0 else -1.0
+                self._rock_failed_dir = None
                 self._enter(SELF_RIGHT, t, q)
                 dt_s = 0.0
             elif dt_s >= p.rock_time:
+                self._rock_failed_dir = self._roll_dir
                 return self._attempt_failed(t, q_meas, pose, x, y, z, yaw)
 
         if self.state == SELF_RIGHT:
@@ -349,12 +465,22 @@ class FallRecovery:
             if abs(roll) < p.self_right_done_deg * DEG and dt_s > 0.2:
                 self._enter(PREPARE, t, q)
                 dt_s = 0.0
+            elif abs(roll) > p.self_right_over_deg * DEG and dt_s > 0.3:
+                # rolled over onto the back instead of the belly: back roll right away
+                # (saves the DAMP + TUCK of a new attempt, ~2-3 s), counted as an attempt
+                if self.attempt >= p.max_attempts:
+                    return self._attempt_failed(t, q_meas, pose, x, y, z, yaw)
+                self.attempt += 1
+                self.attempts_total += 1
+                self._roll_dir = 1.0 if roll > 0 else -1.0
+                self._enter(ROCK, t, q)
+                dt_s = 0.0
             elif dt_s >= p.self_right_timeout:
                 return self._attempt_failed(t, q_meas, pose, x, y, z, yaw)
 
         if self.state == PREPARE:
-            q = self._interp(self._q_from, self.prepare_pose(), dt_s / p.prepare_time)
-            if dt_s >= p.prepare_time:
+            q = self.prepare_traj(dt_s)
+            if dt_s >= self.prepare_time():
                 if abs(roll) > p.self_right_done_deg * DEG + 15 * DEG:
                     # rolled back onto a side while folding: retry
                     return self._attempt_failed(t, q_meas, pose, x, y, z, yaw)
@@ -429,6 +555,17 @@ class FallRecovery:
         was found upright in FAILED."""
         r, self._reset_done = self._reset_done, False
         return r
+
+    def _back_roll_dir(self, roll: float) -> float:
+        """Direction of a back roll: towards the side the body already leans
+        to (sign of roll), but the other way when the last back roll in that
+        direction timed out - a wall or the uphill side of a slope can block
+        one direction, and on the back the sign of roll (~ +-180 deg) hardly
+        tells which side is free."""
+        d = 1.0 if roll > 0 else -1.0
+        if self._rock_failed_dir is not None and d == self._rock_failed_dir:
+            d = -d
+        return d
 
     def _interp(self, q0, q1, u) -> np.ndarray:
         return np.asarray(q0, dtype=float) + (np.asarray(q1, dtype=float) - np.asarray(q0, dtype=float)) \
