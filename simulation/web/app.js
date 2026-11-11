@@ -1146,7 +1146,7 @@
   // fall / self-righting phase of module1 fall_recovery (/locomotion/state recovery_state) as a badge
   // in the robot card: the same four steps as the Gazebo HUD (넘어짐 감지 > 자세 뒤집기 > 일어서기 >
   // 복구 완료); "복구 완료" stays for a few seconds after the robot is upright again
-  const REC_STEP = { FALL_DETECTED: 0, DAMP: 0, FAILED: 0, TUCK: 1, ROCK: 1, SELF_RIGHT: 1, PREPARE: 2, STAND_UP: 2, VERIFY: 2, ASSISTED_RESET: 2 };
+  const REC_STEP = { FALL_DETECTED: 0, DAMP: 0, FAILED: 0, TUCK: 1, ROCK: 1, SLIDE: 1, BACK_OFF: 1, SELF_RIGHT: 1, PREPARE: 2, STAND_UP: 2, VERIFY: 2, ASSISTED_RESET: 2 };
   const REC_TITLE = ["넘어짐 감지", "자세 뒤집기", "일어서기"];
   const rec = { down: false, until: 0, byReset: false, base: null };
   const robotDown = (l) => (!!l.recovery_state && l.recovery_state !== "NORMAL") || l.mode === "FALLEN" || l.mode === "RECOVERING";

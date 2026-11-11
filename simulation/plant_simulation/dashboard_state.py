@@ -34,8 +34,8 @@ that official value (``value_source: "mission"``) instead of later live readings
 is the session directory for the screen (home directory shown as ``~``): where the results were
 saved.
 
-Falls: ``recovery_state`` (module1 fall_recovery phase: FALL_DETECTED, DAMP, TUCK, ROCK,
-SELF_RIGHT, PREPARE, STAND_UP, VERIFY, FAILED, ASSISTED_RESET; NORMAL when upright) and
+Falls: ``recovery_state`` (module1 fall_recovery phase: FALL_DETECTED, DAMP, TUCK, ROCK, SLIDE,
+SELF_RIGHT, PREPARE, STAND_UP, VERIFY, BACK_OFF, FAILED, ASSISTED_RESET; NORMAL when upright) and
 ``assisted_resets`` of /locomotion/state are passed through; the fall events of
 /locomotion/fall_event go to the event log.
 """

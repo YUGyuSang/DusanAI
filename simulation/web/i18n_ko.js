@@ -89,6 +89,7 @@
     // module1 fall_recovery.py phases (/locomotion/state recovery_state)
     recovery: {
       NORMAL: "정상", FALL_DETECTED: "넘어짐 감지", DAMP: "충격 완화", TUCK: "다리 접기", ROCK: "몸 흔들어 뒤집기",
+      SLIDE: "몸 돌려 장애물 벗어나기", BACK_OFF: "턱에서 내려오기",
       SELF_RIGHT: "몸 뒤집기", PREPARE: "일어설 준비", STAND_UP: "일어서기", VERIFY: "자세 확인",
       FAILED: "자가 복구 실패", ASSISTED_RESET: "보조 리셋 (위치 재설정)",
     },

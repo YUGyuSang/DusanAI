@@ -651,3 +651,131 @@ def test_gz_busy_rejection_and_missing_executable():
     # the default runner reports instead of raising
     rc, out = GZ._default_runner(["definitely_not_a_gz_binary_123"], 1.0)
     assert rc != 0 and out
+
+
+def _to_rock(fr, roll, pitch, h, t=0.31):
+    while fr.state != F.ROCK and t < 60.0:
+        fr.update(t, np.zeros(12), roll, pitch, h)
+        t += 0.01
+    return t
+
+
+def test_propped_on_the_back_turns_off_the_obstacle():
+    """On the back across a lying pipe (one end of the trunk on the pipe,
+    pitch ~ 11 deg, low body): when the back roll has timed out in BOTH
+    directions, SLIDE turns the body in yaw (front legs as stilts, swept
+    sideways) until it has turned slide_yaw_deg, then the next attempt rolls
+    again.  Flat on the back (pitch ~ 0) the back roll just alternates."""
+    fr = F.FallRecovery()
+    p = fr.p
+    roll, pitch, h = 178 * DEG, 11 * DEG, 0.14
+    fr.check(0.0, roll, pitch, h)
+    fr.check(0.31, roll, pitch, h)
+    t = _to_rock(fr, roll, pitch, h)
+    seen, prev = [], None
+    while t < 60.0 and fr.state != F.SLIDE:
+        fr.update(t, np.zeros(12), roll, pitch, h, yaw=0.5)
+        if fr.state != prev:
+            seen.append(fr.state)
+            prev = fr.state
+        t += 0.01
+    assert fr.state == F.SLIDE and seen.count(F.ROCK) == 2 and fr.attempt == 2
+    assert fr._slide_dir == 1.0 and fr._slide_yaw0 == pytest.approx(0.5)
+    t0 = fr._t_state
+    # keyframes: front legs stilts swept from +hip_x to -hip_x, hind legs tucked, joint limits respected
+    fold, plant, stroke, lift = fr.slide_poses(1.0)
+    for q in (fold, plant, stroke, lift):
+        assert np.all(q >= kin.JOINT_LOWER - 1e-9) and np.all(q <= kin.JOINT_UPPER + 1e-9)
+        assert np.allclose(q[6:], fr.tuck_pose()[6:])
+    assert plant[0] == plant[3] == pytest.approx(fr.SLIDE_HIP_X) and stroke[0] == pytest.approx(-fr.SLIDE_HIP_X)
+    fs = kin.fk_all(plant)
+    assert fs[0, 2] > 0.25 and fs[1, 2] > 0.15                  # feet towards the floor (body +z on the back)
+    assert np.allclose(fr.slide_poses(-1.0)[1][0::3][:2], [-fr.SLIDE_HIP_X] * 2)
+    # still turning: keeps sliding; turned far enough (between two strokes): next attempt
+    fr.update(t0 + 1.0, np.zeros(12), roll, pitch, h, yaw=0.9)
+    assert fr.state == F.SLIDE
+    u = p.slide_fold_time + fr.slide_cycle_time() + 0.1           # start of the 2nd plant phase
+    fr.update(t0 + u, np.zeros(12), roll, pitch, h, yaw=0.5 + 1.5)
+    assert fr.state == F.DAMP and fr.attempt == 2
+    # the next SLIDE of the same fall turns the other way
+    t = _to_rock(fr, roll, pitch, h, t0 + u + 0.01)
+    while t < 200.0 and fr.state not in (F.SLIDE, F.FAILED):
+        fr.update(t, np.zeros(12), roll, pitch, h, yaw=0.0)
+        t += 0.01
+    if fr.state == F.SLIDE:
+        assert fr._slide_dir == -1.0
+    # a slide that never turns ends after slide_cycles strokes
+    fr2 = F.FallRecovery()
+    fr2.state, fr2._t_state, fr2._slide_yaw0 = F.SLIDE, 0.0, 0.0
+    fr2.update(fr2.slide_time() - 0.05, np.zeros(12), roll, pitch, h, yaw=0.0)
+    assert fr2.state == F.SLIDE
+    fr2.update(fr2.slide_time() + 0.01, np.zeros(12), roll, pitch, h, yaw=0.0)
+    assert fr2.state == F.DAMP
+    # flat on the back, or propped up too high: no SLIDE
+    for pitch2, h2 in ((1 * DEG, 0.09), (11 * DEG, 0.30)):
+        fr3 = F.FallRecovery()
+        fr3.check(0.0, roll, pitch2, h2)
+        fr3.check(0.31, roll, pitch2, h2)
+        t = 0.31
+        states = set()
+        while t < 40.0 and fr3.state != F.FAILED:
+            fr3.update(t, np.zeros(12), roll, pitch2, h2)
+            states.add(fr3.state)
+            t += 0.01
+        assert F.SLIDE not in states
+
+
+def test_hanging_over_a_ledge_backs_off():
+    """Upright but steeply pitched in VERIFY (front feet on the ramp, hind feet
+    in the channel 0.3 m below): the 2nd such failure in one fall starts
+    BACK_OFF - the high-end legs planted on the high ground sweep sideways
+    together (the body turns about its low end), the low-end legs tucked -
+    until the heading has turned back_off_yaw_deg (or back_off_cycles strokes),
+    then the next attempt; the next BACK_OFF of the fall sweeps the other way."""
+    fr = F.FallRecovery()
+    p = fr.p
+    fr.check(0.0, 0.0, -50 * DEG, 0.3)
+    fr.check(2.1, 0.0, -50 * DEG, 0.3)
+    assert fr.state == F.FALL_DETECTED
+    t, seen, prev = 2.1, [], None
+    while t < 60.0 and fr.state != F.BACK_OFF:
+        fr.update(t, np.zeros(12), 2 * DEG, -46 * DEG, 0.35, yaw=1.5)
+        if fr.state != prev:
+            seen.append(fr.state)
+            prev = fr.state
+        t += 0.01
+    assert fr.state == F.BACK_OFF and seen.count(F.VERIFY) == 2 and fr._ledge_dir == -1.0
+    assert fr._ledge_turns == 1 and fr._ledge_yaw0 == pytest.approx(1.5)
+    fold, plant, stroke, lift = fr.back_off_poses(-1.0)
+    for q in (fold, plant, stroke, lift):
+        assert np.all(q >= kin.JOINT_LOWER - 1e-9) and np.all(q <= kin.JOINT_UPPER + 1e-9)
+        assert np.allclose(q[6:], fr.tuck_pose()[6:])                    # hind legs tucked
+    assert np.allclose(plant[1:3], fr.LEDGE_STAND) and np.allclose(lift[1:3], fr.LEDGE_FOLD)
+    assert plant[0] == plant[3] == pytest.approx(fr.SLIDE_HIP_X) and stroke[0] == pytest.approx(-fr.SLIDE_HIP_X)
+    assert kin.fk_all(plant)[0, 2] < -0.2                                  # front feet down on the high ground
+    other = fr.back_off_poses(-1.0, sweep=-1.0)
+    assert other[1][0] == pytest.approx(-fr.SLIDE_HIP_X)
+    rear = fr.back_off_poses(1.0)
+    assert np.allclose(rear[1][6:9], [fr.SLIDE_HIP_X, *fr.LEDGE_STAND]) and np.allclose(rear[1][:6],
+                                                                                         fr.tuck_pose()[:6])
+    t0 = fr._t_state
+    fr.update(t0 + 1.0, np.zeros(12), 2 * DEG, -50 * DEG, 0.35, yaw=1.6)
+    assert fr.state == F.BACK_OFF                                          # not turned far enough yet
+    u = p.slide_fold_time + fr.slide_cycle_time() + 0.1
+    fr.update(t0 + u, np.zeros(12), 2 * DEG, -50 * DEG, 0.35, yaw=1.5 - 1.3)
+    assert fr.state == F.DAMP
+    fr2 = F.FallRecovery()
+    fr2.state, fr2._t_state, fr2._ledge_yaw0 = F.BACK_OFF, 0.0, 0.0
+    fr2.update(fr2.back_off_time() + 0.01, np.zeros(12), 0.0, -50 * DEG, 0.35, yaw=0.0)
+    assert fr2.state == F.DAMP
+    # a VERIFY that fails lying on a side (roll) or only slightly pitched is an ordinary failed attempt
+    for roll, pitch in ((40 * DEG, -40 * DEG), (5 * DEG, -26 * DEG)):
+        fr2 = F.FallRecovery()
+        fr2.check(0.0, 0.0, -60 * DEG, 0.3)
+        fr2.check(0.31, 0.0, -60 * DEG, 0.3)
+        t, states = 0.31, set()
+        while t < 40.0 and fr2.state != F.FAILED:
+            fr2.update(t, np.zeros(12), roll if fr2.state == F.VERIFY else 0.0, pitch, 0.35)
+            states.add(fr2.state)
+            t += 0.01
+        assert F.BACK_OFF not in states and F.VERIFY in states

@@ -658,7 +658,8 @@ def test_i18n_recovery_and_new_messages():
              "recovered at (1.2, 3.4) roll 0 deg pitch 0 deg", "mode RECOVERING -> STAND"]
     js = ("const KO = require(process.argv[1]); const t = JSON.parse(process.argv[2]);"
           "console.log(JSON.stringify({ev: t.map((x) => KO.event(x, '')),"
-          " rec: ['FALL_DETECTED','DAMP','TUCK','ROCK','SELF_RIGHT','PREPARE','STAND_UP','VERIFY','FAILED',"
+          " rec: ['FALL_DETECTED','DAMP','TUCK','ROCK','SLIDE','SELF_RIGHT','PREPARE','STAND_UP','VERIFY',"
+          "'BACK_OFF','FAILED',"
           "'ASSISTED_RESET'].map((x) => KO.label('recovery', x))}));")
     r = subprocess.run(["node", "-e", js, os.path.realpath(web), json.dumps(texts)], capture_output=True, text=True,
                        encoding="utf-8")

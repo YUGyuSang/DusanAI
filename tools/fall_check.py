@@ -26,6 +26,12 @@ Cases (flat floor / the REAL plant world simulation/worlds/plant.sdf)::
     mission    plant: mission in the loop (the REAL MissionLogic, upper corridor -> V1, depth-camera
                map), lateral knock (450..550 N) at ~14 s while walking: the robot gets up and the
                mission carries on to the viewpoint (DONE)
+    pipe_back  plant: spawn on the back ACROSS the C-OBS5 pipe (d 0.08 m) like a fall while crossing it
+               (heading across the pipe west / east, the pipe 0.04..0.14 m behind the base under the rear
+               of the trunk: tail propped up, nose on the floor, pitch ~ +11 deg)
+    ramp_edge  plant: spawn upright but hanging over the unrailed south edge of the corridor ramp (fallen
+               off it sideways): one pair of feet on the ramp, the other in the 0.2..0.4 m lower channel
+               beside it, pitch ~ 45 deg (even seeds facing north = nose up, odd seeds facing south)
 
 The flat-floor cases run without an elevation map (flat ground), the plant
 cases with the emulated depth camera -> terrain_mapper map (``--map depth``
@@ -85,10 +91,12 @@ for _p in ("dusan_common", "module1_locomotion", "simulation", "tools"):
 import numpy as np  # noqa: E402
 
 RESULTS = os.path.join(ROOT, "docs", "results", "fall_check.json")
-CASES = ("side", "back", "trot", "roll", "push", "wall", "ramp_walk", "ramp_push", "mission")
+CASES = ("side", "back", "trot", "roll", "push", "wall", "ramp_walk", "ramp_push", "mission", "pipe_back",
+         "ramp_edge")
 DEFAULT_CASES = CASES
 DEFAULT_SEEDS = tuple(range(10))
-ALIASES = {"trot_fall": "trot", "trot-fall": "trot", "ramp-walk": "ramp_walk", "ramp-push": "ramp_push"}
+ALIASES = {"trot_fall": "trot", "trot-fall": "trot", "ramp-walk": "ramp_walk", "ramp-push": "ramp_push",
+           "pipe-back": "pipe_back", "ramp-edge": "ramp_edge"}
 
 # acceptance of a run
 FINAL_TILT_DEG = 15.0         # |roll|, |pitch| over the last FINAL_WINDOW s
@@ -96,7 +104,8 @@ FINAL_HEIGHT = 0.25           # [m] base above the ground over the last FINAL_WI
 FINAL_WINDOW = 2.0
 WALK_DELAY, WALK_TIME, WALK_SPEED = 2.0, 6.0, 0.3     # walk after a recovery
 END_AFTER_RECOVERY = WALK_DELAY + WALK_TIME + 2.0     # [s] the run ends this long after the latest recovery
-IN_PLACE_CASES = ("wall", "ramp_walk", "ramp_push")   # walk in place after the recovery (plant world)
+IN_PLACE_CASES = ("wall", "ramp_walk", "ramp_push", "pipe_back", "ramp_edge")   # walk in place after the recovery
+                                                                                  # (plant world)
 
 # plant world spots (simulation/config/world_layout.yaml geometry)
 Z_LOWER = -0.88               # lower corridor floor (dock, pallet; foot of the ramp)
@@ -104,6 +113,10 @@ SPAWN_DZ = 0.557              # spawn height of the base above the floor (gazebo
 WALL_SPOT = (57.0, 1.3)       # lower corridor, 0.5 m from the north wall (y = 1.8)
 RAMP_WALK_SPOT = (52.6, 0.8)  # lower corridor floor east of the ramp (ramp x 46.97 .. 51.22, uphill to -x)
 RAMP_SPOT = (49.1, 0.8)       # middle of the ramp (11.8 deg; north wall y = 1.8, drop-off south of y = -0.17)
+RAMP_EDGE_Y = -0.165          # unrailed south edge of the ramp (lower channel y -1.7 .. -0.165, z -0.88)
+PIPE_SPOT = (22.0, 0.0)       # C-OBS5 pipe across the upper corridor: centre, axis yaw, diameter
+PIPE_YAW = 1.92
+PIPE_D = 0.08
 
 
 def canonical(name: str) -> str:
@@ -159,7 +172,33 @@ def case_setup(case: str, seed: int) -> dict:
            "params": {}, "commands": [], "pushes": [], "pre_cmd": None, "stop_knock": None, "mission": None,
            "map_source": ""}
     c, s = math.cos(yaw), math.sin(yaw)
-    if case in ("side", "back"):
+    if case == "pipe_back":
+        # lying on the back across the pipe after a fall while crossing it (mission_check: the robot
+        # crosses at right angles; the pipe ends up under the rear of the trunk, the nose on the floor)
+        from gazebo_check import world as W
+        heading = PIPE_YAW + (math.pi / 2 if seed % 2 == 0 else -math.pi / 2)    # west / east across
+        yaw = math.atan2(math.sin(heading), math.cos(heading)) + float(rng.uniform(-0.35, 0.35))
+        ax = (math.cos(PIPE_YAW), math.sin(PIPE_YAW))
+        u = float(rng.uniform(-0.4, 0.4))                     # along the pipe
+        d = float(rng.uniform(0.04, 0.14))                    # pipe behind the base
+        x = PIPE_SPOT[0] + u * ax[0] + d * math.cos(yaw)
+        y = PIPE_SPOT[1] + u * ax[1] + d * math.sin(yaw)
+        out["terrain"] = W.PLANT
+        out["map_source"] = "depth"
+        out["spawn"] = (x, y, 0.19, yaw)
+        out["spawn_rp"] = (math.pi + float(rng.uniform(-0.17, 0.17)), 0.19 + float(rng.uniform(-0.05, 0.05)))
+        out["params"]["use_imu_orientation"] = False          # see the module docstring
+    elif case == "ramp_edge":
+        from gazebo_check import world as W
+        north = seed % 2 == 0
+        yaw = (math.pi / 2 if north else -math.pi / 2) + float(rng.uniform(-0.3, 0.3))
+        out["terrain"] = W.PLANT
+        out["map_source"] = "depth"
+        out["spawn"] = (float(rng.uniform(49.3, 50.1)), RAMP_EDGE_Y - 0.04 + float(rng.uniform(-0.04, 0.04)),
+                        -0.36, yaw)
+        out["spawn_rp"] = (float(rng.uniform(-0.1, 0.1)), (-0.75 if north else 0.75) + float(rng.uniform(-0.1, 0.1)))
+        out["params"]["use_imu_orientation"] = False          # see the module docstring
+    elif case in ("side", "back"):
         if case == "side":
             roll = sign * (math.pi / 2 + float(rng.uniform(-0.26, 0.26)))
         else:
@@ -220,7 +259,8 @@ def case_setup(case: str, seed: int) -> dict:
 
 
 def case_duration(case: str) -> float:
-    return {"mission": 120.0, "ramp_walk": 100.0, "ramp_push": 100.0}.get(canonical(case), 60.0)
+    return {"mission": 120.0, "ramp_walk": 100.0, "ramp_push": 100.0, "pipe_back": 90.0,
+            "ramp_edge": 90.0}.get(canonical(case), 60.0)
 
 
 class AfterRecoveryWalk:

@@ -30,8 +30,9 @@ DEG = math.pi / 180.0
 # ---------------------------------------------------------------------------
 def test_cases_are_deterministic_and_cover_the_list():
     assert set(FC.DEFAULT_CASES) == {"side", "back", "trot", "roll", "push", "wall", "ramp_walk", "ramp_push",
-                                     "mission"}
+                                     "mission", "pipe_back", "ramp_edge"}
     assert FC.canonical("trot-fall") == "trot" and FC.canonical("ramp-push") == "ramp_push"
+    assert FC.canonical("pipe-back") == "pipe_back" and FC.canonical("ramp-edge") == "ramp_edge"
     with pytest.raises(KeyError):
         FC.canonical("cartwheel")
     for c in FC.CASES:
@@ -153,7 +154,7 @@ def test_operator_walks_before_the_fall_and_after_the_recovery():
     for t in (10.0, 12.5, 15.0, 20.0):
         assert op(t) == (0.0, 0.0, 0.0)
     assert h.commands == [(10.0 + FC.WALK_DELAY, "walk"), (10.0 + FC.WALK_DELAY + FC.WALK_TIME, "stand")]
-    assert set(FC.IN_PLACE_CASES) == {"wall", "ramp_walk", "ramp_push"}
+    assert set(FC.IN_PLACE_CASES) == {"wall", "ramp_walk", "ramp_push", "pipe_back", "ramp_edge"}
 
 
 def test_operator_stops_on_the_ramp_and_knocks():
@@ -255,3 +256,35 @@ def test_side_fall_recovers_physically_in_gazebo(tmp_path):
     assert r["fell"] and r["ok"], r["reason"]
     assert r["assisted"] == 0 and r["recoveries"] >= 1 and r["final_mode"] in ("STAND", "WALK")
     assert block["summary"]["side"]["teleports"] == 0
+
+
+def test_pipe_back_and_ramp_edge_spawns():
+    """pipe_back: on the back across the C-OBS5 pipe (layout), heading across it west / east, the pipe
+    under the rear of the trunk (tail up: pitch > 0); ramp_edge: upright, hanging over the unrailed
+    south edge of the ramp, nose up (facing north) on even seeds, nose down (south) on odd seeds."""
+    import yaml
+    lay = yaml.safe_load(open(os.path.join(ROOT, "simulation", "config", "world_layout.yaml"), encoding="utf-8"))
+    pipe = [o for o in lay["obstacles"] if o["id"] == "C-OBS5"][0]
+    assert tuple(pipe["center"]) == FC.PIPE_SPOT and pipe["yaw"] == FC.PIPE_YAW and pipe["diameter"] == FC.PIPE_D
+    n = np.array([-math.sin(FC.PIPE_YAW), math.cos(FC.PIPE_YAW)])
+    u = np.array([math.cos(FC.PIPE_YAW), math.sin(FC.PIPE_YAW)])
+    for seed in range(10):
+        s = FC.case_setup("pipe_back", seed)
+        x, y, z, yaw = s["spawn"]
+        roll, pitch = s["spawn_rp"]
+        assert s["terrain"] == "plant" and s["map_source"] == "depth" and s["params"] == {"use_imu_orientation": False}
+        assert abs(math.cos(roll) + 1.0) < 0.02 and 0.13 <= pitch <= 0.25 and 0.15 <= z <= 0.25
+        head = np.array([math.cos(yaw), math.sin(yaw)])
+        assert abs(float(head @ n)) > math.cos(0.36)                              # across the pipe
+        rel = np.array([x, y]) - np.array(FC.PIPE_SPOT)
+        side = float(rel @ n)                                                     # base ahead of the pipe axis
+        assert side * float(head @ n) > 0.0 and 0.03 <= abs(side) <= 0.15        # (pipe under the rear) ...
+        assert abs(float(rel @ u)) <= 0.6                                         # ... inside the pipe span
+        assert (float(head @ n) > 0) == (seed % 2 == 0)                           # west / east
+        e = FC.case_setup("ramp_edge", seed)
+        x, y, z, yaw = e["spawn"]
+        roll, pitch = e["spawn_rp"]
+        north = seed % 2 == 0
+        assert abs(roll) <= 0.1 + 1e-9 and (pitch < -0.6 if north else pitch > 0.6)
+        assert (math.sin(yaw) > 0.9) == north and 49.3 <= x <= 50.1 and abs(y - FC.RAMP_EDGE_Y) < 0.1
+        assert e["terrain"] == "plant" and e["params"] == {"use_imu_orientation": False}

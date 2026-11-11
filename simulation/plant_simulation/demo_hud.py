@@ -118,6 +118,7 @@ LOCO_LABELS = {      # /locomotion/state mode, locomotion_mode, gait -> (ko, en)
 RECOVERY_LABELS = {
     "FALL_DETECTED": ("충격 완화 준비", "FALL DETECTED"), "DAMP": ("충격 완화", "DAMPING"),
     "TUCK": ("다리 접기", "TUCKING LEGS"), "ROCK": ("몸 흔들어 뒤집기", "ROCKING OVER"),
+    "SLIDE": ("몸 돌려 장애물 벗어나기", "TURNING OFF OBSTACLE"), "BACK_OFF": ("턱에서 내려오기", "STEPPING OFF LEDGE"),
     "SELF_RIGHT": ("몸 뒤집기", "SELF-RIGHTING"), "PREPARE": ("일어설 준비", "PREPARING"),
     "STAND_UP": ("다리 펴기", "EXTENDING LEGS"), "VERIFY": ("자세 확인", "CHECKING POSTURE"),
     "FAILED": ("자가 복구 실패 · 재시도 대기", "RECOVERY FAILED - WAITING"),
@@ -126,7 +127,8 @@ RECOVERY_LABELS = {
 # the four steps shown while the robot is down; recovery_state -> step index
 RECOVERY_STEPS = (("넘어짐 감지", "FALL"), ("자세 뒤집기", "SELF-RIGHT"), ("일어서기", "STAND UP"),
                   ("복구 완료", "RECOVERED"))
-RECOVERY_STEP_OF = {"FALL_DETECTED": 0, "DAMP": 0, "FAILED": 0, "TUCK": 1, "ROCK": 1, "SELF_RIGHT": 1,
+RECOVERY_STEP_OF = {"FALL_DETECTED": 0, "DAMP": 0, "FAILED": 0, "TUCK": 1, "ROCK": 1, "SLIDE": 1, "BACK_OFF": 1,
+                    "SELF_RIGHT": 1,
                     "PREPARE": 2, "STAND_UP": 2, "VERIFY": 2, "ASSISTED_RESET": 2}
 DOWN_MODES = ("FALLEN", "RECOVERING")
 STATUS_LABELS = {"normal": ("정상", "NORMAL"), "warning": ("경고", "WARNING"), "alarm": ("경보", "ALARM")}
