@@ -1,6 +1,7 @@
 """Low-memory profile (8 GB laptop), camera arguments, shadow-free world and respawn of the launch
 files - dry runs against the launch stand-ins of test_plant_launch_files plus the real xacro."""
 import importlib.util
+import inspect
 import os
 import re
 import sys
@@ -195,17 +196,37 @@ def test_respawn_of_safe_nodes(tmp_path):
 
 
 def test_respawn_max_retries_only_where_launch_supports_it(tmp_path):
+    """launch (Jazzy and later, the stubs): respawn_max_retries is a parameter of ExecuteProcess' BASE
+    class ExecuteLocal - every respawned node gets at most 10 restarts, none restarts forever.
+    Humble: no such parameter anywhere - not passed (it would be a TypeError)."""
     stubs = _stubs(tmp_path)
+    cls = stubs["__classes__"]
     mod = load_launch_module("sim.launch.py", stubs)
     assert mod.respawn_kwargs(False) == {}
-    assert mod.respawn_kwargs(True) == {"respawn": True, "respawn_delay": 3.0}    # stub: no such parameter
+    assert "respawn_max_retries" not in inspect.signature(cls["ExecuteProcess"].__init__).parameters
+    assert mod.respawn_kwargs(True) == {"respawn": True, "respawn_delay": 3.0, "respawn_max_retries": 10}
+    actions, _ = run_setup("bringup.launch.py", stubs, {"demo": "true"})
+    respawned = [x for x in nodes(actions, cls).values() if x.respawn]
+    sim_actions, _ = run_setup("sim.launch.py", stubs, _sim_include(actions).launch_args)
+    respawned += [x for x in nodes(sim_actions, cls).values() if x.respawn]
+    ns = {x.executable for x in respawned}
+    assert {"cmd_vel_mux", "mission_manager", "monitor_dashboard", "demo_hud", "robot_state_publisher",
+            "parameter_bridge", "clock_relay", "map_server_lite"} <= ns
+    assert all(x.respawn_max_retries == 10 for x in respawned)
+    m3 = _load_gas_safety(stubs).generate_launch_description()
+    cfg = {a.name: a.default for a in m3.entities if isinstance(a, DeclareLaunchArgument)}
+    out = [x for e in m3.entities if isinstance(e, cls["OpaqueFunction"]) for x in e.kwargs["function"](Context(cfg))]
+    m3_respawned = [x for x in out if isinstance(x, Node) and x.respawn]
+    assert len(m3_respawned) == 4 and all(x.respawn_max_retries == 10 for x in m3_respawned)
 
-    class NewExecuteProcess:
-        def __init__(self, cmd=None, respawn=False, respawn_delay=None, respawn_max_retries=0):
+    class HumbleExecuteProcess:                                                  # Humble: no such parameter
+        def __init__(self, *, cmd, name=None, cwd=None, env=None, additional_env=None, shell=False,
+                     sigterm_timeout=None, sigkill_timeout=None, emulate_tty=False, output="log",
+                     respawn=False, respawn_delay=None, **kwargs):
             pass
 
-    mod.ExecuteProcess = NewExecuteProcess                                       # Jazzy and later
-    assert mod.respawn_kwargs(True)["respawn_max_retries"] == 10
+    mod.ExecuteProcess = HumbleExecuteProcess
+    assert mod.respawn_kwargs(True) == {"respawn": True, "respawn_delay": 3.0}
 
 
 def _load_gas_safety(stubs):

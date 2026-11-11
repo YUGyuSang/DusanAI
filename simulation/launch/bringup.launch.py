@@ -58,6 +58,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
+from dusan_common.launch_utils import respawn_kwargs
+
 PKG = "plant_simulation"
 MODULE_LAUNCHES = (
     ("module1_locomotion", "locomotion.launch.py"),
@@ -87,17 +89,9 @@ def _truthy(text):
 
 
 def _respawn_kwargs(enabled, delay=3.0, max_retries=10):
-    """respawn / respawn_delay (every distro) + respawn_max_retries where launch has it (Jazzy and later)."""
-    if not enabled:
-        return {}
-    kw = {"respawn": True, "respawn_delay": float(delay)}
-    try:
-        import inspect
-        if "respawn_max_retries" in inspect.signature(ExecuteProcess.__init__).parameters:
-            kw["respawn_max_retries"] = int(max_retries)
-    except (TypeError, ValueError):
-        pass
-    return kw
+    """respawn / respawn_delay (every distro) + respawn_max_retries where launch has it (Jazzy and later:
+    a parameter of ExecuteProcess' base class ExecuteLocal, see dusan_common.launch_utils)."""
+    return respawn_kwargs(ExecuteProcess, enabled, delay, max_retries)
 
 
 def _layout_names(path):

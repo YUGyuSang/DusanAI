@@ -139,6 +139,25 @@ class Node(_Rec):
         return self.kwargs.get(item)
 
 
+class ExecuteLocal(_Rec):
+    """Shaped like launch (Jazzy and later): respawn / respawn_max_retries are parameters of
+    ExecuteLocal.__init__ (respawn_max_retries -1 = restart forever) ..."""
+
+    def __init__(self, *args, respawn=False, respawn_delay=None, respawn_max_retries=-1, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.respawn, self.respawn_delay, self.respawn_max_retries = respawn, respawn_delay, respawn_max_retries
+
+
+class ExecuteProcess(ExecuteLocal):
+    """... and ExecuteProcess.__init__ only has cmd / prefix / name / cwd / env / additional_env and
+    **kwargs for its base class."""
+
+    def __init__(self, *args, cmd=None, prefix=None, name=None, cwd=None, env=None, additional_env=None, **kwargs):
+        if cmd is not None:
+            kwargs["cmd"] = cmd
+        super().__init__(*args, **kwargs)
+
+
 class Context:
     def __init__(self, cfg):
         self.launch_configurations = dict(cfg)
@@ -174,6 +193,7 @@ def _stubs(tmp):
                                                "RegisterEventHandler", "OnProcessExit",
                                                "UnlessCondition", "Command", "PathJoinSubstitution",
                                                "PythonExpression", "FindPackageShare", "ParameterValue")}
+    simple["ExecuteProcess"] = ExecuteProcess
     mod("launch", LaunchDescription=LaunchDescription)
     mod("launch.actions", DeclareLaunchArgument=DeclareLaunchArgument, IncludeLaunchDescription=IncludeLaunchDescription,
         **{k: simple[k] for k in ("OpaqueFunction", "TimerAction", "LogInfo", "SetEnvironmentVariable",

@@ -38,7 +38,6 @@ map_server_lite when they die (stateless; 3 s delay).  odom_tf is not respawned:
 it decides on its FIRST odometry sample whether the Gazebo odometry is
 spawn-relative, which a restart in the middle of a run could get wrong.
 """
-import inspect
 import os
 import shlex
 import tempfile
@@ -54,6 +53,8 @@ from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 
+from dusan_common.launch_utils import respawn_kwargs as _respawn_kwargs
+
 PKG = "plant_simulation"
 DEFAULT_SPAWN = [61.9, 0.0, -0.32, 3.14159265]
 # camera arguments of spot.urdf.xacro passed through when set ('' = the xacro default)
@@ -68,15 +69,7 @@ def respawn_kwargs(enabled=True, delay=3.0, max_retries=10):
     """Node(...) keyword arguments that restart a dead process: respawn / respawn_delay (every distro)
     plus respawn_max_retries where launch has it (Jazzy and later), so a node that crashes in its
     constructor is not restarted forever."""
-    if not enabled:
-        return {}
-    kw = {"respawn": True, "respawn_delay": float(delay)}
-    try:
-        if "respawn_max_retries" in inspect.signature(ExecuteProcess.__init__).parameters:
-            kw["respawn_max_retries"] = int(max_retries)
-    except (TypeError, ValueError):
-        pass
-    return kw
+    return _respawn_kwargs(ExecuteProcess, enabled, delay, max_retries)
 
 
 def world_without_shadows(world, out_dir=None):

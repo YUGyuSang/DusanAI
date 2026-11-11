@@ -22,7 +22,6 @@ manual return is taken over by mission_manager, which drives to the dock itself
 when return_to_home does not acknowledge).  battery_simulator is NOT respawned:
 it would come back with the start charge and hide a low battery.
 """
-import inspect
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -31,6 +30,8 @@ from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
+
+from dusan_common.launch_utils import respawn_kwargs
 
 PKG = "module3_gas_safety"
 RESPAWN_SAFE = ("gas_dispersion_sim", "source_seeker", "comm_simulator", "return_to_home")
@@ -51,14 +52,9 @@ def _truthy(text) -> bool:
 
 
 def _respawn_kwargs(delay: float = 3.0, max_retries: int = 10) -> dict:
-    """respawn / respawn_delay (every distro) + respawn_max_retries where launch has it (Jazzy and later)."""
-    kw = {"respawn": True, "respawn_delay": float(delay)}
-    try:
-        if "respawn_max_retries" in inspect.signature(ExecuteProcess.__init__).parameters:
-            kw["respawn_max_retries"] = int(max_retries)
-    except (TypeError, ValueError):
-        pass
-    return kw
+    """respawn / respawn_delay (every distro) + respawn_max_retries where launch has it (Jazzy and later:
+    a parameter of ExecuteProcess' base class ExecuteLocal, see dusan_common.launch_utils)."""
+    return respawn_kwargs(ExecuteProcess, True, delay, max_retries)
 
 
 def _nodes(context, *args, **kwargs):
