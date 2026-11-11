@@ -1,7 +1,7 @@
 """
 Offline demo of the digital-twin dashboard - no ROS, no Gazebo.
 
-    python -m plant_simulation.dashboard_demo [--port 8080] [--speed 4] [--no-autostart]
+    python -m plant_simulation.dashboard_demo [--port 8080] [--speed 4] [--no-autostart] [--fall-at 120,400]
 
     # headless evaluation run: as fast as possible, metrics session recorded
     # with the real MetricsRecorder (then: python tools/plot_metrics.py <dir>)
@@ -26,7 +26,13 @@ aggregator; the other modules are replaced by simple synthetic models:
   mu 0.15) give the module1 friction-prior fields of /terrain/info and the
   slip-mode fields of /locomotion/state while the robot crosses them
   (:class:`SyntheticSlip`).  The kinematic robot is not slowed down, so a
-  headless metrics run is the same with or without it.
+  headless metrics run is the same with or without it;
+* falls (--fall-at T1,T2 simulated s, off by default): the robot falls on its
+  side there and rights itself through the module1 fall_recovery phases
+  (recovery_state, mode, roll and the fall / recovery counters of
+  /locomotion/state, fall / recovered events of /locomotion/fall_event); it
+  stands still meanwhile and the mission holds as with the real controller
+  (:class:`SyntheticFall`).
 
 Useful to preview the UI on the development PC, in tests, and (headless,
 with --metrics-dir) as an end-to-end check of mission -> metrics -> report
@@ -97,6 +103,57 @@ def demo_gauge_snapshot(layout, gid, frame, result, t, frames=1):
                             frames=int(frames), readings=int(frames), frame_value=res.get("value"),
                             frame_confidence=res.get("confidence"), robot_pose=None, distance=None,
                             incidence_deg=None, synthetic=True)
+
+
+# synthetic fall on the side and self-righting: (recovery_state, mode, duration s, |roll| rad at the end)
+FALL_PHASES = (("FALL_DETECTED", "FALLEN", 0.1, 1.40), ("DAMP", "FALLEN", 1.2, 1.55),
+               ("TUCK", "RECOVERING", 0.8, 1.55), ("SELF_RIGHT", "RECOVERING", 1.6, 0.50),
+               ("PREPARE", "RECOVERING", 1.0, 0.05), ("STAND_UP", "RECOVERING", 2.5, 0.02),
+               ("VERIFY", "RECOVERING", 0.3, 0.0))
+
+
+class SyntheticFall:
+    """Falls at given simulated times, each followed by a successful self-righting
+    (display / mission-hold check only, no physics)."""
+
+    def __init__(self, times=()):
+        self.times = sorted(float(t) for t in (times or ()))
+        self.t0 = None
+        self.fall_count = self.successes = self.attempts = 0
+
+    @property
+    def down(self):
+        return self.t0 is not None
+
+    def counters(self):
+        return {"fall_count": self.fall_count, "recovery_success": self.successes, "assisted_resets": 0,
+                "recovery_attempts": self.attempts}
+
+    def step(self, t, x, y):
+        """-> (dict of /locomotion/state fields, [fall events]); fields always carry the counters,
+        mode / recovery_state / roll only while the robot is down."""
+        events = []
+        if self.t0 is None and self.times and t >= self.times[0]:
+            self.times.pop(0)
+            self.t0 = float(t)
+            self.fall_count += 1
+            events.append({"event": "fall", "x": x, "y": y, "roll": 1.40, "pitch": 0.05})
+        fields = {"recovery_state": "NORMAL"}
+        if self.t0 is not None:
+            dt = t - self.t0
+            for name, mode, dur, roll in FALL_PHASES:
+                if dt < dur:
+                    if name == "TUCK" and self.attempts < self.fall_count:
+                        self.attempts += 1                       # an attempt starts after the impact
+                    fields = {"recovery_state": name, "mode": mode, "roll": roll, "body_height": 0.12}
+                    break
+                dt -= dur
+            else:
+                self.t0 = None
+                self.successes += 1
+                events.append({"event": "recovered", "x": x, "y": y, "roll": 0.0, "pitch": 0.0})
+        fields.update(self.counters())
+        return fields, events
 
 
 class SyntheticPlant:
@@ -311,7 +368,7 @@ class SyntheticSlip:
 
 
 def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None, quiet=False,
-             serve=True, realtime=True, sim_duration=None, metrics_dir=None, stop_when_done=False):
+             serve=True, realtime=True, sim_duration=None, metrics_dir=None, stop_when_done=False, fall_at=()):
     """Run the synthetic plant + real mission (+ dashboard server).
 
     serve          start the HTTP dashboard (False: headless)
@@ -320,6 +377,7 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
     sim_duration   stop after this many SIMULATED seconds
     metrics_dir    record a metrics session (MetricsRecorder) below this directory
     stop_when_done stop once a started mission has finished (docked / done)
+    fall_at        simulated times [s] of synthetic falls + self-righting (SyntheticFall)
     Returns (DashboardState, MissionLogic); the metrics session directory (or
     None) is left in ``run_demo.session_dir``.
     """
@@ -336,6 +394,7 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
         metrics_dir = temp_metrics = tempfile.mkdtemp(prefix="dusan_demo_metrics_")
     state = DashboardState(layout, metrics_root=metrics_dir)
     slip = SyntheticSlip(friction_zones_from_layout(layout))
+    falls = SyntheticFall(fall_at)
     mission = MissionLogic({"autostart": bool(autostart), "autostart_delay": 3.0, "rth_ack_timeout": 3.0}, layout)
     mission.set_map(grid)
     # patrol plan + route like module2 would publish
@@ -435,6 +494,15 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
                 with lock:
                     t = plant.t
                     mission.set_pose(plant.x, plant.y, plant.yaw, t)
+                    fall_fields, fall_events = falls.step(t, plant.x, plant.y)
+                    if falls.down:                  # the mission holds like with the real controller
+                        mission.on_locomotion_state(fall_fields, t)
+                    elif fall_events or mission.loco_mode in ("FALLEN", "RECOVERING"):
+                        mission.on_locomotion_state({"mode": "STAND", "recovery_state": "NORMAL"}, t)
+                    for ev in fall_events:
+                        state.set_fall_event(ev)
+                        if rec:
+                            rec.on_fall_event(t, ev)
                     ppm = plant.gas_at(plant.x, plant.y)
                     mission.on_gas(ppm, t)
                     # toy seeker
@@ -523,7 +591,9 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
                         if snap is not None:
                             rec.on_gauge_snapshot(t, snap)
                         insp = None
-                    if seeking and cmd is not None:
+                    if falls.down:
+                        drive = (0.0, 0.0, 0.0)
+                    elif seeking and cmd is not None:
                         drive = cmd
                     elif out.cmd_vel is not None:
                         drive = out.cmd_vel
@@ -541,8 +611,8 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
                     state.set_mission(mstate)
                     started = started or mission.mode is not None
                     rssi = plant.rssi_at(plant.x, plant.y)
-                    state.set_robot(plant.x, plant.y, plant.z, rng.gauss(0, 0.01), rng.gauss(0, 0.01), plant.yaw,
-                                    plant.vx, plant.vy, plant.wz, t_sim=t)
+                    state.set_robot(plant.x, plant.y, plant.z, fall_fields.get("roll", rng.gauss(0, 0.01)),
+                                    rng.gauss(0, 0.01), plant.yaw, plant.vx, plant.vy, plant.wz, t_sim=t)
                     moving = math.hypot(plant.vx, plant.vy) > 0.03 or abs(plant.wz) > 0.05
                     loco = {"mode": "WALK" if moving else "STAND", "gait": "trot", "gait_auto": True,
                             "body_height": 0.34 + rng.gauss(0, 0.004), "roll": rng.gauss(0, 0.01),
@@ -551,6 +621,7 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
                             "stability_margin": 0.08 + rng.gauss(0, 0.005)}
                     terrain, slip_fields = slip.step(plant.x, plant.y, plant.yaw, t, dt)   # no rng: metrics unchanged
                     loco.update(slip_fields)
+                    loco.update(fall_fields)
                     state.set_locomotion(loco)
                     state.set_terrain(terrain)
                     state.set_gas_ppm(ppm)
@@ -621,11 +692,17 @@ def main():
     ap.add_argument("--sim-duration", type=float, default=None, help="stop after N simulated seconds")
     ap.add_argument("--metrics-dir", default=None,
                     help="record a metrics session there (plot it with tools/plot_metrics.py)")
+    ap.add_argument("--fall-at", default="",
+                    help="simulated times [s] of synthetic falls + self-righting, e.g. 120,400")
     a = ap.parse_args()
+    try:
+        fall_at = [float(v) for v in a.fall_at.replace(",", " ").split()]
+    except ValueError:
+        ap.error("--fall-at needs numbers, e.g. 120,400")
     sim_duration = a.sim_duration if a.sim_duration is not None else (1800.0 if a.headless else None)
     run_demo(a.port, a.speed, not a.no_autostart, a.host, a.duration, serve=not a.headless,
              realtime=not a.headless, sim_duration=sim_duration, metrics_dir=a.metrics_dir,
-             stop_when_done=a.headless)
+             stop_when_done=a.headless, fall_at=fall_at)
 
 
 if __name__ == "__main__":

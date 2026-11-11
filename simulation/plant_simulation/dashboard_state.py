@@ -30,7 +30,14 @@ plant_simulation.web_server from that directory) and a top-level ``report`` obje
 (``{url, json_url, final, written, session}``) for the inspection_report.html link.  Only a
 directory inside ``metrics_root`` (default ~/dusan_metrics, the metrics_logger output_dir) is
 accepted.  Once the mission has accepted a gauge (``/mission/state`` ``results``) its tile shows
-that official value (``value_source: "mission"``) instead of later live readings.
+that official value (``value_source: "mission"``) instead of later live readings.  ``report.dir``
+is the session directory for the screen (home directory shown as ``~``): where the results were
+saved.
+
+Falls: ``recovery_state`` (module1 fall_recovery phase: FALL_DETECTED, DAMP, TUCK, ROCK,
+SELF_RIGHT, PREPARE, STAND_UP, VERIFY, FAILED, ASSISTED_RESET; NORMAL when upright) and
+``assisted_resets`` of /locomotion/state are passed through; the fall events of
+/locomotion/fall_event go to the event log.
 """
 import math
 import os
@@ -55,8 +62,8 @@ SLIPPERY_MU = 0.35             # zones below make the terrain 'slippery' (classi
 
 # fields of /locomotion/state and /terrain/info passed to the browser
 LOCO_KEYS = ("mode", "locomotion_mode", "gait", "gait_auto", "phase", "contacts", "body_height", "roll", "pitch",
-             "fall_count", "recovery_attempts", "recovery_success", "mpc_solve_ms", "mpc_status",
-             "stability_margin", "terrain", "cmd",
+             "fall_count", "recovery_attempts", "recovery_success", "assisted_resets", "recovery_state",
+             "mpc_solve_ms", "mpc_status", "stability_margin", "terrain", "cmd",
              # slippery ground (module1 README section 3.8)
              "slip", "slip_mode", "slip_source", "slip_speed", "slip_legs", "slip_events", "mu_est", "mpc_mu",
              "friction_prior", "torque_ff")
@@ -284,6 +291,17 @@ def session_rel(rel):
 def session_url(rel):
     """Same-origin URL of a session file (relative to the dashboard page)."""
     return "session/" + quote(rel, safe="/")
+
+
+def display_dir(path):
+    """A directory for the screen: the home directory as '~', '/' separators, trailing '/'."""
+    p = str(path or "").rstrip("/\\")
+    if not p:
+        return ""
+    home = os.path.expanduser("~").rstrip("/\\")
+    if home and (p == home or p.startswith(home + os.sep) or p.startswith(home + "/")):
+        p = "~" + p[len(home):]
+    return p.replace("\\", "/") + "/"
 
 
 class DashboardState:
@@ -771,7 +789,8 @@ class DashboardState:
             return None
         return {"url": session_url(s["report"]),
                 "json_url": session_url(s["report_json"]) if s.get("report_json") else None,
-                "final": s.get("report_final"), "written": s.get("report_written"), "session": s["name"]}
+                "final": s.get("report_final"), "written": s.get("report_written"), "session": s["name"],
+                "dir": display_dir(s["dir"])}
 
     # ------------------------------------------------------ layers/images
     def set_layer(self, name, data, origin_x, origin_y, resolution, now=None, extra=None):

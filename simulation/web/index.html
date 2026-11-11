@@ -50,6 +50,8 @@
           <div class="kpi"><div class="k">현재 목표</div><div class="v" id="missionTarget">&mdash;</div></div>
           <button type="button" class="ghost report-btn" id="btnReport" title="판독 결과·경보·누출원 추적을 정리한 임무 보고서">임무 보고서</button>
         </div>
+        <!-- final result: shown once the robot docked after the whole route (numbers frozen at that moment) -->
+        <div class="m-result" id="missionResult" role="status" aria-label="임무 결과" hidden></div>
       </section>
 
       <!-- map -->
@@ -189,6 +191,7 @@
         <div class="card-head tight">
           <h2 id="robotTitle">로봇 &middot; 전원</h2>
           <span class="head-tags">
+            <span id="recBadge" class="badge s-alarm sm" hidden></span>
             <span id="slipBadge" class="badge s-warn sm" hidden>&#9650; 미끄럼 대응</span>
             <span class="zone-chip" id="robotZone" title="현재 구역"></span>
           </span>
@@ -203,7 +206,7 @@
           <div class="kv">
             <div><div class="k">보행 상태</div><div class="v"><span id="locoMode" class="badge sm">&mdash;</span> <span class="v-sub" id="locoGait"></span></div></div>
             <div><div class="k">속도</div><div class="v" id="robotVel">&mdash;</div></div>
-            <div><div class="k">넘어짐 / 복구</div><div class="v" id="locoFalls">&mdash;</div></div>
+            <div><div class="k">넘어짐 / 자가 복구</div><div class="v" id="locoFalls">&mdash;</div></div>
             <div><div class="k">통신 신호</div><div class="v" id="rssi">&mdash;</div></div>
             <div><div class="k">자동 복귀</div><div class="v" id="rthState">&mdash;</div></div>
             <div><div class="k">충전소까지</div><div class="v" id="distHome">&mdash;</div></div>
@@ -265,6 +268,7 @@
           <div><div class="k">롤 / 피치</div><div class="v" id="locoRP">&mdash;</div></div>
           <div><div class="k">MPC 계산</div><div class="v" id="locoMpc">&mdash;</div></div>
           <div><div class="k">안정 여유</div><div class="v" id="locoMargin">&mdash;</div></div>
+          <div><div class="k">자가 복구 단계</div><div class="v" id="locoRecovery">&mdash;</div></div>
           <div><div class="k">마찰 &mu; 추정 / MPC</div><div class="v" id="locoMu">&mdash;</div></div>
           <div><div class="k">주행 명령 출처</div><div class="v" id="cmdSource">&mdash;</div></div>
           <div class="wide"><div class="k">위치 &middot; 방향</div><div class="v" id="robotPose">&mdash;</div></div>
@@ -279,6 +283,7 @@
           <div><div class="k">재계획</div><div class="v" id="missionReplans">&mdash;</div></div>
           <div><div class="k">남은 경로</div><div class="v" id="missionRemain">&mdash;</div></div>
           <div><div class="k">순찰 계획 출처</div><div class="v" id="planSource">&mdash;</div></div>
+          <div class="wide"><div class="k">결과 저장 위치 (계기 사진 &middot; 점검 보고서)</div><div class="v mono" id="sessionDir">&mdash;</div></div>
         </div>
       </section>
       <section class="dcard">

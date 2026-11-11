@@ -13,7 +13,7 @@ from dusan_common.layout import Layout
 
 from plant_simulation.dashboard_render import (encode_jpeg, gas_rgba, placeholder_jpeg, render_gas_png,
                                                render_map_png, render_rssi_png, rssi_rgba)
-from plant_simulation.dashboard_state import (DashboardState, build_static_info, downsample_path,
+from plant_simulation.dashboard_state import (DashboardState, build_static_info, display_dir, downsample_path,
                                               friction_zones_from_layout)
 from plant_simulation.layout_map import rasterize_layout
 from plant_simulation.web_server import DashboardServer, validate_command
@@ -533,6 +533,39 @@ def test_headless_demo_records_a_complete_mission(headless_mission):
     assert near or not any(t.startswith("slip detected") for t in texts)
 
 
+def test_demo_synthetic_fall_phases():
+    from plant_simulation.dashboard_demo import FALL_PHASES, SyntheticFall
+    f = SyntheticFall([10.0])
+    seen, events = [], []
+    for k in range(300):
+        fields, ev = f.step(k * 0.1, 1.0, 2.0)
+        events += ev
+        if not seen or seen[-1] != fields["recovery_state"]:
+            seen.append(fields["recovery_state"])
+        assert f.down == (fields["recovery_state"] != "NORMAL")
+    assert seen == ["NORMAL"] + [p[0] for p in FALL_PHASES] + ["NORMAL"]
+    assert [e["event"] for e in events] == ["fall", "recovered"]
+    assert f.counters() == {"fall_count": 1, "recovery_success": 1, "assisted_resets": 0, "recovery_attempts": 1}
+    from module1_locomotion import fall_recovery as fr
+    for name, mode, _, _ in FALL_PHASES:                            # real state names, real modes
+        assert name in fr.FALLEN_STATES + fr.RECOVERING_STATES
+        assert mode == ("FALLEN" if name in fr.FALLEN_STATES else "RECOVERING")
+
+
+def test_headless_demo_with_falls_holds_the_mission_and_finishes():
+    from plant_simulation import dashboard_demo
+    state, mission = dashboard_demo.run_demo(speed=50, autostart=True, quiet=True, serve=False, realtime=False,
+                                             sim_duration=1500.0, stop_when_done=True, fall_at=[60.0, 200.0])
+    assert mission.base == "DOCKED" and len(mission.completed) == len(Layout.load().gauges)
+    loco = state.snapshot()["locomotion"]
+    assert (loco["fall_count"], loco["recovery_success"], loco["recovery_state"]) == (2, 2, "NORMAL")
+    texts = [(e["source"], e["text"]) for e in state.events]
+    assert sum(src == "fall" and t.startswith("fall at") for src, t in texts) == 2
+    assert sum(src == "fall" and t.startswith("recovered at") for src, t in texts) == 2
+    assert ("mission", "locomotion not ready (FALLEN) - holding") in texts
+    assert any(src == "mission" and t.startswith("locomotion ready again") for src, t in texts)
+
+
 def test_demo_synthetic_slip_crossing_a_plate():
     """Display-only friction prior + slip detection of the offline demo."""
     from plant_simulation.dashboard_demo import SyntheticSlip
@@ -600,6 +633,9 @@ def test_session_photos_and_report_link_in_the_snapshot(layout, tmp_path):
     assert g["G05"]["image_url"] == "session/gauges/G05_49.8.jpg"
     assert g["G05"]["image_full_url"] == "session/gauges/G05_49.8_full.jpg"
     assert "image_url" not in g["G01"] and "image_url" not in g["G02"]          # unsafe / missing names dropped
+    shown = snap["report"].pop("dir")                                          # where the results were saved
+    assert shown == display_dir(os.path.realpath(str(sdir))) and shown.endswith("/20261111_100000/")
+    assert "\\" not in shown
     assert snap["report"] == {"url": "session/inspection_report.html", "json_url": "session/inspection_report.json",
                               "final": False, "written": "2026-11-11 10:05:00", "session": "20261111_100000"}
     assert state.session_dir() == os.path.realpath(str(sdir))
@@ -609,6 +645,25 @@ def test_session_photos_and_report_link_in_the_snapshot(layout, tmp_path):
     assert texts == ["inspection report written: inspection_report.html",
                      "inspection report final: inspection_report.html"]
     json.dumps(state.snapshot(now=5.0), allow_nan=False)
+
+
+def test_display_dir_hides_the_home_directory():
+    home = os.path.expanduser("~")
+    assert display_dir(os.path.join(home, "dusan_metrics", "20261111_100000")) == "~/dusan_metrics/20261111_100000/"
+    assert display_dir(home) == "~/"
+    assert display_dir("/srv/data/run1/") == "/srv/data/run1/"
+    assert display_dir("") == "" and display_dir(None) == ""
+
+
+def test_recovery_state_and_assisted_resets_reach_the_browser(layout):
+    state = DashboardState(layout)
+    state.set_locomotion({"mode": "RECOVERING", "recovery_state": "SELF_RIGHT", "fall_count": 2,
+                          "recovery_success": 1, "assisted_resets": 0, "recovery_attempts": 3}, now=1.0)
+    loco = state.snapshot(now=1.5)["locomotion"]
+    assert (loco["recovery_state"], loco["assisted_resets"], loco["recovery_attempts"]) == ("SELF_RIGHT", 0, 3)
+    state.set_fall_event({"event": "recovered", "x": 1.0, "y": 2.0, "roll": 0.0, "pitch": 0.0}, now=2.0)
+    assert state.events[-1]["source"] == "fall" and state.events[-1]["text"].startswith("recovered")
+    json.dumps(state.snapshot(now=3.0), allow_nan=False)
 
 
 def test_session_outside_the_metrics_root_is_ignored(layout, tmp_path):
