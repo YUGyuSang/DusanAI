@@ -26,7 +26,7 @@
       RECOVERING: "복구 중", ESTOP: "비상정지",
     },
     // gauge / hot-spot status
-    status: { normal: "정상", warning: "경고", alarm: "경보", unread: "미판독", unseen: "미탐지", unknown: "알 수 없음" },
+    status: { normal: "정상", warning: "경고", alarm: "경보", unread: "미판독", unseen: "미관측", unknown: "알 수 없음" },
     // topic link health (dashboard_state.topic_health)
     link: { ok: "정상", late: "지연", stale: "끊김", never: "수신 없음" },
     // /gas/seek_status state + mission seek results
@@ -112,6 +112,8 @@
   const list = (s) => String(s).replace(/[[\]']/g, "");
   const na = (v) => (v === "n/a" || v === "None" ? "없음" : v);
   const readCount = (n, m) => "(판독 " + n + ", 누락 " + m + ")";
+  // "(-3.53, 1.9)" -> "-3.53, 1.90"
+  const xy = (a, b) => [a, b].map((v) => (isFinite(+v) ? (+v).toFixed(2) : v)).join(", ");
 
   function slipParts(s) {
     return String(s)
@@ -151,9 +153,18 @@
     [/^gait (\S+) -> (\S+)$/, (m) => "보행 방식: " + arrow(label("gait", m[1]), label("gait", m[2]))],
     [/^locomotion mode (\S+) -> (\S+)$/, (m) => "제어 방식: " + arrow(label("algo", m[1]), label("algo", m[2]))],
     [/^slip detected #(\d+)(?:: (.+))?$/, (m) => "미끄럼 감지 #" + m[1] + (m[2] ? ": " + slipParts(m[2]) : "")],
-    [/^slip mode ON(?: \((.+)\))?$/, (m) => "미끄럼 모드 켜짐" + (m[1] ? " (" + slipParts(m[1]) + ")" : "")],
+    // short form (the event column is narrow): source + prior friction only, details in the tooltip
+    [/^slip mode ON(?: \((.+)\))?$/, (m) => {
+      const d = m[1] || "";
+      const mu = /prior mu ([\d.]+)/.exec(d);
+      const parts = ["미끄럼 대응 켜짐"];
+      if (/terrain prior/.test(d)) parts.push("저마찰 바닥" + (mu ? " μ " + mu[1] : ""));
+      if (/slip detected/.test(d)) parts.push("미끄럼 감지");
+      if (parts.length === 1 && d) parts.push(slipParts(d));
+      return parts.join(" · ");
+    }],
     [/^slip mode OFF(?: \((\d+) detections? so far\))?$/,
-      (m) => "미끄럼 모드 꺼짐" + (m[1] ? " (지금까지 감지 " + m[1] + "회)" : "")],
+      (m) => "미끄럼 대응 꺼짐" + (m[1] && m[1] !== "0" ? " (지금까지 감지 " + m[1] + "회)" : "")],
     [/^(fall|recovered|recovery_retry|recovery_failed|assisted_reset|reset_request)(?: at \((\S+), (\S+)\))?(?: roll (-?\d+) deg pitch (-?\d+) deg)?$/,
       (m) => label("fall", m[1]) + (m[2] ? " 위치 (" + m[2] + ", " + m[3] + ")" : "") +
         (m[4] ? " 롤 " + m[4] + "° 피치 " + m[5] + "°" : "")],
@@ -170,18 +181,24 @@
     [/^battery recovered: (\S+) %$/, (m) => "배터리 회복: " + m[1] + " %"],
     [/^gas (\S+) ppm above (\S+) ppm$/, (m) => "가스 " + m[1] + " ppm - 경보 기준 " + m[2] + " ppm 초과"],
     [/^gas back to (\S+) ppm$/, (m) => "가스 정상 복귀: " + m[1] + " ppm"],
+    // the aggregator's error comes from the 2-decimal estimate: the page shows the
+    // mission's error (mission.seek.error_m) instead, the raw text stays in the tooltip
     [/^LEAK SOURCE FOUND(?: at \((\S+), (\S+)\))?(?: - error (\S+) m)?$/,
-      (m) => "누출원 발견" + (m[1] ? " (" + m[1] + ", " + m[2] + ")" : "") + (m[3] ? ", 오차 " + m[3] + " m" : "")],
+      (m) => "누출원 발견" + (m[1] ? " (" + xy(m[1], m[2]) + ")" : "")],
     [/^source seeking FAILED$/, () => "누출원 추적 실패"],
     [/^seeker (\S+) -> (\S+)$/, (m) => "추적기: " + arrow(label("seek", m[1]), label("seek", m[2]))],
+    // emitted when a gauge's status changes (normally its first reading): no number here,
+    // the tile shows the latest of many readings and the raw text stays in the tooltip
     [/^(\S+) (.*?): (\S+) (\S*) \((\w+)\)(?:, error (\S+) % FS)?$/,
-      (m) => m[1] + (m[2] ? " " + m[2] : "") + ": " + (na(m[3]) === m[3] ? m[3] + (m[4] ? " " + m[4] : "") : "판독값 없음") +
-        " (" + label("status", m[5]) + ")" + (m[6] ? ", 오차 " + m[6] + " % FS" : ""), "gauge"],
+      (m) => m[1] + (m[2] ? " " + m[2] : "") + (na(m[3]) === m[3] ? " 판독 완료 · " : " 판독값 없음 · ") +
+        label("status", m[5]), "gauge"],
+    // status change of a hot spot: no temperature here either (the thermal table shows the
+    // latest measurement, the first one stays in the tooltip)
     [/^(\S+) (.*?): (\S+) C \((\w+)\)$/,
-      (m) => m[1] + (m[2] ? " " + m[2] : "") + ": " + (na(m[3]) === m[3] ? m[3] + " °C" : "온도 없음") +
-        " (" + label("status", m[4]) + ")", "thermal"],
+      (m) => m[1] + (m[2] ? " " + m[2] : "") + (na(m[3]) === m[3] ? " 고온 검출 · " : " 온도 없음 · ") +
+        label("status", m[4]), "thermal"],
     [/^THERMAL ALARM (\S+) (.*?): (\S+) C(?: at (.+))?$/,
-      (m) => "열화상 경보 " + m[1] + (m[2] ? " " + m[2] : "") + ": " + m[3] + " °C" + (m[4] ? ", 위치 " + m[4] : "")],
+      (m) => "열화상 경보 " + m[1] + (m[2] ? " " + m[2] : "") + (m[4] ? " · 위치 " + m[4] : "")],
     [/^(mission|locomotion|battery) command '(.*)'$/,
       (m) => "운영자 명령: " + (m[1] === "battery" ? command("battery", m[2]) : "'" + command(m[1], m[2]) + "'")],
     [/^locomotion '(.*)' \(not simulated in the demo\)$/,
@@ -212,12 +229,13 @@
     [/^return_to_home released - resuming the mission$/, () => "복귀 노드 해제 - 임무 재개"],
     [/^return_to_home released \(not docked\)$/, () => "복귀 노드 해제 (충전소 미도착)"],
     [/^return to home \((.+?)\)( - waiting for return_to_home)?$/,
-      (m) => "충전소 복귀 (" + label("reason", m[1]) + ")" + (m[2] ? " - 복귀 노드 응답 대기" : "")],
+      (m) => "충전소 복귀 시작 (" + label("reason", m[1]) + ")" +
+        (m[2] && m[1] !== "mission_complete" ? " - 복귀 노드 응답 대기" : "")],
     [/^self RTH impossible: no layout$/, () => "자체 복귀 불가: 레이아웃 없음"],
     [/^self RTH: waiting for \/odom$/, () => "자체 복귀: /odom 대기"],
     [/^self RTH: no path to the dock$/, () => "자체 복귀: 충전소까지 경로 없음"],
     [/^self RTH failed: (.+)$/, (m) => "자체 복귀 실패: " + why(m[1])],
-    [/^return_to_home did not acknowledge - driving to the dock myself$/, () => "복귀 노드 응답 없음 - 로봇이 직접 충전소로 이동"],
+    [/^return_to_home did not acknowledge - driving to the dock myself$/, () => "충전소 복귀: 자체 경로로 이동"],
     [/^return_to_home did not acknowledge the RTH request$/, () => "복귀 노드가 복귀 요청에 응답하지 않음"],
     [/^mission complete - docked \((\d+) read, (\d+) missed\)$/, (m) => "임무 완료 - 충전소 도착 " + readCount(m[1], m[2])],
     [/^docked(?: \((\d+) viewpoints pending, 'resume' continues\))?$/,
@@ -261,9 +279,9 @@
     [/^(\S+): alignment timeout \(yaw error (\S+) deg\)$/, (m) => m[1] + ": 방향 맞춤 시간 초과 (방향 오차 " + m[2] + "°)"],
     [/^inspecting (\S+)$/, (m) => m[1] + " 점검 중"],
     [/^(\S+): no reading yet - scanning left\/right$/, (m) => m[1] + ": 아직 판독 없음 - 좌우로 살피는 중"],
+    // no value here either (the tile shows the latest reading)
     [/^(\S+) read: (?:(\S+) (\S*) \((\w*)\)|ok) from (\d+) readings$/,
-      (m) => m[1] + " 판독" + (m[2] ? ": " + m[2] + (m[3] ? " " + m[3] : "") + " (" + label("status", m[4]) + ")" : " 완료") +
-        ", 판독 " + m[5] + "회"],
+      (m) => m[1] + " 판독 완료" + (m[4] ? " · " + label("status", m[4]) : "") + " (" + m[5] + "회 판독)"],
     [/^(\S+): no reading obtained - skipped$/, (m) => m[1] + ": 판독 실패 - 건너뜀"],
     [/^gas source seeking started \((.+)\)$/, (m) => "가스 누출원 추적 시작 (" + why(m[1]) + ")"],
     [/^source seeker did not become active$/, () => "누출원 추적기가 동작하지 않음"],

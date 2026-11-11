@@ -9,7 +9,7 @@ Spot형 4족 로봇 `spot`(15 kg, 다리 0.2256 m + 0.2997 m)의 기구학, 보�
 
 **`terrain_mapper` 출력의 다른 사용처** (2026-10-26): `/elevation_map/points`는 보행 제어기 말고도 `mission_manager`,
 `return_to_home`, `source_seeker`가 구독합니다. 내비 맵에 없는 장애물을 찾아 피하는 데 씁니다
-(`dusan_common/obstacle_layer.py`, [README](../README.md#obstacles-2026-10-26), [REPORT §7.8](../docs/REPORT.md)).
+(`dusan_common/dusan_common/obstacle_layer.py`, [USAGE §8.3](../docs/USAGE.md#obstacle-avoidance), [REPORT §7.8](../docs/REPORT.md#obstacle-avoidance)).
 - 증거는 `step` 레이어와 같은 기준입니다(5×5 셀 창의 최고 − 최저 ≥ 0.22 m). `config/terrain.yaml`의 `map.step_crit`나
   `map.step_window`를 바꾸면 세 노드의 `obstacle_step_height`, `obstacle_step_window`도 같이 바꿔야 합니다. 테스트가 두 값이 같은지 검사합니다.
 - `publish_rate`(5 Hz)가 장애물 확정 지연을 정합니다(2프레임 = 0.4 s).
@@ -558,7 +558,7 @@ Gazebo의 순응적인 위치 서보(p 450 N m/rad)에 맞게 고쳤습니다. M
 `physics_check.py`와 `tune_locomotion.py`는 `pip install mujoco matplotlib`이 필요한 개발 도구입니다.
 런타임 패키지(`module1_locomotion`, `dusan_common`)는 mujoco와 scipy를 import하지 않습니다.
 `gazebo_check.py`는 conda-forge Gazebo Harmonic의 파이썬 바인딩이 필요합니다. 렌더링(카메라 영상, GUI)과 ROS 노드·브리지는 없으므로
-Ubuntu의 GUI 실행 결과는 [README §7.4](../README.md#results-template)의 절차로 따로 기록합니다.
+Ubuntu의 GUI 실행 결과는 [REPORT §8.4](../docs/REPORT.md#84-gazebo-실측-결과-기입용-템플릿과-측정-절차)의 절차로 따로 기록합니다.
 
 ### 4.1 강체 오프라인 평가 (`tools/eval_locomotion.py`)
 
@@ -705,8 +705,8 @@ CPU 코어 수 − 2(최대 8)입니다. 이전 실행을 비교 기준으로 �
   - ros_gz_bridge, ROS 실행기 스레드, Gazebo가 렌더링한 깊이 영상(노이즈·결측), 실제 CPU 부하에서의 타이밍.
   - 월드 전체가 아니라 단순화한 지형 조각(배관 1개와 단차, 계단, 경사로, 철판)만 다룹니다.
   - 시드 3개는 결과가 갈리는 밀기 같은 시나리오에서 표본이 작습니다((f)는 시드 0–5에서 3/6).
-- Gazebo 첫 실행에서 확인할 것: 무릎 진동(서보 안정성), 평지 trot 중 `/locomotion/state`의 `slip_events`가 0인지,
-  [README §7.4](../README.md#results-template)의 표와 [REPORT 표 8-4](../docs/REPORT.md#842-기입용-표).
+- Gazebo 첫 실행에서 확인할 것: 무릎 진동(서보 안정성), 평지 trot 중 `/locomotion/state`의 `slip_events`가 0인지.
+  기록 표는 [REPORT 표 8-4](../docs/REPORT.md#842-기입용-표).
 
 **남은 실패와 원인**
 
@@ -1203,7 +1203,7 @@ python tools/gazebo_check.py --mode stable --map depth --label stable_regress2 -
 - `stable_regress2`는 `final_default`·`routes_final`과 33회 실행 모두 통과 여부, 도착 시간, 진행 거리까지 같습니다(stable 퇴행 없음).
 - MPC 실측 지연(동시 실행 10개): 실행별 평균 18–28 ms, 중앙값 22–25 ms, p95 30–35 ms, 최대 45–118 ms.
 - 장애물 회피 미션(`tools/obstacle_check.py`): MPC r t u v w x z 21/21(stable 21/21), 45 m 경로 y 0/3(stable 3/3).
-  표는 [README](../README.md#mpc-2026-10-26)에 있습니다.
+  표는 [REPORT §7.8.3](../docs/REPORT.md#783-gazebo-신규-박스-실험-toolsobstacle_checkpy)에 있습니다.
 
 **경사로 약점** (11.8°, x 51.2 → 47.0, 깊이 맵). 공식 실행에서 경사로를 오른 8회 중 3회가 x 48.2–48.8에서 넘어졌습니다.
 경사로만 떼어 출발점 3곳 × 시드 3개로 진단했습니다(스크래치).

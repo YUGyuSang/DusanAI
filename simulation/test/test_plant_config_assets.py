@@ -200,11 +200,14 @@ def test_web_assets_self_contained():
     assert ids_js <= ids_html, ids_js - ids_html
     # every command button maps to a valid backend command
     from plant_simulation.web_server import validate_command
-    for target, cmd in re.findall(r'data-target="([a-z]+)" data-cmd="([^"]+)"', html):
+    cmds = re.findall(r'data-target="([a-z]+)" data-cmd="([^"]+)"', html)
+    for target, cmd in cmds:
         assert validate_command(target, cmd)[0], (target, cmd)
-    labels = set(re.findall(r">([A-Za-z /-]+)</button>", html))
-    for needed in ("Start mission", "Patrol", "Gas seek", "RTH", "Pause", "Abort", "Stand", "Sit", "Recover"):
-        assert needed in labels, needed
+    # every operator command still has a button (the labels are Korean, so the commands are checked)
+    needed = {("mission", "start"), ("mission", "patrol"), ("mission", "seek"), ("mission", "rth"),
+              ("mission", "pause"), ("mission", "abort"), ("locomotion", "stand"), ("locomotion", "sit"),
+              ("locomotion", "recover"), ("locomotion", "estop"), ("locomotion", "release")}
+    assert needed <= set(cmds), needed - set(cmds)
     assert "textContent" in js and "innerHTML" not in js        # untrusted strings never parsed as HTML
 
 

@@ -4,7 +4,7 @@
 |---|---|
 | 대상 플랫폼 | Ubuntu 26.04 + ROS 2 Lyrical + Gazebo Jetty (gz-sim 10). Ubuntu 24.04 + Jazzy + Harmonic 도 지원 |
 | 저장소 구조 | `module1_locomotion/`, `module2_inspection/`, `module3_gas_safety/`, `simulation/` (ROS 패키지 `plant_simulation`), `dusan_common/`, `docs/`, `tools/`, `scripts/` |
-| 함께 볼 문서 | [README](../README.md) (설치·실행), [SETUP_GUIDE](SETUP_GUIDE.md), [DESIGN_SPEC](DESIGN_SPEC.md) (인터페이스 계약), 모듈별 README (부록 A) |
+| 함께 볼 문서 | [README](../README.md) (개요·설치), [USAGE](USAGE.md) (실행·사용), [SETUP_GUIDE](SETUP_GUIDE.md), [DESIGN_SPEC](DESIGN_SPEC.md) (인터페이스 계약), 모듈별 README (부록 A) |
 | 수치 출처 | `docs/results/*.json`: 오프라인 평가 6종(2026-10-12 릴리스 재실행본. `locomotion_eval.json`만 2026-10-13 최종 점검에서 다시 실행), MuJoCo 물리 검증 `physics_check.json`과 파라미터 탐색 `tuning.json`(2026-10-13), **Gazebo 헤드리스 검증 `gazebo_check.json`(2026-10-13, Gazebo Harmonic. MPC 최종 검증 `mpc_final2`와 stable 회귀 `stable_regress2`는 2026-10-26)**. 릴리스 테스트 요약, 오프라인 대시보드 데모의 `summary.json`. 지도에 없는 장애물의 Gazebo 점검(`tools/obstacle_check.py`, 2026-10-26)은 결과 JSON을 커밋하지 않았고 수치는 §7.8에 옮겼다 |
 
 > [!IMPORTANT]
@@ -91,7 +91,7 @@
 | MuJoCo 물리 검증 (`tools/physics_check.py`) | 필수 시나리오 11개 중 9개가 시드 0/1/2 모두 통과. (e) 배관 + 단차 0/3, (f) 측면 밀기 2/3 | 54개 작업, 작업 시간 합 약 23분. §4.7 |
 | 파라미터 탐색 (`tools/tune_locomotion.py`) | 2회 실행(21.3분, 23.9분, 12 워커). 채택 후보 없음, 기본값 유지 | §4.9 |
 | `py_compile` | .py 170개, 실패 0 (2026-10-13 최종 점검. 릴리스 점검 때 140개) | |
-| CRLF 검사 | 2026-10-13 최종 점검: 텍스트 파일 321개(py, yaml, sh, xacro, sdf, urdf, rviz, config, html, js, css, md, xml, json) 중 CRLF 0 (릴리스 점검 때 205개 중 0) | USB 복사 후 `\r` 오류 방지. 이후 Windows에서 고친 파일이 CRLF일 수 있다. Python·YAML·xacro는 그대로 동작하고 `build.sh`·`check_install.sh`가 경고한다(README FAQ Q4) |
+| CRLF 검사 | 2026-10-13 최종 점검: 텍스트 파일 321개(py, yaml, sh, xacro, sdf, urdf, rviz, config, html, js, css, md, xml, json) 중 CRLF 0 (릴리스 점검 때 205개 중 0) | USB 복사 후 `\r` 오류 방지. 이후 Windows에서 고친 파일이 CRLF일 수 있다. Python·YAML·xacro는 그대로 동작하고 `build.sh`·`check_install.sh`가 경고한다([USAGE FAQ Q4](USAGE.md#faq-crlf)) |
 | launch/config 아래 `__pycache__` | 없음 | setup.py가 share/에 설치하지 않도록 |
 | `bash -n scripts/*.sh` | 8/8 통과 (`run_demo.sh` 포함) | |
 | `node --check simulation/web/app.js` | 통과 | 대시보드 스크립트 문법 |
@@ -1609,7 +1609,7 @@ sequenceDiagram
   Note over I: mission_autostart:=true 이면 25 s 뒤 'start'
 ```
 
-주요 인자: `gui`, `headless_rendering`, `rviz`, `thermal_source`(gazebo | synthetic), `mission_autostart`, `autostart_delay`(25 s), `dashboard_port`(8080), `teleop_terminal`, `metrics`(true), `module_delay`(6 s), `demo`(false), `hud`(true), `follow_camera`('' = demo), `follow_offset`(-2.5,0.0,1.6). 전체 목록은 [README §6.1](../README.md#run-bringup)에 있다.
+주요 인자: `gui`, `headless_rendering`, `rviz`, `thermal_source`(gazebo | synthetic), `mission_autostart`, `autostart_delay`(25 s), `dashboard_port`(8080), `teleop_terminal`, `metrics`(true), `module_delay`(6 s), `demo`(false), `hud`(true), `follow_camera`('' = demo), `follow_offset`(-2.5,0.0,1.6). 전체 목록은 [USAGE §1](USAGE.md#run-bringup)에 있다.
 
 **데모 모드** (`bash scripts/run_demo.sh` = `demo:=true`): 미션 자동 시작에 두 가지를 더한다. `follow_camera`는 gz CLI로 GUI 카메라가 로봇 뒤 2.5 m, 위 1.6 m에서 따라가게 한다(`/gui/track`, 안 되면 Harmonic의 `/gui/follow`, 실패해도 launch는 계속). `demo_hud`는 점검 카메라 영상에 가스 농도(10 / 25 ppm 색 구분, 경보 시 깜빡이는 테두리), 배터리, 임무, 보행 상태를 겹쳐 `/demo/hud`(bgr8)와 `/demo/hud_rgb`(rgb8)로 발행하고, 브리지가 rgb8 사본을 Gazebo GUI의 "Robot HUD" 창(gz 토픽 `/demo/hud`)으로 보낸다. 한글은 Pillow + 한글 글꼴(`python3-pil`, `fonts-noto-cjk`)이 있을 때 쓰고, 없으면 영어로 쓴다. 누출 밸브의 가스 파티클은 초록색 반투명이다(Harmonic의 ogre2는 파티클 색 범위를 무시하고 재질 diffuse 색으로 칠하므로 재질 색을 초록으로 정함). 추적 카메라와 HUD 창은 개발 PC의 Harmonic GUI(작은 시험 월드)에서 확인했고, 로봇이 들어간 전체 bringup에서는 확인하지 못했다.
 
@@ -1754,6 +1754,7 @@ sequenceDiagram
 | 미션 관리자가 죽었는지 텔레옵 화면에서 알 수 없음 (2026-10-14) | `/mission/state`(0.5 s마다 재발행)가 5 s 끊기면 텔레옵 상태 줄에 `mission X(stale Ns)`를 표시한다. 그 상태에서 미션 키(`t p g h o`)를 누르면 받는 노드가 없다는 경고를 출력한다 |
 | 미션 관리자가 공장에 들어서면 죽음. `/mission/state`가 멈춰 대시보드에서 빨강, 미션 정지 (Ubuntu·Lyrical 실행 보고, 2026-10-26) | 원인: rclpy는 로그 호출 위치(파일·줄)마다 심각도를 하나만 허용하고, 바뀌면 `ValueError: Logger severity cannot be changed between calls`를 낸다. 미션 관리자는 모든 미션 이벤트를 한 줄에서 심각도만 바꿔 남겼고, info 이벤트 뒤 첫 warning(공장 입구)에서 죽었다. 수정: `_log_event`가 심각도마다 다른 줄에서 로그를 남기고, 그 틱의 명령을 모두 발행한 뒤에 로그를 쓴다. 재발 방지: `dusan_common/rclpy_logger_rules.py`의 `CallSiteRules`로 노드 스텁 테스트의 가짜 로거가 같은 규칙을 검사한다(plant 노드, 게이지 노드, M3 노드, `terrain_mapper`·`keyboard_teleop`). 회귀 테스트 `test_mission_manager_logs_events_of_every_level_without_dying` |
 
+<a id="obstacle-avoidance"></a>
 ### 7.8 지도에 없는 장애물 회피 (2026-10-26)
 
 경로 계획기(미션 순찰·자체 귀환, `return_to_home`, 가스 탐색기의 국소 계획)는 정적 내비 맵만 알았다. 지도에 없는 상자가 경로에 있으면 미션은 8 s 정체 → 후진 → 같은 지도로 재계획을 4회 반복하고 뷰포인트를 건너뛰었다. 이제 로봇 자신의 깊이 카메라로 만든 elevation map에서 새 장애물을 찾아 피한다. 지도와 무관하게 동작한다. 지도가 없으면 모든 장애물을 새것으로 본다. 기본으로 켜져 있고, `obstacle_enabled: false`면 구독도 하지 않아 이전 동작과 같다.
@@ -1818,7 +1819,7 @@ flowchart LR
 | `source_seeker` | 메모리만 | near 층을 내비 격자에 합침(탐색 중 최대 1 Hz, `obstacle_rebuild_period`). 기존 국소 A* 우회와 척력이 그대로 피함. 진행 중 경로가 막히면 다시 계획 |
 
 - 주행하지 않을 때는 프레임을 1 Hz로만 처리한다(`obstacle_idle_period` 1.0 s). 대상은 미션 비주행 상태, RTH의 MONITOR·DOCKED·CHARGING, 탐색기 비활성이다.
-- 주요 파라미터는 부록 B와 [README](../README.md#obstacles-2026-10-26), 전체 목록은 [DESIGN_SPEC §5](DESIGN_SPEC.md)와 각 YAML 주석에 있다.
+- 주요 파라미터는 부록 B와 [USAGE §8.3](USAGE.md#obstacle-avoidance), 전체 목록은 [DESIGN_SPEC §5](DESIGN_SPEC.md)와 각 YAML 주석에 있다.
 
 #### 7.8.2 인지 실측
 
@@ -1856,7 +1857,7 @@ flowchart LR
 
 #### 7.8.3 Gazebo 신규 박스 실험 (`tools/obstacle_check.py`)
 
-사용법은 [README §8.7](../README.md#obstacle-check)에 있다. 실험 조건은 다음과 같다.
+사용법은 [USAGE §12](USAGE.md#obstacle-check)에 있다. 실험 조건은 다음과 같다.
 
 - 시뮬레이터: Gazebo Harmonic 헤드리스, 실제 `plant.sdf` + DART 1 ms
 - 제어: 실제 제어기(stable 기본값), 실제 `MissionLogic`과 장애물 층
@@ -1931,7 +1932,7 @@ MPC 모드, 시드 0·1·2 (2026-10-26, MPC 안정화 최종 코드, 실측 MPC 
 | (Gazebo t) 멀리서 본 박스의 1.0 m 그림자가 C-OBS1 북쪽 틈을 막아 경로가 파이프를 넘고 넘어짐 | near 경로가 1.5배 이상 싸면 선택 | t 3/3, 넘어짐 0 |
 | RTH 상태의 `obstacle.source`가 실제 입력과 다름 | 노드 파라미터를 전달 | 표시 수정 |
 
-관련 테스트는 전체 테스트에 들어 있다: `dusan_common/test/test_obstacle_layer.py`, `simulation/test/test_plant_obstacles.py`, `module3_gas_safety/test/test_m3_obstacles.py`, `tools/test/test_obstacle_perception.py`, `tools/test/test_obstacle_check.py`, 그리고 노드 스텁 테스트(목록은 [README §8.1](../README.md#windows)).
+관련 테스트는 전체 테스트에 들어 있다: `dusan_common/test/test_obstacle_layer.py`, `simulation/test/test_plant_obstacles.py`, `module3_gas_safety/test/test_m3_obstacles.py`, `tools/test/test_obstacle_perception.py`, `tools/test/test_obstacle_check.py`, 그리고 노드 스텁 테스트(`simulation/test/test_plant_nodes_stubbed.py`, `module3_gas_safety/test/test_m3_nodes_stubbed.py`).
 
 #### 7.8.5 한계
 
@@ -2292,7 +2293,7 @@ flowchart LR
 | 36 | REPORT.md: 모듈별 알고리즘·구현 과정·문제 해결 | 이 문서 §4~§7 | — | ● |
 | 37 | REPORT.md: 시뮬레이션 결과·평가 지표 분석 (보행 안정성, 점검 정확도, 자율성) | 이 문서 §8 | 오프라인 값 + Gazebo 템플릿 | ● / ◐ |
 | 38 | REPORT.md: 디지털 트윈 관제 화면 캡처 및 설명 | 이 문서 §7.5 | 오프라인 데모 캡처 4장 | ● (데모) |
-| 39 | README.md: 환경 설정, 모듈별 실행, 결과 확인 | `README.md`, `docs/SETUP_GUIDE.md` | — | ● |
+| 39 | README.md: 환경 설정, 모듈별 실행, 결과 확인 | `README.md`, `docs/USAGE.md`, `docs/SETUP_GUIDE.md` | — | ● |
 | 40 | 모델링: 복도 45 × 3.5 m, 높이 4 m | 48.56 × 3.55 m, 4.0 m | §3.3 | ● |
 | 41 | 모델링: 공장 25 × 18 m, 높이 7 m | 외곽 25.19 × 18.65 m, 높이 7.3 m | §3.3 | ● |
 | 42 | 모델링: 험지 방해물 복도 3, 공장 5 이상 | 5 / 9 | §3.3 | ● |
@@ -2417,7 +2418,7 @@ python tools/eval_gas.py                 # → gas_eval.json, gas_*.png, rth_*.p
 # 개발 전용 (pip install mujoco matplotlib)
 python tools/physics_check.py            # → physics_check.json, physics_*.png (MuJoCo 물리 검증, §4.7·§4.8)
 python tools/tune_locomotion.py          # → tuning.json, tuning_*.png (파라미터 탐색 약 24분, §4.9)
-# 개발 전용 (Gazebo Harmonic 파이썬 바인딩: Windows conda-forge gz-sim8, README §8.6)
+# 개발 전용 (gz-sim 8 파이썬 바인딩 필요. 설치는 docs/SETUP_GUIDE.md §7, 명령은 docs/USAGE.md §12)
 python tools/gazebo_check.py --mode stable --label stable --scenarios a b c d e i   # → gazebo_check.json (평지, §4.10.3)
 python tools/gazebo_check.py --label plant_depth --map depth --scenarios j k m o    # 실제 plant.sdf, 깊이 카메라 맵 (§4.10.4)
 python tools/gazebo_check.py --mode stable --map depth --label final_default --scenarios a e i k o j   # 지금 기본값 (§4.10.4)
@@ -2442,7 +2443,7 @@ python tools/plot_metrics.py /tmp/dusan_metrics/<세션>
 
 ```bash
 bash scripts/install_deps.sh --add-ros-repo && bash scripts/build.sh && bash scripts/check_install.sh
-# 업데이트: 폴더 전체를 ~/dusan_ws/src/DusanAI에 다시 복사 → sudo apt install python3-pil fonts-noto-cjk → build.sh → check_install.sh (README 맨 위)
+# 업데이트: cd ~/dusan_ws/src/DusanAI && git pull → build.sh → check_install.sh (docs/USAGE.md §11)
 bash scripts/run_bringup.sh [rviz:=true] [thermal_source:=synthetic] [mission_autostart:=true]
 bash scripts/run_teleop.sh                                   # 별도 터미널
 bash scripts/run_demo.sh                                     # 데모: 자동 미션 + 추적 카메라 + HUD (§7.1)

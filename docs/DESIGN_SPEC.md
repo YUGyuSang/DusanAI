@@ -50,8 +50,8 @@ Ubuntu PC and runs it there. Therefore:
 
 ```
 DusanAI/
-  README.md                  execution guide (root)
-  docs/                      REPORT.md, DESIGN_SPEC.md, SETUP_GUIDE.md, images/
+  README.md                  project overview, install, quick start (root)
+  docs/                      USAGE.md (run/usage guide, FAQ), REPORT.md, DESIGN_SPEC.md, SETUP_GUIDE.md, images/
   dusan_common/              shared lib (DONE — read it, do not change APIs)
   module1_locomotion/        terrain mapping, MPC gait controller, fall recovery, teleop
   module2_inspection/        gauge reader, thermal fusion, patrol planner

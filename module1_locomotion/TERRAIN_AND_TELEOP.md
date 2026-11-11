@@ -275,8 +275,7 @@ ros2 launch module1_locomotion locomotion.launch.py teleop_terminal:=xterm
 출력하고, 실시간 상태 줄에 모드, 속도 스케일, 현재 명령, 수동 오버라이드 / E-STOP, `/locomotion/state`의
 모드와 보행, 배터리 %, 미션 상태를 보여 줍니다. `/mission/state`가 5 s 넘게 오지 않으면 미션 상태 뒤에
 `(stale Ns)`를 붙이고(예: `mission PATROL(stale 12s)`), 그 상태에서 미션 키(`t` 등)를 누르면 "mission_manager가
-응답하지 않음, bringup 터미널 확인" 경고를 출력합니다. 2026-10-26 이전 빌드에서는 공장 입구에서 미션 관리자가 rclpy 로거
-예외(`Logger severity cannot be changed between calls`)로 죽어 이 표시가 나왔습니다(루트 README FAQ Q9, 고침). stdin이 TTY가 아니면(터미널 prefix 없이 `ros2 launch`로
+응답하지 않음, bringup 터미널 확인" 경고를 출력합니다(대처는 [USAGE FAQ Q9](../docs/USAGE.md#faq-q9)). stdin이 TTY가 아니면(터미널 prefix 없이 `ros2 launch`로
 시작) 노드는 "Gazebo 키 전용" 모드로 동작합니다. Gazebo 창을 클릭하고 같은 키를 쓰면 됩니다(KeyPublisher
 GUI 플러그인이 `/keyboard/keypress`에 Qt 키 코드를 발행하고 `plant_simulation`이 브리지합니다).
 
