@@ -469,11 +469,12 @@ class FallRecovery:
         """Longest duration of SLIDE [s]."""
         return self.p.slide_fold_time + max(int(self.p.slide_cycles), 1) * self.slide_cycle_time()
 
-    def slide_pose(self, t_rel: float) -> np.ndarray:
-        """SLIDE targets ``t_rel`` s after entering: fold (from the entry
-        posture), then cycles of plant - stroke - lift - return."""
+    def _stroke_traj(self, t_rel: float, frames) -> np.ndarray:
+        """Targets ``t_rel`` s into a SLIDE / BACK_OFF with the keyframes
+        (fold, plant, stroke, lift): fold (from the entry posture), then
+        cycles of plant - stroke - lift - return (to fold)."""
         p = self.p
-        fold, plant, stroke, lift = self.slide_poses(self._slide_dir)
+        fold, plant, stroke, lift = frames
         if t_rel < p.slide_fold_time:
             return kin.clamp_joints(self._interp(self._q_from, fold, t_rel / p.slide_fold_time))
         u = (t_rel - p.slide_fold_time) % self.slide_cycle_time()
@@ -483,6 +484,18 @@ class FallRecovery:
                 return self._interp(q0, q1, u / dur)
             u -= dur
         return fold
+
+    def _stroke_done(self, t_rel: float, longest: float, yaw0: float, yaw: float, turn_deg: float) -> bool:
+        """SLIDE / BACK_OFF over: ``longest`` s used up, or the heading has
+        turned ``turn_deg`` from ``yaw0`` and the legs are between two strokes."""
+        p = self.p
+        turned = abs(math.remainder(float(yaw) - yaw0, 2.0 * math.pi))
+        between = (t_rel - p.slide_fold_time) % self.slide_cycle_time() < p.slide_plant_time
+        return t_rel >= longest or (turned >= turn_deg * DEG and between)
+
+    def slide_pose(self, t_rel: float) -> np.ndarray:
+        """SLIDE targets ``t_rel`` s after entering."""
+        return self._stroke_traj(t_rel, self.slide_poses(self._slide_dir))
 
     def back_off_poses(self, ledge_dir: float, sweep: float = 1.0):
         """(fold, plant, stroke, lift) keyframes of BACK_OFF: the legs at the high
@@ -504,21 +517,14 @@ class FallRecovery:
         return tuple(out)
 
     def back_off_time(self) -> float:
+        """Longest duration of BACK_OFF [s]."""
         return self.p.slide_fold_time + max(int(self.p.back_off_cycles), 1) * self.slide_cycle_time()
 
     def back_off_traj(self, t_rel: float) -> np.ndarray:
-        p = self.p
-        fold, plant, stroke, lift = self.back_off_poses(self._ledge_dir,
-                                                        1.0 if self._ledge_turns % 2 == 1 else -1.0)
-        if t_rel < p.slide_fold_time:
-            return kin.clamp_joints(self._interp(self._q_from, fold, t_rel / p.slide_fold_time))
-        u = (t_rel - p.slide_fold_time) % self.slide_cycle_time()
-        for q0, q1, dur in ((fold, plant, p.slide_plant_time), (plant, stroke, p.slide_stroke_time),
-                            (stroke, lift, p.slide_lift_time), (lift, fold, p.slide_return_time)):
-            if u < dur:
-                return self._interp(q0, q1, u / dur)
-            u -= dur
-        return fold
+        """BACK_OFF targets ``t_rel`` s after entering (the 1st BACK_OFF of a
+        fall sweeps one way, the 2nd the other, ...)."""
+        sweep = 1.0 if self._ledge_turns % 2 == 1 else -1.0
+        return self._stroke_traj(t_rel, self.back_off_poses(self._ledge_dir, sweep))
 
     def _propped_on_back(self) -> Optional[float]:
         """Back roll samples of a body lying on the back propped up on an
@@ -628,9 +634,7 @@ class FallRecovery:
 
         if self.state == SLIDE:
             q = self.slide_pose(dt_s)
-            turned = abs(math.remainder(float(yaw) - self._slide_yaw0, 2.0 * math.pi))
-            between = (dt_s - p.slide_fold_time) % self.slide_cycle_time() < p.slide_plant_time
-            if dt_s >= self.slide_time() or (turned >= p.slide_yaw_deg * DEG and between):
+            if self._stroke_done(dt_s, self.slide_time(), self._slide_yaw0, yaw, p.slide_yaw_deg):
                 self._enter(DAMP, t, q_meas)
                 return kin.clamp_joints(np.asarray(q_meas, dtype=float))
 
@@ -701,9 +705,7 @@ class FallRecovery:
 
         if self.state == BACK_OFF:
             q = self.back_off_traj(dt_s)
-            turned = abs(math.remainder(float(yaw) - self._ledge_yaw0, 2.0 * math.pi))
-            between = (dt_s - p.slide_fold_time) % self.slide_cycle_time() < p.slide_plant_time
-            if dt_s >= self.back_off_time() or (turned >= p.back_off_yaw_deg * DEG and between):
+            if self._stroke_done(dt_s, self.back_off_time(), self._ledge_yaw0, yaw, p.back_off_yaw_deg):
                 self._enter(DAMP, t, q_meas)
                 return kin.clamp_joints(np.asarray(q_meas, dtype=float))
 
