@@ -582,7 +582,7 @@ python tools/generate_world.py                        # world_layout.yaml을 고
 | `tools/physics_check.py` (MuJoCo 물리 검증, `pip install mujoco`), `tools/tune_locomotion.py` (파라미터 탐색) | `python tools/physics_check.py --quick` | `docs/results/physics_check.json`, [module1 README §4](../module1_locomotion/README.md#4-평가) |
 | `tools/gazebo_check.py` (Gazebo 헤드리스 보행 검증) | `python tools/gazebo_check.py --scenarios a b --seeds 0 --duration 9 --no-save` | `docs/results/gazebo_check.json`, [module1 README §4.5](../module1_locomotion/README.md#45-gazebo-헤드리스-검증-toolsgazebo_checkpy) |
 | `tools/obstacle_check.py` (지도에 없는 박스를 넣은 미션) | `python tools/obstacle_check.py --scenarios u --seeds 0` | `--out` 파일, [REPORT §7.8.3](REPORT.md#783-gazebo-신규-박스-실험-toolsobstacle_checkpy) |
-| `tools/fall_check.py` (넘어짐 → 물리 자가 복구: 옆·등·밀기·벽·경사로·미션 중) | `python tools/fall_check.py --cases side back --seeds 0 --no-save` | `docs/results/fall_check.json`, [module1 README §4.9](../module1_locomotion/README.md#49-gazebo-넘어짐-복구-검증-toolsfall_checkpy) |
+| `tools/fall_check.py` (넘어짐 → 물리 자가 복구: 옆·등·밀기·벽·경사로·미션 중·배관 위에 누움·경사로 턱에 걸침) | `python tools/fall_check.py --cases side back --seeds 0 --no-save` | `docs/results/fall_check.json`, [module1 README §4.9](../module1_locomotion/README.md#49-gazebo-넘어짐-복구-검증-toolsfall_checkpy) |
 | `tools/mission_check.py` (데모 미션 전체: 도크 → 8개 계기판 → 가스 탐색 → 귀환·도킹) | `python tools/mission_check.py --seeds 0 --out <파일>.json` | `--out` 파일, [module1 README §4.10](../module1_locomotion/README.md#410-gazebo-전체-미션-검증-toolsmission_checkpy) |
 
 - Gazebo 도구 네 개는 gz-sim 8 파이썬 바인딩(`gz.sim8`, `gz.transport13`)이 필요합니다. conda-forge의 `gz-sim8` 등으로 설치합니다([SETUP_GUIDE §7](SETUP_GUIDE.md#7-개발-도구)).

@@ -384,6 +384,8 @@ NORMAL --(|roll| 또는 |pitch| > 55 deg 또는 높이 < 0.12 m가 0.3 s 지속,
           또는 |roll| 또는 |pitch| > 30 deg가 2 s 지속 = 벽 등에 기대 섬)--> FALL_DETECTED
 FALL_DETECTED -> DAMP -> TUCK -> [|roll| > 120 deg이면 ROCK] -> SELF_RIGHT -> PREPARE -> STAND_UP -> VERIFY -> NORMAL
 SELF_RIGHT --(배 대신 등 쪽으로 넘어감)--> ROCK (다음 시도로 셈, DAMP / TUCK 생략)
+ROCK --(양쪽 방향 모두 시간 초과 + 장애물에 받쳐 누움: 중앙값 |pitch| > 7 deg, 높이 < 0.2 m)--> SLIDE -> DAMP (다음 시도)
+VERIFY --(몸은 바로 섰는데(|roll| < 20 deg) |pitch| > 30 deg로 두 번째 실패: 턱에 걸침)--> BACK_OFF -> DAMP
 실패 -> 다음 시도 (DAMP) ... 3회 시도 후 -> recovery_failed -> FAILED
                                          (assisted_reset: true일 때만 ASSISTED_RESET = gz set_pose 순간이동)
 FAILED --(다리로 서 있음이 0.3 s 확인)--> NORMAL (컨트롤러가 측정 자세에서 일어섬)
@@ -404,6 +406,8 @@ FAILED --(다리로 서 있음이 0.3 s 확인)--> NORMAL (컨트롤러가 측�
 | PREPARE (1.3 s) | ① 무릎을 접고 hip_x를 가운데로, hip_y는 그대로(0.35 s) ② 무릎을 접은 채 hip_y를 1.25로(0.6 s) ③ (0, 1.20, -2.55)(0.35 s) | 배를 대고 발을 hip 아래로. SELF_RIGHT에서 편 다리를 땅에 댄 채 hip_y를 돌리면 0.5 m 지렛대가 45 N·m 한계에 걸려 몸이 다시 옆으로 넘어갔습니다. 무릎을 먼저 접으면(발까지 0.14 m) 5-10 N·m로 몸을 넘깁니다 |
 | STAND_UP (2.5 s) | 서기 자세까지 smoothstep | |
 | VERIFY | 1.5 s 안에 0.3 s 동안 똑바로 섬(\|roll\|, \|pitch\| < 25 deg, 높이 > 0.22 m) | 성공 -> `recovered` |
+| SLIDE (배관 위에 등을 대고 누움) | 앞다리를 지지대로 세움(hip_y -1.6, knee -1.5: 정강이가 바닥을 짚음) → 발을 붙인 채 hip_x를 +0.6에서 -0.6으로 함께 쓸기(0.8 s) → 들기(hip_y -0.6) → 되돌리기. 뒷다리는 접음. 머리 방향이 80° 바뀌면(최대 6회) 끝 | C-OBS5 위에 누우면 몸통 뒤쪽이 배관에, 앞쪽이 바닥에 닿아 ROCK이 배관을 받침점 삼아 제자리로 돌아왔습니다. 앞쪽을 옆으로 밀어 몸을 돌리면 배관과 나란해지거나(능선 위라 한쪽으로 기움) 배관 밖으로 비켜나 바닥에 눕고, 다음 ROCK이 넘깁니다. 같은 넘어짐에서 다음 SLIDE는 반대로 돎 |
+| BACK_OFF (턱에 걸침) | 낮은 쪽 다리는 접고, 높은 쪽 다리를 높은 바닥에 짚은 채(hip_y 0.9, knee -1.6) hip_x로 함께 옆으로 쓸기 → 들기 → 되돌리기. 머리 방향이 70° 바뀌면(최대 6회) 끝, 다음 BACK_OFF는 반대 방향 | 경사로 남쪽 가장자리(난간 없음) 밖으로 떨어지면 앞발은 경사로, 뒷발은 0.3 m 아래 통로에 둔 채 pitch 45°로 걸쳐 일어서기만 되풀이했습니다. 몸을 돌려 턱과 나란하게 하면 통로 쪽으로 떨어지고, 평평한 바닥에서 다시 일어섭니다 |
 
 30° / 2 s 기울기 조건(`fall_lean_deg`, `fall_lean_time`)은 벽 쪽으로 밀린 로봇이 벽에 기대 41° 기운 채 STAND로 남아
 멈춘 경우 때문에 넣었습니다(55°에 닿지 않아 넘어짐으로 보지 않았음). 이벤트 `fall`, `recovered`, `recovery_failed`,
@@ -1267,6 +1271,8 @@ python tools/gazebo_check.py --mode stable --map depth --label stable_regress2 -
 | `ramp_walk` | 11.8° 복도 경사로를 trot 0.3 m/s로 오르다가 경사로 위에서 측면 250-350 N |
 | `ramp_push` | 경사로 가운데(x = 49.1 m)까지 걸어 올라가 멈추고 2.5 s 뒤 측면 300-400 N |
 | `mission` | 실제 MissionLogic이 위층 복도에서 V1으로 가는 미션 중 약 14 s에 측면 450-550 N. 일어난 뒤 미션이 이어져 V1에 도착해야 함 |
+| `pipe_back` | C-OBS5 배관(0.08 m)을 건너다 넘어진 자세로 스폰: 등을 대고(roll 180 ± 10°), 배관을 가로지르는 방향(서쪽 / 동쪽, ±20°), 배관이 몸통 뒤쪽 아래(중심 뒤 0.04-0.14 m)에 있어 pitch 약 +11° |
+| `ramp_edge` | 경사로 남쪽 가장자리(난간 없음) 밖으로 떨어져 걸친 자세로 스폰: 한 쌍의 발은 경사로, 다른 쌍은 0.2-0.4 m 아래 통로, pitch 약 45°(짝수 시드는 북쪽을 보고 앞이 높음, 홀수 시드는 남쪽) |
 
 평지 케이스는 지도 없이, plant 케이스는 Ubuntu처럼 깊이 카메라 → `terrain_mapper` 지도(`--map depth`)로 걷습니다.
 옆·등으로 스폰하는 케이스는 roll / pitch를 오도메트리에서 읽습니다(`use_imu_orientation: false`). gz IMU의 자세가 스폰
@@ -1276,7 +1282,7 @@ python tools/gazebo_check.py --mode stable --map depth --label stable_regress2 -
 따로 셉니다. 밀어도 넘어지지 않은 실행은 복구율에서 뺍니다.
 
 ```
-python tools/fall_check.py                                   # 9개 케이스 x 시드 0-9 -> docs/results/fall_check.json
+python tools/fall_check.py                                   # 11개 케이스 x 시드 0-9 -> docs/results/fall_check.json
 python tools/fall_check.py --cases side back --seeds 0 1 --no-save
 python tools/fall_check.py --summary-only                    # 저장된 요약 보기
 ```
@@ -1310,6 +1316,19 @@ python tools/fall_check.py --summary-only                    # 저장된 요약 
   100 s 동안 14회 시도하고도 서지 못했습니다(시도는 계속함).
 - 경사로에서 일어선 직후 제자리 trot이나 미션 재개 중에 다시 넘어진 경우가 2회 있었습니다(`ramp_push` 1, `mission` 1).
   두 번 다 다시 일어나 걸었습니다. 경사면을 가로질러 걷는 보행 자체의 약점입니다.
+
+**배관 위에 누움·경사로 턱 (2026-11-12, `pipe_back` / `ramp_edge` 케이스와 SLIDE / BACK_OFF 추가 뒤)**
+
+| 케이스 | 이전 코드 | 현재 | 넘어짐 → STAND 평균 / 최대 | 순간이동 |
+|---|---|---|---|---|
+| `pipe_back` 배관 위에 등을 대고 누움 | 0/5(시드 0-4, ROCK만 되풀이) | **13/13**(시드 0-12) | 37 / 55 s | 0 |
+| `ramp_edge` 경사로 턱에 걸침 | 2/3(시드 0-3. 턱에 걸친 채 남은 시드 2는 일어서기만 되풀이) | **6/7**(시드 2·4·6·10, 10·11·12) | 58 / 84 s | 0 |
+
+- `pipe_back`은 ROCK이 두 방향 모두 시간 초과한 뒤(넘어지고 약 16 s) SLIDE로 몸을 돌리므로 다른 케이스보다 오래 걸립니다.
+  돌린 뒤에는 배가 바닥으로 와서 바로 PREPARE로 가거나(시드 0·5·8·9), 배관 옆 바닥에서 ROCK으로 넘어갔습니다.
+- `ramp_edge` 실패 1회(시드 2)는 BACK_OFF가 매번 같은 방향으로 쓸던 설정의 실행입니다. 처음에 53°만 돌고, 다음 두 번은 몸이
+  거의 돌지 않아 90 s 안에 서지 못했습니다. 그래서 같은 넘어짐의 다음 BACK_OFF는 반대 방향으로 씁니다(시드 10-12는 이 설정).
+- 11개 케이스 × 시드 10-12 전체(33회)는 33/33, 순간이동 0이었습니다(`ramp_push` 시드 12도 이번에는 경사로 위에서 일어섬).
 
 ### 4.10 Gazebo 전체 미션 검증 (`tools/mission_check.py`)
 
@@ -1381,7 +1400,23 @@ python tools/mission_check.py --seeds 0 1 --spawn=24.2,0.5,3.14 --goal=19.8,0.3 
   맡기는 변경을 더해 돌린 미션은 출발 230 s 안에 5회 중 3회 넘어져 중단했고, 기본값은 미션 10회로 확인한 설정으로 두었습니다.
 - `tools/obstacle_check.py`(지도에 없는 박스, r t u v w x z × 시드 3개): 21/21, 넘어짐 0(이전 21/21).
 
-## 5. 튜닝 가이드
+**추가 개선 (2026-11-12)**: 배관 위에 누운 자세 빠져나오기(SLIDE, §3.6), 배관을 경사로로 읽지 않는 지형 pitch
+(`stable_terrain_pitch_window`, §3.9 장애물 보행 ⑤), 가스 탐색 스텝의 배관 건너기 governor(module3 README §4.2).
+
+| | 완료 | 넘어짐 | 탐색 중 넘어짐 | 순간이동 | 미션 시간 |
+|---|---|---|---|---|---|
+| 이전, 시드 10–14 | 4/5 | 6 (1.2/회) | 4 (F-OBS3 출입구) | 0 | 평균 633 s (완료 4회) |
+| **이후, 시드 10–14** | **5/5** | **2 (0.4/회)** | **0** | 0 | 평균 573 s |
+
+- 이전 미완료(시드 10)는 C-OBS5 위에 등을 대고 누워 245 s 동안 서지 못한 경우였습니다. 이후 시드 10은 넘어짐 없이 498 s에
+  끝났습니다. 완료한 실행은 모두 계기판 8/8, 누출원 FOUND입니다. 남은 넘어짐 2회(시드 13)는 C-OBS5 건너기 1회, 순찰 중
+  F-OBS3 배관 끝 1회이고 둘 다 다시 일어나 이어 갔습니다.
+- C-OBS5 구간 실행(위와 같은 `--spawn` / `--goal`, `--duration 50`, 깊이 10 Hz, 방향마다 시드 20개, 넘어지지 않고 통과한 비율):
+  이전 서쪽 7/10·동쪽 5/10(시드 20–29, 넘어진 건너기 40 %) → 이후 서쪽 **16/20**·동쪽 **16/20**(시드 20–39, 20 %).
+  같은 조건에서 건너기 속도 0.15 m/s는 9/20, 건너는 동안 crawl 보행은 12/20으로 나아지지 않았습니다.
+- 회귀: `tools/gazebo_check.py --mode stable --map depth` 시드 0은 9/10(이전 8/10, l 복도 전체가 통과로 바뀜, j는 그대로 실패).
+  `tools/obstacle_check.py` 21/21, 넘어짐 0으로 이전과 같습니다.
+
 
 * **stable 모드 (기본)**: 먼저 Gazebo 하네스로 확인합니다(§4.5, `--mode stable`).
   - 발이 미끄러지거나 몸이 앞뒤로 출렁이면 `stable_stance_max_error`를 줄입니다(0.015 → 0.01, 밀기 6/6). 0.02는
