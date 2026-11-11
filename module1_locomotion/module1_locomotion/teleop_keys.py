@@ -450,7 +450,12 @@ class MissionCommandTracker:
         if not isinstance(d, dict):
             return []
         seq = d.get("cmd_seq")
+        prev = self.seq
         self.seq = int(seq) if isinstance(seq, (int, float)) and not isinstance(seq, bool) else None
+        if self.pending is not None and prev is not None and self.seq is not None and self.seq < prev:
+            # cmd_seq went backwards: mission_manager restarted and counts from 0 again - any record
+            # of the pending command in the new process is the answer to it
+            self.pending["seq0"] = -1
         rc = d.get("recent_commands")
         self.recent = [r for r in rc if isinstance(r, dict)] if isinstance(rc, list) else []
         p = self.pending

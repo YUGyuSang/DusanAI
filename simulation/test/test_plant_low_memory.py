@@ -48,7 +48,7 @@ def test_bringup_default_profile_is_unchanged(tmp_path):
         assert sim[k] == "", k                        # '' = xacro / world / gui.config defaults
     assert not _env(actions, cls)                      # no MALLOC_ARENA_MAX / BLAS thread limits
     n = nodes(actions, cls)
-    assert param_dicts(n["demo_hud"]) == [{"use_sim_time": True}]
+    assert param_dicts(n["demo_hud"]) == [{"use_sim_time": True, "layout_file": ""}]   # no HUD rate override
     sim_actions, _ = run_setup("sim.launch.py", stubs, sim)
     assert set(_xacro_mappings(sim_actions, cls)) == {"enable_thermal", "enable_cameras"}
     gz = _gz_args(sim_actions)

@@ -145,6 +145,8 @@ MISSION_DEFAULTS = {
     "autostart": False,
     "autostart_delay": 15.0,       # s after the node starts (sim time)
     "plan_wait_timeout": 20.0,     # s autostart waits for /patrol/plan_json before falling back
+    "autostart_window": 120.0,     # s: autostart only if this process began stepping before this time;
+                                   #    a respawned mission_manager (later sim time) stays IDLE. <= 0: no limit
     "start_plan_wait": 30.0,       # s a manual start / patrol without a patrol plan yet waits for it (0 = off)
 }
 
@@ -782,6 +784,14 @@ class MissionLogic:
     # ------------------------------------------------------------- autostart
     def _autostart(self, t):
         if not self.p["autostart"] or self._autostarted:
+            return
+        window = float(self.p.get("autostart_window", 0.0) or 0.0)
+        if window > 0.0 and self._t_first > window:
+            # sim time is global: a process whose first step is this late was restarted mid-run
+            # (respawn) - never begin a second patrol on its own, e.g. after the robot has docked
+            self._autostarted = True
+            self._emit("warn", f"autostart skipped: mission_manager started at t={self._t_first:.0f} s "
+                               "(restarted?) - press 't' to start the mission")
             return
         waited = t - self._t_first
         if waited < float(self.p["autostart_delay"]) or self.pose is None:

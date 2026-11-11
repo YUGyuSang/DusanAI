@@ -46,7 +46,7 @@ bash scripts/run_demo.sh --low-memory                          # 8 GB 노트북 
 | `headless_rendering` | `false` | `gui:=false`일 때 카메라를 EGL로 렌더링 (디스플레이 없는 PC, 원격 접속) |
 | `rviz` | `false` | RViz2 실행 (`rviz/plant.rviz`) |
 | `thermal_source` | `gazebo` | `gazebo`: Gazebo 열화상 센서. `synthetic`: `synthetic_thermal_camera` 노드가 열화상을 만들고 Gazebo 센서는 자동으로 꺼짐 |
-| `mission_autostart` | `false` | `autostart_delay` 뒤 전체 미션(`start`) 자동 시작 |
+| `mission_autostart` | `false` | `autostart_delay` 뒤 전체 미션(`start`) 자동 시작. 실행 중 다시 뜬 mission_manager(시뮬레이션 120 s 이후)는 자동 시작하지 않으니 `t`로 시작 |
 | `autostart_delay` | `25.0` | 자동 시작 대기 시간 (시뮬레이션 시간, s) |
 | `dashboard_port` | `8080` | 웹 대시보드 포트. 사용 중이면 +1…+5를 차례로 시도 |
 | `teleop_terminal` | `none` | 텔레옵 실행 방식: `none` / `xterm` / `gnome-terminal` / `konsole` / `gz`(터미널 없이 Gazebo 창 키 입력만) |

@@ -488,3 +488,13 @@ def test_sim_launch_xacro_args_are_declared_by_the_urdf():
     passed = set(re.findall(r'" ([A-Za-z0-9_]+):="', src))
     assert passed, "sim.launch.py passes no xacro arguments?"
     assert passed <= declared, f"xacro args {passed - declared} are not declared in spot.urdf.xacro"
+
+
+def test_bringup_passes_layout_file_to_the_demo_hud(tmp_path):
+    # the HUD result panel computes the reading error from the layout truth: it must use the same layout
+    # as mission_manager / dashboard / metrics, not the installed default
+    stubs = _stubs(tmp_path)
+    actions, _ = run_setup("bringup.launch.py", stubs, {"layout_file": "/tmp/other_layout.yaml"})
+    n = nodes(actions, stubs["__classes__"])
+    assert param_dicts(n["demo_hud"])[-1]["layout_file"] == "/tmp/other_layout.yaml"
+    assert param_dicts(n["mission_manager"])[-1]["layout_file"] == "/tmp/other_layout.yaml"

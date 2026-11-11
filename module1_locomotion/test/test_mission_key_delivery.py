@@ -314,3 +314,26 @@ def test_plan_wait_survives_a_backwards_clock_jump():
         if logic.base != "IDLE":
             break
     assert logic.base == "PATROL" and 29.9 <= t <= 30.3     # waited 30 s from the jump, not 130 s
+
+
+def test_restarted_mission_manager_acknowledgement_is_not_ignored():
+    # mission_manager respawns within the 'alive' window: cmd_seq restarts from 0. The new process's
+    # 'start accepted' must end the pending key - no re-send, no false 'REJECTED: already running'
+    tr = MissionCommandTracker(ack_timeout=2.0, max_sends=3)
+    tr.on_state(st(7, [{"seq": 7, "cmd": "abort", "accepted": True}]), 0.0)     # old process
+    tr.press("start", 1.0)
+    msgs = tr.on_state(st(1, [{"seq": 1, "cmd": "start", "accepted": True, "message": "full mission started"}],
+                          "PATROL"), 1.5)                                       # new process accepted it
+    assert msgs == ["mission: 'start' accepted - full mission started"]
+    assert tr.pending is None and tr.poll(3.6) == (None, [])
+
+
+def test_restart_before_the_key_reaches_the_new_process_still_waits_for_its_answer():
+    tr = MissionCommandTracker(ack_timeout=2.0, max_sends=3)
+    tr.on_state(st(7), 0.0)
+    tr.press("start", 1.0)
+    assert tr.on_state(st(0), 1.2) == []                  # restarted, key not seen yet
+    cmd, _ = tr.poll(3.1)
+    assert cmd == "start"                                 # re-sent to the new process
+    msgs = tr.on_state(st(1, [{"seq": 1, "cmd": "start", "accepted": True}], "PATROL"), 3.3)
+    assert msgs == ["mission: 'start' accepted"]

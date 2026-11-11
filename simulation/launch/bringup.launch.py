@@ -214,7 +214,7 @@ def _launch_setup(context, *args, **kwargs):
                             parameters=cfg("dashboard.yaml") + [common]))
     # ------------------------------------------------------- demo helpers
     if hud:
-        hud_params = {"use_sim_time": use_sim_time}
+        hud_params = dict(common)         # layout_file: HUD error figures use the same truth as dashboard/report
         if prof("hud_rate"):
             hud_params["rate"] = float(prof("hud_rate"))
         actions.append(Node(package=PKG, executable="demo_hud", name="demo_hud", output="screen",

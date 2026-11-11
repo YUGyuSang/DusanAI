@@ -140,4 +140,5 @@ mission_manager:
     autostart: false              # bringup.launch.py mission_autostart:=true overrides
     autostart_delay: 15.0         # s (sim time); bringup passes autostart_delay
     plan_wait_timeout: 20.0       # s autostart waits for the patrol plan before falling back
+    autostart_window: 120.0       # s (sim time): a mission_manager respawned later does not autostart
     start_plan_wait: 30.0         # s a manual start without a patrol plan yet waits for it (0 = off)

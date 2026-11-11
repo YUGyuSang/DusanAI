@@ -763,3 +763,20 @@ def test_pipe_crossing_planned_straight_and_walked_steadily():
     assert "cross" in states and m.crossing.n_crossings == 1
     assert cmds and all(v[0] == pytest.approx(MISSION_DEFAULTS["crossing_speed"]) and v[1] == 0.0
                         and abs(v[2]) <= MISSION_DEFAULTS["crossing_wz"] + 1e-9 for v in cmds)
+
+
+def test_respawned_mission_manager_does_not_autostart():
+    # sim time is global: a mission_manager respawned at t=900 s (e.g. after docking) must stay IDLE
+    m = make({"autostart": True, "autostart_delay": 2.0, "plan_wait_timeout": 1.0, "autostart_window": 120.0})
+    sim = Sim(m, t0=900.0)
+    assert sim.run(40.0, until=lambda s: s.m.base != "IDLE") is False
+    assert m.base == "IDLE"
+    assert any("autostart skipped" in e[1] for e in sim.events)
+    m.command("start", sim.t)                                   # 't' still works
+    assert sim.run(2.0, until=lambda s: s.m.base == "PATROL")
+
+
+def test_autostart_window_can_be_disabled():
+    m = make({"autostart": True, "autostart_delay": 2.0, "plan_wait_timeout": 1.0, "autostart_window": 0.0})
+    sim = Sim(m, t0=900.0)
+    assert sim.run(5.0, until=lambda s: s.m.base == "PATROL")

@@ -45,10 +45,19 @@ GZ_KEY_REPEAT_S = 0.6            # s (wall): the same Gazebo key again within th
 GZ_MISSION_KEYS = {ord("T"): "start", ord("P"): "patrol", ord("G"): "seek", ord("H"): "rth", ord("O"): "toggle"}
 
 
+def _uses_sim_time(node):
+    try:
+        return bool(node.get_parameter("use_sim_time").value)
+    except Exception:  # noqa: BLE001 - parameter missing (stubs / very old rclpy): assume sim time
+        return True
+
+
 class MissionManagerNode(Node):
     def __init__(self):
         super().__init__("mission_manager")
         self.p = declare_params(self, MISSION_DEFAULTS)
+        if not _uses_sim_time(self):
+            self.p["autostart_window"] = 0.0      # wall clock = epoch seconds: the window only makes sense in sim time
         self.layout = Layout.load(self.p["layout_file"] or None)
         self.logic = MissionLogic(self.p, self.layout)
         self._map_key = None          # fingerprint of the last /map used
