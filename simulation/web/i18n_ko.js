@@ -72,7 +72,7 @@
     event_source: {
       dashboard: "대시보드", mission: "임무", locomotion: "보행", fall: "넘어짐", teleop: "원격조종", safety: "안전",
       patrol: "순찰 계획", battery: "배터리", gas: "가스", gauge: "계기", thermal: "열화상", operator: "운영자",
-      demo: "데모",
+      demo: "데모", metrics: "기록",
     },
     target: { mission: "임무", locomotion: "보행", battery: "배터리" },
     command: {
@@ -288,6 +288,10 @@
     [/^GAS SOURCE FOUND(?: at \((\S+), (\S+)\))?(?:, error (\S+) m)?$/,
       (m) => "가스 누출원 발견" + (m[1] ? " (" + m[1] + ", " + m[2] + ")" : "") + (m[3] ? ", 오차 " + m[3] + " m" : "")],
     [/^gas source seeking ended: (\S+)$/, (m) => "가스 누출원 추적 종료: " + label("seek", m[1])],
+    // inspection report of the metrics session (dashboard_state.set_session)
+    [/^inspection report final: (\S+)$/, () => "점검 보고서 작성 완료 (임무 종료)"],
+    [/^inspection report written: (\S+)$/, () => "점검 보고서 작성 (중간 보고)"],
+    [/^session directory (.+) ignored \(not inside (.+)\)$/, (m) => "기록 폴더 무시: " + m[1] + " (" + m[2] + " 밖)"],
 
     // ---- command responses (web_server.py, monitor_dashboard_node.py, dashboard_demo.py)
     [/^(mission|locomotion|battery) '(.*)' sent$/,

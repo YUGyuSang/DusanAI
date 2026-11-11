@@ -129,6 +129,7 @@ ros2 launch module3_gas_safety gas_safety.launch.py   # M3 가스 확산 + 누�
 - **대시보드**(http://localhost:8080): 로봇 상태, 게이지 판독값과 오차, 과열 경보, 가스 농도 지도와 누출원 추정, 배터리·RTH, 이벤트 기록
 - **토픽**: `ros2 topic echo /mission/state --field data`, `/inspection/gauge_readings`, `/gas/seek_status`, `/safety/status` 등
 - **실행 기록**: 실행마다 `~/dusan_metrics/<시각>/`에 CSV와 `summary.json`이 남습니다. `python3 tools/plot_metrics.py`로 그래프와 요약표를 만듭니다.
+- **점검 보고서**: 같은 폴더의 `gauges/`에 계기별 점검 사진이, `inspection_report.html`에 계기 8개의 확정 판독값·참값·오차·사진과 열화상·가스 결과가 남습니다. 대시보드의 **보고서 열기**로도 볼 수 있습니다.
 
 자세한 방법은 [USAGE 결과 확인](docs/USAGE.md#results)에 있습니다.
 

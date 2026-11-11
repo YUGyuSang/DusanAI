@@ -564,3 +564,169 @@ def test_demo_synthetic_slip_crossing_a_plate():
     assert all(o[3]["slip_events"] == 1 for o in out if o[0] >= det[0])
     assert out[-1][3]["torque_ff"] == 0.0 and out[-1][3]["mu_est"] > 0.3                # recovering to 0.5
     assert max(o[3]["torque_ff"] for o in out) == 1.0
+
+
+# ----------------------------------------------------------------------------
+# inspection photos + report of the metrics session (/metrics/session)
+# ----------------------------------------------------------------------------
+def _session_tree(root):
+    """<root>/20261111_100000 with one photo, the report and a file outside the session."""
+    sdir = root / "20261111_100000"
+    (sdir / "gauges").mkdir(parents=True)
+    jpg = cv2.imencode(".jpg", np.full((40, 40, 3), 200, np.uint8))[1].tobytes()
+    (sdir / "gauges" / "G05_49.8.jpg").write_bytes(jpg)
+    (sdir / "gauges" / "G05_49.8_full.jpg").write_bytes(jpg)
+    (sdir / "inspection_report.html").write_text("<!doctype html><title>보고서</title>", encoding="utf-8")
+    (sdir / "inspection_report.json").write_text("{}", encoding="utf-8")
+    (sdir / ".hidden.json").write_text("{}", encoding="utf-8")
+    (sdir / "notes.txt").write_text("x", encoding="utf-8")
+    (root / "secret.json").write_text('{"secret": 1}', encoding="utf-8")
+    info = {"session_dir": str(sdir), "session": sdir.name, "report": "inspection_report.html",
+            "report_json": "inspection_report.json", "report_final": False, "report_written": "2026-11-11 10:05:00",
+            "gauges": {"G05": {"image": "gauges/G05_49.8.jpg", "image_full": "gauges/G05_49.8_full.jpg",
+                               "stamp": 49.8, "value": 3.7, "unit": "bar", "status": "normal"},
+                       "G01": {"image": "../secret.json"}, "G02": {"image": None}}}
+    return sdir, info, jpg
+
+
+def test_session_photos_and_report_link_in_the_snapshot(layout, tmp_path):
+    state = DashboardState(layout, metrics_root=str(tmp_path))
+    snap = state.snapshot(now=1.0)
+    assert snap["report"] is None and not any("image_url" in g for g in snap["gauges"])
+    sdir, info, _ = _session_tree(tmp_path)
+    assert state.set_session(info, now=2.0)
+    snap = state.snapshot(now=3.0)
+    g = {x["id"]: x for x in snap["gauges"]}
+    assert g["G05"]["image_url"] == "session/gauges/G05_49.8.jpg"
+    assert g["G05"]["image_full_url"] == "session/gauges/G05_49.8_full.jpg"
+    assert "image_url" not in g["G01"] and "image_url" not in g["G02"]          # unsafe / missing names dropped
+    assert snap["report"] == {"url": "session/inspection_report.html", "json_url": "session/inspection_report.json",
+                              "final": False, "written": "2026-11-11 10:05:00", "session": "20261111_100000"}
+    assert state.session_dir() == os.path.realpath(str(sdir))
+    assert snap["topics"]["/metrics/session"]["status"] == "ok"
+    state.set_session(dict(info, report_final=True), now=4.0)
+    texts = [e["text"] for e in state.events if e["source"] == "metrics"]
+    assert texts == ["inspection report written: inspection_report.html",
+                     "inspection report final: inspection_report.html"]
+    json.dumps(state.snapshot(now=5.0), allow_nan=False)
+
+
+def test_session_outside_the_metrics_root_is_ignored(layout, tmp_path):
+    root = tmp_path / "dusan_metrics"
+    root.mkdir()
+    sdir, info, _ = _session_tree(tmp_path)                # session NOT below root
+    state = DashboardState(layout, metrics_root=str(root))
+    assert not state.set_session(info, now=1.0) and state.session_dir() is None
+    assert not state.set_session(dict(info, session_dir="relative/dir"), now=1.0)
+    assert not state.set_session(dict(info, session_dir=str(root / "missing")), now=1.0)
+    assert not state.set_session("garbage") and not state.set_session({"session_dir": 5})
+    assert state.snapshot(now=2.0)["report"] is None
+    assert sum("ignored" in e["text"] for e in state.events) == 3      # one line per rejected directory
+    assert not DashboardState(layout, metrics_root=None).set_session(info)
+
+
+def test_mission_result_replaces_later_live_readings(layout):
+    state = DashboardState(layout)
+    g8 = layout.gauge("G08")
+    state.set_gauge_readings({"readings": [{"id": "G08", "value": 0.95, "status": "normal", "confidence": 0.9}]})
+    state.set_mission({"state": "PATROL", "results": {"G08": {"value": 0.921, "status": "normal", "confidence": 0.97,
+                                                              "n_readings": 6, "t": 12.0},
+                                                      "G06": {"status": "missed", "reason": "no reading"}}})
+    state.set_gauge_readings({"readings": [{"id": "G08", "value": 1.10, "status": "normal", "confidence": 0.3}]})
+    g = {x["id"]: x for x in state.snapshot()["gauges"]}
+    assert g["G08"]["value"] == pytest.approx(0.921) and g["G08"]["value_source"] == "mission"
+    assert g["G08"]["confidence"] == pytest.approx(0.97) and g["G08"]["n_readings"] == 6
+    assert g["G08"]["error_pct_fs"] == pytest.approx(abs(0.921 - g8["value"]) / (g8["max"] - g8["min"]) * 100, abs=0.01)
+    assert g["G06"]["value"] is None and "value_source" not in g["G06"]
+    state.set_mission({"state": "PATROL", "results": {}})                # new mission: live values again
+    assert {x["id"]: x for x in state.snapshot()["gauges"]}["G08"]["value"] == pytest.approx(1.10)
+
+
+def test_resolve_session_file_refuses_everything_outside(tmp_path):
+    from plant_simulation.web_server import resolve_session_file
+    sdir, _info, _ = _session_tree(tmp_path)
+    ok = resolve_session_file(str(sdir), "gauges/G05_49.8.jpg")
+    assert ok and os.path.samefile(ok, str(sdir / "gauges" / "G05_49.8.jpg"))
+    assert resolve_session_file(str(sdir), "inspection_report.html")
+    for bad in ("../secret.json", "gauges/../../secret.json", "/etc/passwd", "gauges\\..\\..\\secret.json",
+                ".hidden.json", "gauges/.x.jpg", "notes.txt", "missing.jpg", "", "gauges/", "C:/Windows/win.ini",
+                "inspection_report.html\x00.jpg", "./inspection_report.html", "gauges//G05_49.8.jpg", None):
+        assert resolve_session_file(str(sdir), bad) is None, bad
+    assert resolve_session_file(None, "inspection_report.html") is None
+    try:                                                    # a symlink pointing out of the session
+        os.symlink(str(tmp_path / "secret.json"), str(sdir / "link.json"))
+    except (OSError, NotImplementedError):
+        return
+    assert resolve_session_file(str(sdir), "link.json") is None
+
+
+def test_server_serves_session_photos_and_report(layout, tmp_path):
+    state = DashboardState(layout, metrics_root=str(tmp_path))
+    srv = DashboardServer(state.snapshot, lambda: state.static, WEB_DIR, port=0, host="127.0.0.1",
+                          session_dir_fn=state.session_dir)
+    port = srv.start()
+    base = f"http://127.0.0.1:{port}"
+    try:
+        with pytest.raises(urllib.error.HTTPError) as e:            # no session yet
+            _get(base + "/session/inspection_report.html")
+        assert e.value.code == 404
+        sdir, info, jpg = _session_tree(tmp_path)
+        state.set_session(info)
+        snap = json.loads(_get(base + "/api/state")[2])
+        url = {g["id"]: g for g in snap["gauges"]}["G05"]["image_url"]
+        code, ctype, body = _get(base + "/" + url)
+        assert code == 200 and ctype == "image/jpeg" and body == jpg
+        with urllib.request.urlopen(base + "/" + snap["report"]["url"], timeout=5) as r:
+            assert r.status == 200 and r.headers["Content-Type"] == "text/html; charset=utf-8"
+            assert "script-src" not in r.headers["Content-Security-Policy"]
+            assert r.headers["Content-Security-Policy"].startswith("default-src 'none'")
+            assert r.headers["Cache-Control"] == "no-cache" and "보고서" in r.read().decode("utf-8")
+        assert json.loads(_get(base + "/session/inspection_report.json")[2]) == {}
+        for bad in ("/session/../secret.json", "/session/%2e%2e/secret.json", "/session/gauges/..%2f..%2fsecret.json",
+                    "/session/%2e%2e%5csecret.json", "/session/.hidden.json", "/session/notes.txt",
+                    "/session/", "/session/gauges/nope.jpg"):
+            with pytest.raises(urllib.error.HTTPError) as e:
+                urllib.request.urlopen(base + bad, timeout=5)
+            assert e.value.code == 404, bad
+    finally:
+        srv.stop()
+
+
+def test_demo_records_photos_and_report(headless_mission):
+    """The offline demo goes through the same snapshot message and recorder: one photo per gauge,
+    a final report with the mission's values, and the dashboard state points at both."""
+    state, mission, session = headless_mission
+    lay = Layout.load()
+    photos = sorted(os.listdir(os.path.join(session, "gauges")))
+    assert len([p for p in photos if not p.endswith("_full.jpg")]) == len(lay.gauges)
+    with open(os.path.join(session, "inspection_report.json"), encoding="utf-8") as f:
+        r = json.load(f)
+    assert r["final"] is True and r["mission"]["state"] == "DOCKED" and r["gauges"]["read"] == len(lay.gauges)
+    for row in r["gauges"]["rows"]:
+        res = mission.results[row["id"]]
+        assert row["value_source"] == "mission" and row["value"] == pytest.approx(res["value"], abs=1e-4)
+        assert row["image"] and os.path.isfile(os.path.join(session, *row["image"].split("/")))
+        assert row["error_pct_fs"] < 5.0 and row["status_correct"] is True
+    assert r["gas"]["result"] == "FOUND" and r["thermal"]["recall"] == 1.0
+    with open(os.path.join(session, "inspection_report.html"), encoding="utf-8") as f:
+        page = f.read()
+    assert page.count("data:image/jpeg;base64,") == len(lay.gauges)
+    snap = state.snapshot()
+    assert snap["report"]["final"] is True and snap["report"]["url"] == "session/inspection_report.html"
+    assert all(g.get("image_url", "").startswith("session/gauges/") for g in snap["gauges"])
+    with open(os.path.join(session, "events.csv"), encoding="utf-8") as f:
+        ev = f.read()
+    assert ev.count(",gauge,result,") == len(lay.gauges) and ev.count(",gauge,snapshot,") == len(lay.gauges)
+
+
+def test_web_ui_shows_thumbnails_and_the_report_link():
+    """index.html has the '보고서 열기' link (new tab, no opener); app.js fills it from snapshot.report
+    and the tile thumbnails from gauge.image_url, same-origin URLs only."""
+    with open(os.path.join(WEB_DIR, "index.html"), encoding="utf-8") as f:
+        html = f.read()
+    with open(os.path.join(WEB_DIR, "app.js"), encoding="utf-8") as f:
+        js = f.read()
+    tag = next(t for t in html.split("<") if 'id="reportLink"' in t)
+    assert 'target="_blank"' in tag and 'rel="noopener"' in tag and "hidden" in tag and "보고서 열기" in tag
+    assert "safeHref(r.url)" in js and "renderReportLink" in js
+    assert "safeImg(g.image_url)" in js and "safeHref(g.image_full_url)" in js

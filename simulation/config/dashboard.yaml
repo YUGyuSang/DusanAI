@@ -17,6 +17,7 @@ monitor_dashboard:
     path_max_points: 400
     port_fallbacks: 5             # try port+1 .. port+5 when busy
     gas_alarm_ppm: 25.0
+    metrics_root: "~/dusan_metrics"  # inspection photos / report served only from session dirs inside (= metrics output_dir)
 
 metrics_logger:
   ros__parameters:
@@ -32,3 +33,4 @@ metrics_logger:
     gauge_error_threshold_pct: 5.0
     gas_alarm_ppm: 25.0
     max_jump_m: 2.0               # odometry jumps above this are not counted as distance
+    snapshot_max_bytes: 4000000   # inspection photos (decoded JPEG) above this are not saved

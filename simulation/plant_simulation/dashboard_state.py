@@ -22,11 +22,22 @@ map); the friction prior of /terrain/info (``slippery``, ``friction_mu``,
 ``slip_legs``, ``slip_events``, ``mu_est``, ``mpc_mu``, ``friction_prior``,
 ``torque_ff``) are passed through to the snapshot.  Older nodes without these
 fields simply leave them out of the snapshot (the browser shows a dash).
+
+Inspection evidence: /metrics/session (metrics_logger, :meth:`DashboardState.set_session`)
+names the metrics session directory and its photo / report files.  The snapshot then gives every
+gauge with a photo ``image_url`` / ``image_full_url`` (``session/gauges/<file>.jpg``, served by
+plant_simulation.web_server from that directory) and a top-level ``report`` object
+(``{url, json_url, final, written, session}``) for the inspection_report.html link.  Only a
+directory inside ``metrics_root`` (default ~/dusan_metrics, the metrics_logger output_dir) is
+accepted.  Once the mission has accepted a gauge (``/mission/state`` ``results``) its tile shows
+that official value (``value_source: "mission"``) instead of later live readings.
 """
 import math
+import os
 import threading
 import time
 from collections import deque
+from urllib.parse import quote
 
 import numpy as np
 
@@ -70,6 +81,7 @@ DASHBOARD_DEFAULTS = {
     "path_max_points": 400,
     "port_fallbacks": 5,           # try port+1 .. port+N when the port is busy
     "gas_alarm_ppm": GAS_ALARM_PPM,
+    "metrics_root": "~/dusan_metrics",   # session dirs of /metrics/session must be inside (photos, report)
 }
 
 # /teleop/active is a 2 Hz (wall clock) heartbeat: shown as off once it is older
@@ -92,6 +104,7 @@ WATCHED_TOPICS = {
     "/inspection/thermal_alerts": 0.0,
     "/inspection/gauge_overlay": 3.0,
     "/inspection/thermal_fusion": 3.0,
+    "/metrics/session": 0.0,
     "/patrol/plan_json": 0.0,
     "/map": 0.0,
     "/cmd_vel": 1.0,
@@ -246,9 +259,36 @@ def build_static_info(layout):
     }
 
 
+def _within(path, root):
+    """True if the real path ``path`` is ``root`` or below it."""
+    try:
+        p, r = os.path.realpath(path), os.path.realpath(root)
+    except (TypeError, ValueError, OSError):
+        return False
+    return p == r or p.startswith(r.rstrip(os.sep) + os.sep)
+
+
+def session_rel(rel):
+    """A photo / report file name of /metrics/session: plain relative path below the session dir
+    (no '..', no hidden parts, no backslash / NUL / drive), else None."""
+    if not isinstance(rel, str) or not rel or len(rel) > 200 or rel.startswith("/"):
+        return None
+    if any(c in rel for c in ("\\", "\x00", ":")):
+        return None
+    parts = rel.split("/")
+    if any(p in ("", ".", "..") or p.startswith(".") for p in parts):
+        return None
+    return rel
+
+
+def session_url(rel):
+    """Same-origin URL of a session file (relative to the dashboard page)."""
+    return "session/" + quote(rel, safe="/")
+
+
 class DashboardState:
     def __init__(self, layout=None, history_s=120.0, max_events=300, path_max_points=400,
-                 gas_alarm_ppm=GAS_ALARM_PPM):
+                 gas_alarm_ppm=GAS_ALARM_PPM, metrics_root=DASHBOARD_DEFAULTS["metrics_root"]):
         self._lock = threading.RLock()
         self.layout = layout
         self.static = build_static_info(layout)
@@ -282,6 +322,8 @@ class DashboardState:
         self.layers = {}
         self._layer_data = {}
         self.images = {}
+        self.metrics_root = os.path.expanduser(os.path.expandvars(metrics_root)) if metrics_root else None
+        self.session = None            # validated /metrics/session (session_dir, photos, report)
         self.events = deque(maxlen=int(max_events))
         self._event_seq = 0
         self.topic_seen = {}
@@ -682,6 +724,55 @@ class DashboardState:
                                    f"{hid} {entry['tag'] or ''}: {entry['max_temp_c']} C ({entry['status']})", now)
             self.thermal_unassigned = unassigned[:10]
 
+    # ------------------------------------------------- inspection evidence
+    def set_session(self, d, now=None):
+        """/metrics/session: where the metrics session lives and which photos / report exist.
+        Returns False (and logs once) for a directory outside ``metrics_root``."""
+        if not isinstance(d, dict):
+            return False
+        sdir = d.get("session_dir")
+        if not isinstance(sdir, str) or not sdir or self.metrics_root is None:
+            return False
+        with self._lock:
+            now = self._now(now)
+            self.topic_seen["/metrics/session"] = now
+            if not os.path.isabs(sdir) or not _within(sdir, self.metrics_root) or not os.path.isdir(sdir):
+                ch, _ = self._changed("session_rejected", sdir)
+                if ch:
+                    self.add_event("warn", "metrics", f"session directory {sdir} ignored (not inside "
+                                                      f"{self.metrics_root})", now)
+                return False
+            photos = {}
+            gauges = d.get("gauges") if isinstance(d.get("gauges"), dict) else {}
+            for gid, g in gauges.items():
+                if not isinstance(g, dict) or not session_rel(g.get("image")):
+                    continue
+                photos[str(gid)] = {"image": g["image"], "image_full": session_rel(g.get("image_full")),
+                                    "stamp": _num(g.get("stamp")), "wall": g.get("wall")}
+            report = session_rel(d.get("report"))
+            new = {"dir": os.path.realpath(sdir), "name": str(d.get("session") or os.path.basename(sdir)),
+                   "photos": photos, "report": report, "report_json": session_rel(d.get("report_json")),
+                   "report_final": bool(d.get("report_final")), "report_written": d.get("report_written")}
+            old = self.session or {}
+            if report and (old.get("report") != report or (new["report_final"] and not old.get("report_final"))):
+                self.add_event("info", "metrics", "inspection report " + ("final" if new["report_final"] else
+                                                                          "written") + f": {report}", now)
+            self.session = new
+            return True
+
+    def session_dir(self):
+        """Directory served under /session/ (None until a valid /metrics/session arrived)."""
+        with self._lock:
+            return self.session["dir"] if self.session else None
+
+    def _report_view(self):
+        s = self.session
+        if not s or not s.get("report"):
+            return None
+        return {"url": session_url(s["report"]),
+                "json_url": session_url(s["report_json"]) if s.get("report_json") else None,
+                "final": s.get("report_final"), "written": s.get("report_written"), "session": s["name"]}
+
     # ------------------------------------------------------ layers/images
     def set_layer(self, name, data, origin_x, origin_y, resolution, now=None, extra=None):
         """Store a 2-D int8 grid (OccupancyGrid convention, row 0 = y origin)."""
@@ -721,6 +812,29 @@ class DashboardState:
             if topic:
                 self.topic_seen[topic] = now
 
+    def _apply_result(self, g, res):
+        """The mission's accepted reading of a gauge replaces later live readings on the tile."""
+        if not isinstance(res, dict):
+            return
+        val = _r(res.get("value"), 4)
+        if val is None:
+            return
+        gdef = self._gauge_def.get(g["id"], {})
+        g["value"], g["value_source"] = val, "mission"
+        status = res.get("status")
+        if status not in ("normal", "warning", "alarm") and self.layout is not None:
+            status = self.layout.gauge_status(g["id"], val)
+        g["status"] = status or g.get("status")
+        if _r(res.get("confidence"), 3) is not None:
+            g["confidence"] = _r(res.get("confidence"), 3)
+        if res.get("n_readings") is not None:
+            g["n_readings"] = res.get("n_readings")
+        true = gdef.get("value")
+        if true is not None:
+            span = float(gdef.get("max", 1.0)) - float(gdef.get("min", 0.0))
+            g["error"] = _r(val - float(true), 4)
+            g["error_pct_fs"] = _r(abs(val - float(true)) / span * 100.0, 2) if span > 0 else None
+
     # ----------------------------------------------------------- snapshot
     def topic_health(self, now=None):
         now = self._now(now)
@@ -749,6 +863,8 @@ class DashboardState:
             loco = {k: _jsonable(self.locomotion.get(k)) for k in LOCO_KEYS if k in self.locomotion}
             loco["age"] = age(self.locomotion)
             gauges = []
+            results = self.mission.get("results") if isinstance(self.mission.get("results"), dict) else {}
+            photos = (self.session or {}).get("photos") or {}
             for gid in sorted(set(self._gauge_def) | set(self.gauges)):
                 g = dict(self.gauges.get(gid) or {"id": gid, "tag": self._gauge_def.get(gid, {}).get("tag", ""),
                                                   "value": None, "status": "unread",
@@ -756,6 +872,11 @@ class DashboardState:
                                                   "true_value": self._gauge_def.get(gid, {}).get("value")})
                 g["age"] = age(g)
                 g.pop("t_wall", None)
+                self._apply_result(g, results.get(gid))
+                ph = photos.get(gid)
+                if ph:
+                    g["image_url"] = session_url(ph["image"])
+                    g["image_full_url"] = session_url(ph["image_full"]) if ph.get("image_full") else None
                 gauges.append(g)
             thermal = []
             for hid in sorted(set(self._hot_def) | set(self.thermal)):
@@ -792,6 +913,7 @@ class DashboardState:
                 "flags": self._flags_view(now),
                 "layers": {k: dict(v) for k, v in self.layers.items()},
                 "images": {k: dict(v) for k, v in self.images.items()},
+                "report": self._report_view(),
                 "events": list(self.events)[-max_events:] if max_events > 0 else [],
                 "topics": self.topic_health(now),
             }

@@ -193,6 +193,7 @@ All JSON payloads are `std_msgs/String` produced with `dusan_common.ros_helpers.
 | /inspection/target | String (plain gauge id or "") | mission_manager | gauge_reader | gauge expected in view |
 | /inspection/gauge_readings | String JSON | gauge_reader | mission, dashboard, metrics | `{stamp, readings:[{id, tag, value, unit, confidence, angle_deg, range:[min,max], status, n_samples, robot_pose:[x,y,yaw]}]}` (latest fused reading per gauge seen in this frame) |
 | /inspection/gauge_overlay | Image (bgr8) | gauge_reader | dashboard, rviz | detection overlay with value text |
+| /inspection/gauge_snapshot | String JSON | gauge_reader | metrics | one evidence photo per inspection visit, published when `/inspection/target` leaves the gauge (the mission accepted or skipped it): `{stamp, t_end, wall, id, tag, value, unit, status, confidence, n_samples, range:[min,max], read, frames, readings, frame_value, frame_confidence, robot_pose, distance, incidence_deg, format: "jpeg", width, height, jpeg_b64, full_jpeg_b64|null}`; `value`/`status` = final fused reading (= the value the mission accepts), `jpeg_b64` = base64 JPEG (~25 KiB) of the dial crop with fitted edge + needle and a footer (id, tag, value, unit, status, confidence, samples, sim time, wall time), `full_jpeg_b64` = downscaled full frame with the overlay; frame = the best detection whose own needle agrees with the final value (no detection: latest frame, `read` false, value null). No cv_bridge: plain JSON (module2_inspection.gauge_snapshot) |
 | /inspection/thermal_alerts | String JSON | thermal_fusion | mission, dashboard, metrics | `{stamp, hotspots:[{id|null, tag|null, max_temp_c, mean_temp_c, position:[x,y,z]|null, status: normal|warning|alarm, bbox:[u,v,w,h]}]}` |
 | /inspection/thermal_fusion | Image (bgr8) | thermal_fusion | dashboard, rviz | colour-mapped thermal blended on RGB |
 | /patrol/route | nav_msgs/Path | patrol_planner | mission, rviz, dashboard | full A* path through viewpoints (latched) |
@@ -230,6 +231,7 @@ All JSON payloads are `std_msgs/String` produced with `dusan_common.ros_helpers.
 | /mission/command | String | teleop, dashboard | mission_manager, return_to_home | `start` `patrol` `seek` `rth` `pause` `resume` `abort` `dock` |
 | /mission/state | String JSON | mission_manager | dashboard, metrics | `{state: IDLE|PATROL|INSPECTING|SEEK|RTH|DOCKED|MANUAL|PAUSED|DONE, target, completed:[ids], pending:[ids], gas_alarm, message}` + `obstacle` object (see below) |
 | /twin/markers | MarkerArray | monitor_dashboard | rviz | gauge status labels, hot spots, leak estimate |
+| /metrics/session | String JSON (latched) | metrics_logger | dashboard | `{session_dir, session, report, report_json, report_final, report_written, gauges:{<id>:{image, image_full, stamp, value, unit, status, wall}}}`: metrics session directory and its files relative to it (`gauges/<id>_<t>.jpg`, `inspection_report.html`); republished after every photo / report write. The dashboard serves them same-origin under `/session/<file>` (only for a `session_dir` inside its `metrics_root`, default `~/dusan_metrics`) and adds `image_url` / `image_full_url` per gauge and a `report` link to its snapshot |
 | /demo/hud | Image (bgr8) | demo_hud | rqt_image_view, ros2 bag | robot camera (`/inspection_camera/image`) + gas ppm bar (10 / 25 ppm colours, blinking alarm frame), battery, mission and locomotion state, sim time; 640×480 at `rate` 5 Hz |
 | /demo/hud_rgb | Image (rgb8) | demo_hud | ros_gz_bridge → gz `/demo/hud` | same frame for the Gazebo GUI ImageDisplay panel "Robot HUD" (gz-gui cannot decode BGR); published only while subscribed |
 
@@ -390,7 +392,9 @@ def max_height_along(emap, p0_xy, p1_xy) -> float   # swing apex helper (NaN-saf
   → SEEK → report → resume, yields to RTH, `start` = full mission, ends with RTH),
   `monitor_dashboard_node.py` (digital-twin web UI on http://localhost:8080, stdlib
   http.server + Server-Sent Events, static files in `simulation/web/`),
-  `metrics_logger_node.py` (CSV/JSON under `~/dusan_metrics/<date>/`),
+  `metrics_logger_node.py` (CSV/JSON under `~/dusan_metrics/<date>/`; inspection photos `gauges/<id>_<t>.jpg`
+  and `inspection_report.json` / `.html` with the mission's official per-gauge result, ground truth, error,
+  photo, thermal and gas results - written on every gauge result / photo and at DONE / DOCKED),
   `clock_relay_node.py` (`/clock_gz` → `/clock` decimated to 200 Hz, see section 3),
   `demo_hud_node.py` (HUD frame drawn by the ROS-free `demo_hud.py`: `/demo/hud`, `/demo/hud_rgb`),
   `follow_camera.py` (gz CLI only: waits for Gazebo, the robot and the GUI, then sends a

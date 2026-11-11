@@ -98,9 +98,11 @@
     const d = new Date(t * 1000);
     return d.toTimeString().slice(0, 8);
   };
-  // per-gauge snapshot (future backend field, e.g. reading.image_url): same-origin paths or data URIs only
-  const safeImg = (u) => (typeof u === "string" && u && (/^data:image\//i.test(u) ||
-    (!/^[a-z][a-z0-9+.-]*:/i.test(u) && !u.startsWith("//"))) ? u : null);
+  // per-gauge inspection photo (gauge.image_url = session/gauges/<file>.jpg): same-origin paths or data URIs only
+  const sameOrigin = (u) => typeof u === "string" && u !== "" && !/^[a-z][a-z0-9+.-]*:/i.test(u) &&
+    !u.startsWith("//") && !u.startsWith("\\");
+  const safeImg = (u) => (typeof u === "string" && (/^data:image\//i.test(u) || sameOrigin(u)) ? u : null);
+  const safeHref = (u) => (sameOrigin(u) ? u : null);
   // leak tag of the layout ("GASTANK-01 relief valve") -> Korean
   const leakTag = (t) => (t ? lbl("leak", t).replace(/relief valve/i, "릴리프 밸브") : "");
   // leak-source error: the mission's value (seeker, full precision) once the source is
@@ -1257,7 +1259,7 @@
     const foot = el("div", "t-foot");
     [head, tag, body, range, meta, foot].forEach((x) => root.appendChild(x));
     const t = { root: root, stWrap: stWrap, status: undefined, tag: tag, body: body, val: val, range: range, track: track, mark: mark,
-      zones: false, meta: meta, foot: foot, thumb: null, thumbSrc: null };
+      zones: false, meta: meta, foot: foot, thumb: null, thumbLink: null, thumbSrc: null };
     tiles[id] = t;
     return t;
   }
@@ -1345,13 +1347,23 @@
       }
       t.foot.title = read ? "신뢰도 " + fmt(g.confidence, 2) + (isNum(g.n_updates) ? " · 판독 " + g.n_updates + "회" : "") + " · " + fmtAge(g.age) : "";
       if (read) t.val.title += "\n" + t.foot.title;          // the footer is hidden on short screens
-      // per-gauge snapshot thumbnail (future backend field): rendered only when present
+      // inspection photo of the accepted reading (metrics session): thumbnail, click = full camera frame
       const src = safeImg(g.image_url) || safeImg((results[g.id] || {}).image_url);
       if (src) {
-        if (!t.thumb) { t.thumb = el("img", "t-thumb"); t.thumb.alt = g.id + " 판독 스냅샷"; t.thumb.loading = "lazy"; t.body.appendChild(t.thumb); }
-        if (t.thumbSrc !== src) { t.thumb.src = src; t.thumbSrc = src; }
+        if (!t.thumb) {
+          t.thumbLink = el("a", "t-thumb-link");
+          t.thumbLink.target = "_blank"; t.thumbLink.rel = "noopener";
+          t.thumb = el("img", "t-thumb"); t.thumb.alt = g.id + " 점검 사진"; t.thumb.loading = "lazy";
+          t.thumbLink.appendChild(t.thumb); t.body.appendChild(t.thumbLink);
+        }
+        if (t.thumbSrc !== src) {
+          t.thumb.src = src; t.thumbSrc = src;
+          const full = safeHref(g.image_full_url) || safeHref(src);
+          if (full) t.thumbLink.href = full; else t.thumbLink.removeAttribute("href");
+          t.thumbLink.title = g.id + " 점검 사진 (누르면 전체 화면 사진)";
+        }
       } else if (t.thumb) {
-        t.thumb.remove(); t.thumb = null; t.thumbSrc = null;
+        t.thumbLink.remove(); t.thumb = null; t.thumbLink = null; t.thumbSrc = null;
       }
       if (read) nRead++;
       if (g.status === "warning") nWarn++;
@@ -1453,6 +1465,20 @@
       const tdS = el("td"); tdS.appendChild(statusEl(x.status)); tr.appendChild(tdS);
       tb.appendChild(tr);
     });
+  }
+
+  // link to the inspection report written by metrics_logger (session/inspection_report.html)
+  function renderReportLink(s) {
+    const a = $("reportLink");
+    const r = s.report || null;
+    const href = r ? safeHref(r.url) : null;
+    a.hidden = !href;
+    if (!href) return;
+    if (a.getAttribute("href") !== href) a.setAttribute("href", href);
+    a.classList.toggle("final", !!r.final);
+    a.textContent = r.final ? "보고서 열기" : "보고서 열기 (중간)";
+    a.title = "점검 보고서를 새 탭에서 열기 · 계기별 사진·판독값·참값·오차, 열화상·가스 결과" +
+      (r.final ? "" : " · 임무 진행 중 중간 보고") + (r.written ? " · 작성 " + r.written : "");
   }
 
   // the frozen report: first finished snapshot of the current mission (the live
@@ -1669,7 +1695,8 @@
     // on every snapshot, whichever tab is open: the report freezes at the real completion moment
     try { captureReport(s); } catch (err) { console.error("captureReport", err); }
     // one malformed field must not freeze every other panel
-    const fns = [renderMission, renderRobot, renderSafety, renderGas, renderThermal, renderGauges, renderEvents, renderCams];
+    const fns = [renderMission, renderRobot, renderSafety, renderGas, renderThermal, renderGauges, renderReportLink,
+      renderEvents, renderCams];
     if (!drawer.hidden) fns.push(renderDetails);
     if (activeTab === "report") fns.push(renderReportView);
     fns.forEach((fn) => {

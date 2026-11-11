@@ -20,6 +20,11 @@ Publications
         an unidentified dial (no pose match, no target) is published with ``id: null``, its
         range / value from OCR only (null if the labels cannot be read).
     /inspection/gauge_overlay       sensor_msgs/Image bgr8 (ellipse, needle, value, status, id)
+    /inspection/gauge_snapshot      std_msgs/String JSON, once per inspection visit: when
+        /inspection/target changes away from a gauge (the mission accepted or skipped it) the
+        annotated evidence JPEG of that visit (crop around the dial + footer with id, value, unit,
+        status, confidence, samples, times; optionally the downscaled full frame) as base64,
+        with the final fused reading (module2_inspection.gauge_snapshot).
 
 Per frame (timer, <= ``process_rate_hz``, newest image only; <= ``idle_process_rate_hz`` while
 /inspection/target is empty): skip while the IMU says the body rotates faster than
@@ -60,8 +65,10 @@ from dusan_common.layout import Layout
 from dusan_common.ros_helpers import json_msg, latched_qos, sensor_qos, stamp_to_sec
 
 from module2_inspection.gauge_association import GaugeAssociator
-from module2_inspection.gauge_reader import (GaugeFusion, GaugeHint, GaugeReader, GaugeReaderConfig,
-                                             draw_header, draw_reading)
+from module2_inspection.gauge_reader import (HEADER_HEIGHT, GaugeFusion, GaugeHint, GaugeReader,
+                                             GaugeReaderConfig, draw_header, draw_reading)
+from module2_inspection.gauge_snapshot import (SnapshotCollector, render_gauge_snapshot, snapshot_message,
+                                               wall_time_text)
 
 try:  # Jazzy and later: spin() raises this when the context is shut down (e.g. SIGINT from launch)
     from rclpy.executors import ExternalShutdownException
@@ -106,6 +113,14 @@ NODE_DEFAULTS = {
     "overlay_scale": 1.0,
     "overlay_idle_period_s": 0.5,    # overlay period of frames without any search / motion-skipped
     "stats_period_s": 30.0,          # processing statistics in the log (0 = off)
+    # evidence snapshot of each inspection visit, published when /inspection/target leaves the gauge
+    "snapshot_enabled": True,
+    "snapshot_topic": "/inspection/gauge_snapshot",
+    "snapshot_crop_px": 320,         # side of the square dial crop (+ text footer)
+    "snapshot_full_width": 640,      # downscaled full frame with the overlay (0 = crop only)
+    "snapshot_jpeg_quality": 85,
+    "snapshot_enhanced": True,       # draw on the enhanced (brightened) frame like the overlay
+    "snapshot_candidates": 3,        # best frames kept per visit (the one agreeing with the result wins)
 }
 
 
@@ -162,6 +177,7 @@ class GaugeReaderNode(Node):
         self._last_processed = -1e9          # image stamp of the last processed frame
         self._last_overlay = -1e9            # image stamp of the last published overlay
         self._last_status = {}
+        self._snap = SnapshotCollector(int(self.p["snapshot_candidates"]))
 
         qos = QoSProfile(depth=10)
         self.create_subscription(Image, self.p["image_topic"], self._on_image, sensor_qos())
@@ -175,6 +191,8 @@ class GaugeReaderNode(Node):
         self.create_subscription(String, self.p["target_topic"], self._on_target, qos)
         self.pub_readings = self.create_publisher(String, self.p["readings_topic"], qos)
         self.pub_overlay = self.create_publisher(Image, self.p["overlay_topic"], qos)
+        self.pub_snapshot = (self.create_publisher(String, self.p["snapshot_topic"], QoSProfile(depth=10))
+                             if self.p["snapshot_enabled"] else None)
         rate = max(0.2, float(self.p["process_rate_hz"]))
         self.create_timer(1.0 / rate, self._process)
         if float(self.p["stats_period_s"]) > 0.0:
@@ -211,7 +229,10 @@ class GaugeReaderNode(Node):
         if tgt and self.assoc.gauge(tgt) is None:
             self.get_logger().warning(f"/inspection/target '{tgt}' is not a registry gauge id",
                                       throttle_duration_sec=10.0)
+        old = self._target
         self._target = tgt
+        if old and old != tgt:
+            self._flush_snapshot(old)         # the visit of 'old' is over (mission accepted / skipped it)
 
     def _log_stats(self):
         s = self._stats
@@ -378,6 +399,9 @@ class GaugeReaderNode(Node):
                     rr[0].range_ocr, rr[0].ocr_confidence = r0.range_ocr, r0.ocr_confidence
                     readings[i] = rr[0]
 
+        snap = target if (target and self.pub_snapshot is not None and self.assoc.gauge(target) is not None) else None
+        if snap:
+            self._snap.frame(snap, bgr, t_img)
         out = []
         overlay_items = []
         robot_pose = [float(pose[0]), float(pose[1]), float(pose[5])] if pose is not None else None
@@ -426,6 +450,8 @@ class GaugeReaderNode(Node):
                 "incidence_deg": pr.incidence_deg if pr is not None else None,
             }
             out.append(item)
+            if gid == snap:
+                self._snap.reading(gid, bgr, r, item, raw, t_img)
             overlay_items.append((r, [f"{gid} {fused.value:.2f} {g.get('unit', '')}",
                                       f"{status.upper()}  c={fused.confidence:.2f} n={fused.n_samples}"], status))
             if self._last_status.get(gid) != status:
@@ -450,11 +476,44 @@ class GaugeReaderNode(Node):
                 if p.visible:
                     cv2.circle(vis, (int(p.center[0]), int(p.center[1])), int(p.radius), (160, 160, 160), 1, cv2.LINE_AA)
             for r, lines, st in overlay_items:
-                draw_reading(vis, r, lines, st)
+                draw_reading(vis, r, lines, st, top=HEADER_HEIGHT + 2)
             dt = (time.perf_counter() - t_wall) * 1000.0
             draw_header(vis, f"gauge_reader  {len(out)} dial(s)  target={target or '-'}  "
                              f"pose={'ok' if pose is not None else 'none'}  |w|={omega:.2f}  {dt:.0f} ms")
             self._publish_overlay(vis, msg, t_img)
+
+    def _flush_snapshot(self, gid: str):
+        """Publish the evidence snapshot of the inspection visit of ``gid`` that just ended (best
+        effort: a failure is logged, reading goes on)."""
+        try:
+            visit = self._snap.finish(gid)
+            if visit is None or self.pub_snapshot is None:
+                return
+            g = self.assoc.gauge(gid) or {}
+            item = visit["item"] or {}
+            vrange = item.get("range") or [g.get("min"), g.get("max")]
+            info = {"id": gid, "tag": g.get("tag", ""), "value": item.get("value"), "unit": g.get("unit", ""),
+                    "status": item.get("status") or "unknown", "confidence": item.get("confidence"),
+                    "n_samples": item.get("n_samples") or 0, "range": vrange, "t_sim": visit["t"],
+                    "wall": wall_time_text()}
+            bgr = visit["bgr"]
+            if self.p["snapshot_enhanced"]:
+                bgr = self.reader.enhance(bgr)["vis"]
+            imgs = render_gauge_snapshot(bgr, visit["rd"], info, int(self.p["snapshot_crop_px"]),
+                                         int(self.p["snapshot_full_width"]), int(self.p["snapshot_jpeg_quality"]))
+            d = snapshot_message(info, imgs, stamp=visit["t"], t_end=self._now(), wall=info["wall"],
+                                 read=visit["rd"] is not None, frames=visit["frames"], readings=visit["readings"],
+                                 frame_value=visit["frame_value"], frame_confidence=visit["frame_confidence"],
+                                 robot_pose=item.get("robot_pose"), distance=item.get("distance"),
+                                 incidence_deg=item.get("incidence_deg"))
+            self.pub_snapshot.publish(json_msg(d))
+            v = item.get("value")
+            self.get_logger().info(
+                f"{gid}: inspection snapshot published ("
+                + (f"{v:.3f} {info['unit']}, {visit['readings']} detections" if v is not None else "no reading")
+                + f" in {visit['frames']} frames, {len(imgs['crop']) // 1024} KiB)")
+        except Exception as e:  # evidence is best effort, never stop reading
+            self.get_logger().warning(f"{gid}: inspection snapshot failed: {e!r}", throttle_duration_sec=10.0)
 
     def _publish_overlay(self, vis, src_msg, t_img: float):
         self._last_overlay = t_img

@@ -54,6 +54,26 @@ hfov 0.9 rad, 로봇 몸체에서 위로 0.30 rad 기울임)로 읽습니다. �
 | sub | `/inspection/target` | std_msgs/String | 미션이 시야에 있으리라 기대하는 게이지 ID (`""` = 없음). transient-local **과** volatile로 모두 구독 |
 | pub | `/inspection/gauge_readings` | std_msgs/String (JSON) | 프레임에 보인 모든 게이지의 최신 융합 판독값 |
 | pub | `/inspection/gauge_overlay` | sensor_msgs/Image bgr8 | 적합한 타원, 바늘, 눈금 끝점, 값 / 단위 / 상태 / ID |
+| pub | `/inspection/gauge_snapshot` | std_msgs/String (JSON) | 점검 1회당 사진 1장. `/inspection/target`이 그 게이지에서 바뀔 때(임무가 판독을 확정하거나 건너뛸 때) 발행 |
+
+`/inspection/gauge_snapshot` (`module2_inspection/gauge_snapshot.py`, cv_bridge 없이 JSON + base64 JPEG):
+
+```json
+{"stamp": 132.4, "t_end": 133.0, "wall": "2026-11-11 14:32:10",
+ "id": "G05", "tag": "TANK-PI-02", "value": 3.701, "unit": "bar", "status": "normal",
+ "confidence": 0.93, "n_samples": 7, "range": [0.0, 10.0],
+ "read": true, "frames": 21, "readings": 18, "frame_value": 3.702, "frame_confidence": 0.95,
+ "robot_pose": [-1.6, 7.75, 3.1416], "distance": 1.81, "incidence_deg": 4.7,
+ "format": "jpeg", "width": 320, "height": 420, "jpeg_b64": "/9j/4AAQ...", "full_jpeg_b64": "/9j/4AAQ..."}
+```
+
+* `value` / `status`는 점검이 끝날 때의 최종 융합값으로, 미션이 확정하는 값과 같습니다.
+* `jpeg_b64`: 게이지 확대 사진(적합한 테두리와 바늘을 그림) 아래에 ID, 태그, 값, 단위, 상태, 신뢰도, 샘플 수,
+  시뮬레이션 시각, 실제 시각을 적은 JPEG(약 25 KiB). 글자는 OpenCV 글꼴의 한계로 영문입니다.
+  `full_jpeg_b64`: 같은 표시를 한 카메라 전체 화면(가로 `snapshot_full_width` px, 0이면 null).
+* 사진은 점검 중 신뢰도가 높은 프레임 `snapshot_candidates`개 가운데, 그 프레임 자체의 바늘 값이 최종값과
+  1 % FS(또는 3 MAD) 안에서 일치하는 프레임입니다. 한 번도 검출하지 못한 점검은 마지막 프레임을 `read: false`, `value: null`로 보냅니다.
+* `metrics_logger`가 `~/dusan_metrics/<세션>/gauges/`에 저장하고 `inspection_report.html`에 넣습니다(사용 가이드 10.3).
 
 `/inspection/gauge_readings` (DESIGN_SPEC 4절. `robot_pose` 뒤의 키는 추가 항목):
 
@@ -261,7 +281,9 @@ combined) + 가림 60프레임 + 배경만 있는 60프레임 + 운용 범위 �
 2.0, `full_search_min_period_s` 0.5, `publish_unknown` true, `publish_empty` false,
 `fusion_window_n` 15, `fusion_window_s` 10, `fusion_mad_k` 3, `ocr_period_s` 2,
 `ocr_confirmed_period_s` 30, `overlay_enabled`, `overlay_enhanced`, `overlay_scale`,
-`overlay_idle_period_s` 0.5, `stats_period_s` 30.
+`overlay_idle_period_s` 0.5, `stats_period_s` 30, 점검 사진 `snapshot_enabled` true,
+`snapshot_topic`, `snapshot_crop_px` 320, `snapshot_full_width` 640, `snapshot_jpeg_quality` 85,
+`snapshot_enhanced` true, `snapshot_candidates` 3.
 판독기(`reader.*`, `GaugeReaderConfig`의 필드와 1:1): 영상 보정(`white_percentile`,
 `max_gain`, `gamma_target`, `gamma_min`, `clahe_clip`, `clahe_tiles`,
 `denoise_sigma_thresh`), 검출(`min_radius_px`, `max_radius_px`, `hough_canny`,

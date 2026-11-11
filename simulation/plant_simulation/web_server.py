@@ -12,6 +12,11 @@ GET  /api/static            layout / ground-truth info
 GET  /api/health            {"ok": true, ...}
 GET  /map.png /gas.png /rssi.png /image/gauge.jpg /image/thermal.jpg
                             binary blobs from the blob provider (404 if none)
+GET  /session/<file>        files of the current metrics session (inspection photos
+                            gauges/*.jpg, inspection_report.html / .json, summary.json,
+                            *.csv): only below the directory of ``session_dir_fn()``,
+                            whitelisted extensions, no '..' / hidden / symlinked-out
+                            paths; the report page gets a script-free CSP
 POST /api/command           {"target": "mission"|"locomotion"|"battery", "command": "..."}
                             (Content-Type: application/json, else 415)
 
@@ -42,6 +47,38 @@ CONTENT_TYPES = {
 }
 BLOB_PATHS = ("/map.png", "/gas.png", "/rssi.png", "/image/gauge.jpg", "/image/thermal.jpg")
 MAX_BODY = 64 * 1024
+SESSION_PREFIX = "/session/"
+SESSION_TYPES = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+                 ".html": "text/html; charset=utf-8", ".json": "application/json; charset=utf-8",
+                 ".csv": "text/csv; charset=utf-8"}
+SESSION_MAX_FILE = 32 * 1024 * 1024
+# the report is generated HTML served on the dashboard origin: no script may ever run in it
+SESSION_CSP = ("default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; base-uri 'none'; "
+               "form-action 'none'; frame-ancestors 'self'")
+
+
+def resolve_session_file(root, rel):
+    """Absolute path of the session file ``rel`` (URL-decoded, '/'-separated) below ``root``,
+    or None: empty / absolute / backslash / NUL / drive / '.' or '..' / hidden segments, an
+    extension outside SESSION_TYPES, a missing file or one whose real path (symlinks
+    resolved) leaves ``root`` are all refused."""
+    if not root or not isinstance(rel, str) or not rel or len(rel) > 255:
+        return None
+    if rel.startswith("/") or any(c in rel for c in ("\\", "\x00", ":")):
+        return None
+    parts = rel.split("/")
+    if any(p in ("", ".", "..") or p.startswith(".") for p in parts):
+        return None
+    if os.path.splitext(parts[-1])[1].lower() not in SESSION_TYPES:
+        return None
+    try:
+        base = os.path.realpath(root)
+        full = os.path.realpath(os.path.join(base, *parts))
+    except (TypeError, ValueError, OSError):
+        return None
+    if not full.startswith(base.rstrip(os.sep) + os.sep) or not os.path.isfile(full):
+        return None
+    return full
 
 
 def validate_command(target, command):
@@ -107,6 +144,8 @@ class _Handler(BaseHTTPRequestHandler):
             elif path == "/api/health":
                 self._json(200, {"ok": True, "port": app.port, "clients": app.sse_clients,
                                  "uptime": round(time.time() - app.t_start, 1)})
+            elif path.startswith(SESSION_PREFIX):
+                self._session_file(path[len(SESSION_PREFIX):])
             elif path in BLOB_PATHS:
                 blob = app.blob(path.lstrip("/"))
                 if blob is None:
@@ -129,13 +168,14 @@ class _Handler(BaseHTTPRequestHandler):
         # CORS preflight (which this server never grants), so a malicious web
         # page in the operator's browser cannot command the robot.
         ctype = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
-        if ctype != "application/json":
-            self._json(415, {"ok": False, "message": "Content-Type must be application/json"})
-            return
         try:
             n = int(self.headers.get("Content-Length") or 0)
         except ValueError:
             n = 0
+        if ctype != "application/json":
+            self._drain(n)
+            self._json(415, {"ok": False, "message": "Content-Type must be application/json"})
+            return
         if n <= 0 or n > MAX_BODY:
             self._json(400, {"ok": False, "message": "missing or oversized body"})
             return
@@ -157,6 +197,36 @@ class _Handler(BaseHTTPRequestHandler):
         except Exception as exc:  # pragma: no cover - publisher failure
             ok, msg = False, f"command failed: {exc}"
         self._json(200 if ok else 503, {"ok": bool(ok), "message": msg, "target": target, "command": res})
+
+    def _drain(self, n):
+        """Read (and drop) a small request body before an early error reply: closing a socket
+        with unread data makes Windows reset the connection, so the client never sees the reply."""
+        if 0 < n <= MAX_BODY:
+            try:
+                self.rfile.read(n)
+            except OSError:
+                pass
+
+    # ----------------------------------------------------------- session
+    def _session_file(self, rel):
+        app = self.server.app
+        full = resolve_session_file(app.session_dir(), unquote(rel))
+        if full is None:
+            self._send(404, b"not found", "text/plain; charset=utf-8", {"Cache-Control": "no-store"})
+            return
+        try:
+            if os.path.getsize(full) > SESSION_MAX_FILE:
+                raise OSError("file too large")
+            with open(full, "rb") as f:
+                data = f.read()
+        except OSError:
+            self._send(404, b"not found", "text/plain; charset=utf-8", {"Cache-Control": "no-store"})
+            return
+        ext = os.path.splitext(full)[1].lower()
+        # photos never change (unique names); the report / json are rewritten during the mission
+        extra = {"Cache-Control": "max-age=3600" if ext in (".jpg", ".jpeg", ".png") else "no-cache",
+                 "Content-Security-Policy": SESSION_CSP}
+        self._send(200, data, SESSION_TYPES[ext], extra)
 
     # ------------------------------------------------------------ static
     def _static(self, path):
@@ -231,7 +301,7 @@ class DashboardServer:
     """Owns the ThreadingHTTPServer + its daemon thread."""
 
     def __init__(self, snapshot_fn, static_fn, web_dir, port=8080, host="0.0.0.0", sse_rate=5.0,
-                 command_fn=None, blob_fn=None, logger=None, port_fallbacks=0):
+                 command_fn=None, blob_fn=None, logger=None, port_fallbacks=0, session_dir_fn=None):
         self.snapshot_fn = snapshot_fn
         self.static_fn = static_fn
         self.web_dir = web_dir
@@ -241,6 +311,7 @@ class DashboardServer:
         self.sse_rate = float(sse_rate)
         self.command_fn = command_fn
         self.blob_fn = blob_fn
+        self.session_dir_fn = session_dir_fn
         self.logger = logger
         self.port_fallbacks = int(port_fallbacks)
         self.stopping = threading.Event()
@@ -273,6 +344,16 @@ class DashboardServer:
         with self._lock:
             self._snap_cache = (now, data)
         return data
+
+    def session_dir(self):
+        """Directory served under /session/ (None: nothing is served)."""
+        if self.session_dir_fn is None:
+            return None
+        try:
+            return self.session_dir_fn()
+        except Exception as exc:
+            self.log("warn", f"session directory lookup failed: {exc}")
+            return None
 
     def blob(self, name):
         if self.blob_fn is None:

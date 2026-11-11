@@ -16,7 +16,11 @@ aggregator; the other modules are replaced by simple synthetic models:
   walks up the plume when the mission enables seeking;
 * comm: log-distance RSSI map from the layout access points + shadow zones;
 * inspection: gauge readings = ground truth + 1 % FS noise while the mission
-  dwells at a viewpoint, thermal alerts when a hot spot is in view;
+  dwells at a viewpoint, thermal alerts when a hot spot is in view; when the
+  mission accepts a gauge, an inspection photo of the synthetic dial (same
+  /inspection/gauge_snapshot message and renderer as gauge_reader_node) goes to
+  the metrics session -> gauges/*.jpg, inspection_report.html, tile thumbnails
+  and the '보고서 열기' link of the dashboard;
 * battery drain / charging on the dock, locomotion state, camera frames;
 * slippery ground (display only): the layout plates (C-OBS4 mu 0.2, F-OBS9
   mu 0.15) give the module1 friction-prior fields of /terrain/info and the
@@ -26,12 +30,16 @@ aggregator; the other modules are replaced by simple synthetic models:
 
 Useful to preview the UI on the development PC, in tests, and (headless,
 with --metrics-dir) as an end-to-end check of mission -> metrics -> report
-figures without ROS.
+figures without ROS.  With the dashboard and without --metrics-dir the session
+is recorded in a temporary directory (deleted at exit; --metrics-dir keeps it)
+so that the photos and the report can be shown.
 """
 import argparse
 import math
 import os
 import random
+import shutil
+import tempfile
 import threading
 import time
 
@@ -64,6 +72,31 @@ THERMAL_HALF_FOV = 0.5 * float(SENSORS["thermal_camera"]["hfov"])
 
 def default_web_dir():
     return os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "web"))
+
+
+# synthetic gauge frame: 360 px dial face pasted at [60:420, 140:500] of a 640 x 480 frame
+DEMO_DIAL_ROI = (320.0, 240.0, 180.0)
+
+
+def demo_gauge_snapshot(layout, gid, frame, result, t, frames=1):
+    """/inspection/gauge_snapshot message for the synthetic frame of ``gid`` (module2 renderer,
+    crop around the known dial position).  ``result`` = the mission's accepted reading.
+    None when module2_inspection is not importable."""
+    try:
+        from module2_inspection.gauge_snapshot import render_gauge_snapshot, snapshot_message, wall_time_text
+    except ImportError:
+        return None
+    g = layout.gauge(gid) or {}
+    res = result if isinstance(result, dict) else {}
+    info = {"id": gid, "tag": g.get("tag", ""), "value": res.get("value"), "unit": g.get("unit", ""),
+            "status": res.get("status") or "unknown", "confidence": res.get("confidence"),
+            "n_samples": res.get("n_readings") or 0, "range": [g.get("min"), g.get("max")], "t_sim": t,
+            "wall": wall_time_text()}
+    imgs = render_gauge_snapshot(frame, None, info, crop_px=320, full_width=640, quality=85, roi=DEMO_DIAL_ROI)
+    return snapshot_message(info, imgs, stamp=t, t_end=t, wall=info["wall"], read=res.get("value") is not None,
+                            frames=int(frames), readings=int(frames), frame_value=res.get("value"),
+                            frame_confidence=res.get("confidence"), robot_pose=None, distance=None,
+                            incidence_deg=None, synthetic=True)
 
 
 class SyntheticPlant:
@@ -298,7 +331,10 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
     except Exception:
         pass
     plant = SyntheticPlant(layout, grid)
-    state = DashboardState(layout)
+    temp_metrics = None
+    if serve and not metrics_dir:           # photos + report need a session directory
+        metrics_dir = temp_metrics = tempfile.mkdtemp(prefix="dusan_demo_metrics_")
+    state = DashboardState(layout, metrics_root=metrics_dir)
     slip = SyntheticSlip(friction_zones_from_layout(layout))
     mission = MissionLogic({"autostart": bool(autostart), "autostart_delay": 3.0, "rth_ack_timeout": 3.0}, layout)
     mission.set_map(grid)
@@ -368,7 +404,8 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
     server = None
     if serve:
         server = DashboardServer(state.snapshot, lambda: state.static, default_web_dir(), port=port, host=host,
-                                 sse_rate=5.0, command_fn=command, blob_fn=blob, port_fallbacks=5)
+                                 sse_rate=5.0, command_fn=command, blob_fn=blob, port_fallbacks=5,
+                                 session_dir_fn=state.session_dir)
         bound = server.start()
         if not quiet:
             print(f"dashboard demo on http://localhost:{bound}  (speed x{speed}, Ctrl-C to quit)")
@@ -377,9 +414,12 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
     if metrics_dir:
         run_demo.session_dir = make_session_dir(metrics_dir)
         rec = MetricsRecorder(run_demo.session_dir, layout)
+        rec.on_change = lambda: state.set_session(rec.session_info())      # like /metrics/session
         rec.event(0.0, "demo", "start", "offline dashboard demo (synthetic plant, real mission logic)")
+        state.set_session(rec.session_info())
         if not quiet:
-            print(f"recording metrics to {run_demo.session_dir}")
+            print(f"recording metrics to {run_demo.session_dir}"
+                  + (" (temporary, deleted at exit; --metrics-dir keeps it)" if temp_metrics else ""))
     started = False
 
     dt = 0.1
@@ -387,6 +427,7 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
     last_gas_layer = -1e9
     rng = random.Random(7)
     seek_path = []
+    insp = None             # current inspection visit {gid, frame, n} -> photo when the mission accepts it
     try:
         while not stop.is_set():
             t0 = time.time()
@@ -449,6 +490,9 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
                         cv2.putText(frame, f"{g['id']} {val:.2f} {g['unit']}", (150, 455), cv2.FONT_HERSHEY_SIMPLEX,
                                     0.8, (255, 255, 255), 2, cv2.LINE_AA)
                         frames["gauge"] = frame
+                        if rec is not None:
+                            n = insp["n"] + 1 if (insp and insp["gid"] == g["id"]) else 1
+                            insp = {"gid": g["id"], "frame": frame, "n": n}
                     # thermal alerts for hot spots in view
                     alerts = []
                     for h in layout.hotspots:
@@ -471,6 +515,14 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
                         frames["thermal"] = cv2.applyColorMap((th / th.max() * 255).astype(np.uint8),
                                                               cv2.COLORMAP_INFERNO)
                     out = mission.step(t)
+                    if insp is not None and not (mission.base == "INSPECTING" and mission.current is not None
+                                                 and mission.current.gauge_id == insp["gid"]):
+                        # the mission left the gauge (accepted / skipped): one inspection photo
+                        snap = demo_gauge_snapshot(layout, insp["gid"], insp["frame"],
+                                                   mission.results.get(insp["gid"]), t, insp["n"])
+                        if snap is not None:
+                            rec.on_gauge_snapshot(t, snap)
+                        insp = None
                     if seeking and cmd is not None:
                         drive = cmd
                     elif out.cmd_vel is not None:
@@ -550,7 +602,9 @@ def run_demo(port=8080, speed=4.0, autostart=True, host="0.0.0.0", duration=None
         if rec is not None:
             rec.event(plant.t, "demo", "stop", mission.base)
             rec.close()
-            if not quiet:
+            if temp_metrics:
+                shutil.rmtree(temp_metrics, ignore_errors=True)
+            elif not quiet:
                 print(f"metrics written to {run_demo.session_dir}")
     return state, mission
 
