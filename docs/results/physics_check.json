@@ -1,0 +1,6389 @@
+{
+ "tool": "tools/physics_check.py",
+ "label": "slippery steel plate handling: layout friction prior + online slip detection -> slip mode (speed / feed-forward / MPC mu / body lead); before_fixes = original velocity-servo baseline, previous_run = physics stage",
+ "date": "2026-10-13 03:53",
+ "engine": {
+  "mujoco": "3.15.0",
+  "gz_dt": 0.001,
+  "substeps": 10,
+  "servo_kv": 500.0,
+  "contact_solref": [
+   0.002,
+   1.0
+  ],
+  "impratio": 10.0,
+  "servo": "gz JointPositionController force mode (spot.urdf): p 450, d 3, i 0, |cmd| <= 60 (knee)",
+  "sensors": "joint states 200 Hz, IMU 200 Hz, odom 50 Hz (rolling mean 10), controller 100 Hz",
+  "mpc_latency": "10/20/30 ms (p = .25/.5/.25, seeded) of simulated time"
+ },
+ "params_override": {},
+ "plant": {
+  "servo": "urdf"
+ },
+ "summary": [
+  {
+   "key": "a_stand",
+   "title": "(a) stand-up + 5 s stand",
+   "required": true,
+   "passed": 3,
+   "runs": 3,
+   "ok": true,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "STAND reached; 5 s window: height 0.34+-0.03, |roll|,|pitch| < 3 deg, no fall",
+   "key_metrics": {
+    "falls_total": 0,
+    "height": 0.33867,
+    "roll_max": 0.0,
+    "pitch_max": 0.19186,
+    "sat": 0.0,
+    "drift_mm": 2.21579
+   }
+  },
+  {
+   "key": "b_trot",
+   "title": "(b) trot 0.4 m/s, 10 s",
+   "required": true,
+   "passed": 3,
+   "runs": 3,
+   "ok": true,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "no fall; mean vx within 20 % of 0.4",
+   "key_metrics": {
+    "falls_total": 0,
+    "vx": 0.42893,
+    "vy": -0.00701,
+    "wz": 0.00137,
+    "height": 0.33965,
+    "roll_max": 3.24691,
+    "pitch_max": 4.17309,
+    "knee_max": 0.79014,
+    "sat": 8e-05,
+    "mpc_ms": 23.66074
+   }
+  },
+  {
+   "key": "c_crawl",
+   "title": "(c) crawl 0.2 m/s, 10 s",
+   "required": true,
+   "passed": 3,
+   "runs": 3,
+   "ok": true,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "no fall; mean vx within 20 % of 0.2",
+   "key_metrics": {
+    "falls_total": 0,
+    "vx": 0.19292,
+    "vy": 0.01065,
+    "wz": 0.00468,
+    "height": 0.3398,
+    "roll_max": 1.992,
+    "pitch_max": 0.94599,
+    "knee_max": 0.50481,
+    "sat": 0.0,
+    "mpc_ms": 28.07776
+   }
+  },
+  {
+   "key": "d_turn",
+   "title": "(d) turn in place 0.5 rad/s",
+   "required": true,
+   "passed": 3,
+   "runs": 3,
+   "ok": true,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "no fall; mean wz within 20 % of 0.5",
+   "key_metrics": {
+    "falls_total": 0,
+    "vx": -0.01192,
+    "vy": -0.03898,
+    "wz": 0.49036,
+    "height": 0.33955,
+    "roll_max": 2.93181,
+    "pitch_max": 1.44962,
+    "knee_max": 0.62011,
+    "sat": 0.0,
+    "mpc_ms": 26.33001
+   }
+  },
+  {
+   "key": "e_obstacles",
+   "title": "(e) 0.10 m pipe + 0.10 m step, auto gait",
+   "required": true,
+   "passed": 0,
+   "runs": 3,
+   "ok": false,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "no fall; base passes x = 5.4 m (pipe at x=1.5, step 3.2-4.4)",
+   "key_metrics": {
+    "falls_total": 8,
+    "t_goal": null,
+    "x_max": 1.61176,
+    "roll_max": 180.0,
+    "pitch_max": 47.15458,
+    "slip": null,
+    "slip_dist": null
+   }
+  },
+  {
+   "key": "f_push",
+   "title": "(f) 15 N s lateral push while trotting",
+   "required": true,
+   "passed": 2,
+   "runs": 3,
+   "ok": false,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "15 N s lateral push (75 N for 0.2 s = the node push_duration) while trotting 0.4 m/s: no fall",
+   "key_metrics": {
+    "falls_total": 2,
+    "peak_roll": 113.17466,
+    "peak_vy": 1.97963,
+    "recovery_s": 2.12469,
+    "vx_after": 0.11879
+   }
+  },
+  {
+   "key": "g_payload",
+   "title": "(g) +3 kg payload: stand + trot 0.4 m/s",
+   "required": true,
+   "passed": 3,
+   "runs": 3,
+   "ok": true,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "+3 kg on the trunk: stand height 0.34+-0.03, trot 0.4 m/s within 20 %, no fall",
+   "key_metrics": {
+    "falls_total": 0,
+    "stand_height": 0.33829,
+    "vx": 0.41354,
+    "knee_max": 0.71741,
+    "sat": 0.0
+   }
+  },
+  {
+   "key": "h_side",
+   "title": "(h1) start lying on the side -> self-righting",
+   "required": true,
+   "passed": 3,
+   "runs": 3,
+   "ok": true,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+   "key_metrics": {
+    "falls_total": 6,
+    "attempts": 1.0,
+    "recoveries": 1.0,
+    "assisted": 0.0,
+    "t_recover": 6.07
+   }
+  },
+  {
+   "key": "h_push",
+   "title": "(h2) 60 N s push while standing -> fall -> recovery",
+   "required": true,
+   "passed": 3,
+   "runs": 3,
+   "ok": true,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+   "key_metrics": {
+    "falls_total": 3,
+    "attempts": 1.0,
+    "recoveries": 1.0,
+    "assisted": 0.0,
+    "t_recover": 5.16
+   }
+  },
+  {
+   "key": "h_push100",
+   "title": "(h4) 100 N s push while standing (lands on the back)",
+   "required": false,
+   "passed": 0,
+   "runs": 1,
+   "ok": false,
+   "seeds": [
+    0
+   ],
+   "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+   "key_metrics": {
+    "falls_total": 3,
+    "attempts": 5.0,
+    "recoveries": 0.0,
+    "assisted": 1.0,
+    "t_recover": null
+   }
+  },
+  {
+   "key": "h_back",
+   "title": "(h3) start on the back -> rock + self-righting",
+   "required": false,
+   "passed": 0,
+   "runs": 1,
+   "ok": false,
+   "seeds": [
+    0
+   ],
+   "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+   "key_metrics": {
+    "falls_total": 3,
+    "attempts": 6.0,
+    "recoveries": 0.0,
+    "assisted": 1.0,
+    "t_recover": null
+   }
+  },
+  {
+   "key": "i_plate_trot",
+   "title": "(i) mu 0.15 plate, trot 0.4 m/s",
+   "required": false,
+   "passed": 0,
+   "runs": 1,
+   "ok": false,
+   "seeds": [
+    0
+   ],
+   "criterion": "best effort: cross the mu 0.15 plate (record slip / falls)",
+   "key_metrics": {
+    "falls_total": 0,
+    "t_goal": null,
+    "x_max": 5.82161,
+    "roll_max": 3.70079,
+    "pitch_max": 2.33702,
+    "slip": 0.14182,
+    "slip_dist": 5.24605
+   }
+  },
+  {
+   "key": "i_plate_crawl",
+   "title": "(i) mu 0.15 plate, crawl 0.2 m/s",
+   "required": false,
+   "passed": 0,
+   "runs": 1,
+   "ok": false,
+   "seeds": [
+    0
+   ],
+   "criterion": "best effort: cross the mu 0.15 plate (record slip / falls)",
+   "key_metrics": {
+    "falls_total": 2,
+    "t_goal": null,
+    "x_max": 2.69355,
+    "roll_max": 180.0,
+    "pitch_max": 11.44897,
+    "slip": 0.1447,
+    "slip_dist": 4.52633
+   }
+  },
+  {
+   "key": "j_stairs",
+   "title": "(j) 0.17 m stairs up + down, auto gait",
+   "required": false,
+   "passed": 0,
+   "runs": 1,
+   "ok": false,
+   "seeds": [
+    0
+   ],
+   "criterion": "no fall; base passes x = 6.3 m (4 x 0.17 m up, landing, 4 down)",
+   "key_metrics": {
+    "falls_total": 6,
+    "t_goal": null,
+    "x_max": 1.13357,
+    "roll_max": 180.0,
+    "pitch_max": 88.60454,
+    "slip": null,
+    "slip_dist": null
+   }
+  },
+  {
+   "key": "j_ramp",
+   "title": "(j) 16 deg ramp up + down, auto gait",
+   "required": false,
+   "passed": 0,
+   "runs": 1,
+   "ok": false,
+   "seeds": [
+    0
+   ],
+   "criterion": "no fall; base passes x = 8.2 m (16 deg, 2 m up, 1.5 m top, 2 m down)",
+   "key_metrics": {
+    "falls_total": 4,
+    "t_goal": null,
+    "x_max": 1.5054,
+    "roll_max": 180.0,
+    "pitch_max": 46.49162,
+    "slip": null,
+    "slip_dist": null
+   }
+  },
+  {
+   "key": "k_slip_off",
+   "title": "(k) mu 0.15 plate, trot 0.4: no slip handling (before)",
+   "required": false,
+   "passed": 0,
+   "runs": 3,
+   "ok": false,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "key_metrics": {
+    "falls_total": 7,
+    "t_goal": null,
+    "x_max": 3.10906,
+    "plate_speed": 0.04727,
+    "slip_dist": 6.33948,
+    "slip": 0.23163,
+    "slip_p95": 1.13526,
+    "roll_max": 180.0,
+    "detect_latency": null,
+    "mode_lead": null,
+    "mode_frac": 0.0,
+    "mpc_mu": 0.5
+   }
+  },
+  {
+   "key": "k_slip_prior",
+   "title": "(k) mu 0.15 plate, trot 0.4: friction prior only",
+   "required": false,
+   "passed": 3,
+   "runs": 3,
+   "ok": true,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "key_metrics": {
+    "falls_total": 0,
+    "t_goal": 33.55333,
+    "x_max": 6.2005,
+    "plate_speed": 0.1868,
+    "slip_dist": 5.0916,
+    "slip": 0.12806,
+    "slip_p95": 0.36496,
+    "roll_max": 2.18597,
+    "detect_latency": null,
+    "mode_lead": 2.58333,
+    "mode_frac": 1.0,
+    "mpc_mu": 0.15
+   }
+  },
+  {
+   "key": "k_slip_detect",
+   "title": "(k) mu 0.15 plate, trot 0.4: online slip detection only",
+   "required": false,
+   "passed": 2,
+   "runs": 3,
+   "ok": false,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "key_metrics": {
+    "falls_total": 1,
+    "t_goal": 31.795,
+    "x_max": 5.73442,
+    "plate_speed": 0.16112,
+    "slip_dist": 5.49144,
+    "slip": 0.13027,
+    "slip_p95": 0.44584,
+    "roll_max": 180.0,
+    "detect_latency": 1.34667,
+    "mode_lead": -1.34667,
+    "mode_frac": 0.96796,
+    "mpc_mu": 0.15
+   }
+  },
+  {
+   "key": "k_slip_both",
+   "title": "(k) mu 0.15 plate, trot 0.4: prior + detection (deployed)",
+   "required": true,
+   "passed": 3,
+   "runs": 3,
+   "ok": true,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "key_metrics": {
+    "falls_total": 0,
+    "t_goal": 33.72,
+    "x_max": 6.20043,
+    "plate_speed": 0.18694,
+    "slip_dist": 5.09412,
+    "slip": 0.12824,
+    "slip_p95": 0.36475,
+    "roll_max": 2.14324,
+    "detect_latency": 2.15,
+    "mode_lead": 2.58333,
+    "mode_frac": 1.0,
+    "mpc_mu": 0.15
+   }
+  },
+  {
+   "key": "k_slip02_off",
+   "title": "(k) mu 0.2 plate, trot 0.4: no slip handling (before)",
+   "required": false,
+   "passed": 1,
+   "runs": 3,
+   "ok": false,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "mu 0.2 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "key_metrics": {
+    "falls_total": 6,
+    "t_goal": 19.42,
+    "x_max": 4.23767,
+    "plate_speed": 0.16291,
+    "slip_dist": 4.36265,
+    "slip": 0.14979,
+    "slip_p95": 0.74246,
+    "roll_max": 180.0,
+    "detect_latency": null,
+    "mode_lead": null,
+    "mode_frac": 0.0,
+    "mpc_mu": 0.5
+   }
+  },
+  {
+   "key": "k_slip02_detect",
+   "title": "(k) mu 0.2 plate, trot 0.4: online slip detection only",
+   "required": false,
+   "passed": 3,
+   "runs": 3,
+   "ok": true,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "mu 0.2 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "key_metrics": {
+    "falls_total": 0,
+    "t_goal": 27.23667,
+    "x_max": 6.20133,
+    "plate_speed": 0.2668,
+    "slip_dist": 3.76461,
+    "slip": 0.12857,
+    "slip_p95": 0.5022,
+    "roll_max": 4.44159,
+    "detect_latency": 1.54,
+    "mode_lead": -1.54,
+    "mode_frac": 0.64087,
+    "mpc_mu": 0.26667
+   }
+  },
+  {
+   "key": "k_slip02_both",
+   "title": "(k) mu 0.2 plate, trot 0.4: prior + detection (deployed)",
+   "required": true,
+   "passed": 3,
+   "runs": 3,
+   "ok": true,
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "criterion": "mu 0.2 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "key_metrics": {
+    "falls_total": 0,
+    "t_goal": 33.42,
+    "x_max": 6.20079,
+    "plate_speed": 0.18936,
+    "slip_dist": 3.8793,
+    "slip": 0.09964,
+    "slip_p95": 0.35479,
+    "roll_max": 1.59899,
+    "detect_latency": 25.465,
+    "mode_lead": 2.57333,
+    "mode_frac": 1.0,
+    "mpc_mu": 0.2
+   }
+  }
+ ],
+ "runs": [
+  {
+   "key": "a_stand",
+   "seed": 0,
+   "ok": true,
+   "criterion": "STAND reached; 5 s window: height 0.34+-0.03, |roll|,|pitch| < 3 deg, no fall",
+   "metrics": {
+    "t_stand": 3.0,
+    "max_roll_deg": 0.0,
+    "max_pitch_deg": 0.19186,
+    "height_mean": 0.33867,
+    "height_min": 0.33627,
+    "height_max": 0.33951,
+    "height_std": 0.00075,
+    "max_ratio_hip_x": 0.05817,
+    "max_ratio_hip_y": 0.04931,
+    "max_ratio_knee": 0.16713,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.12625,
+    "rms_ratio_hip_y": 0.03127,
+    "no_contact_frac": 0.0,
+    "stance_slip_mean": 0.00026,
+    "stance_slip_p95": 0.00062,
+    "drift_mm": 2.21579,
+    "falls": 0,
+    "standup_max_ratio_hip_x": 0.06318,
+    "standup_max_ratio_hip_y": 0.18552,
+    "standup_max_ratio_knee": 0.20983,
+    "standup_saturation_frac": 0.0,
+    "standup_rms_ratio_knee": 0.13956,
+    "standup_rms_ratio_hip_y": 0.06125,
+    "sim_time": 8.99,
+    "wall": {
+     "physics": 1.29,
+     "controller": 3.54,
+     "perception": 1.72
+    }
+   },
+   "wall_s": 7.2419,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND"
+   ]
+  },
+  {
+   "key": "a_stand",
+   "seed": 1,
+   "ok": true,
+   "criterion": "STAND reached; 5 s window: height 0.34+-0.03, |roll|,|pitch| < 3 deg, no fall",
+   "metrics": {
+    "t_stand": 3.0,
+    "max_roll_deg": 0.0,
+    "max_pitch_deg": 0.19186,
+    "height_mean": 0.33867,
+    "height_min": 0.33627,
+    "height_max": 0.33951,
+    "height_std": 0.00075,
+    "max_ratio_hip_x": 0.05817,
+    "max_ratio_hip_y": 0.04931,
+    "max_ratio_knee": 0.16713,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.12625,
+    "rms_ratio_hip_y": 0.03127,
+    "no_contact_frac": 0.0,
+    "stance_slip_mean": 0.00026,
+    "stance_slip_p95": 0.00062,
+    "drift_mm": 2.21579,
+    "falls": 0,
+    "standup_max_ratio_hip_x": 0.06318,
+    "standup_max_ratio_hip_y": 0.18552,
+    "standup_max_ratio_knee": 0.20983,
+    "standup_saturation_frac": 0.0,
+    "standup_rms_ratio_knee": 0.13956,
+    "standup_rms_ratio_hip_y": 0.06125,
+    "sim_time": 8.99,
+    "wall": {
+     "physics": 1.29,
+     "controller": 3.56,
+     "perception": 1.75
+    }
+   },
+   "wall_s": 7.3065,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND"
+   ]
+  },
+  {
+   "key": "a_stand",
+   "seed": 2,
+   "ok": true,
+   "criterion": "STAND reached; 5 s window: height 0.34+-0.03, |roll|,|pitch| < 3 deg, no fall",
+   "metrics": {
+    "t_stand": 3.0,
+    "max_roll_deg": 0.0,
+    "max_pitch_deg": 0.19186,
+    "height_mean": 0.33867,
+    "height_min": 0.33627,
+    "height_max": 0.33951,
+    "height_std": 0.00075,
+    "max_ratio_hip_x": 0.05817,
+    "max_ratio_hip_y": 0.04931,
+    "max_ratio_knee": 0.16713,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.12625,
+    "rms_ratio_hip_y": 0.03127,
+    "no_contact_frac": 0.0,
+    "stance_slip_mean": 0.00026,
+    "stance_slip_p95": 0.00062,
+    "drift_mm": 2.21579,
+    "falls": 0,
+    "standup_max_ratio_hip_x": 0.06318,
+    "standup_max_ratio_hip_y": 0.18552,
+    "standup_max_ratio_knee": 0.20983,
+    "standup_saturation_frac": 0.0,
+    "standup_rms_ratio_knee": 0.13956,
+    "standup_rms_ratio_hip_y": 0.06125,
+    "sim_time": 8.99,
+    "wall": {
+     "physics": 1.28,
+     "controller": 3.53,
+     "perception": 1.7
+    }
+   },
+   "wall_s": 7.20173,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND"
+   ]
+  },
+  {
+   "key": "b_trot",
+   "seed": 0,
+   "ok": true,
+   "criterion": "no fall; mean vx within 20 % of 0.4",
+   "metrics": {
+    "vx_mean": 0.42707,
+    "vy_mean": -0.00104,
+    "wz_mean": 0.00079,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "max_roll_deg": 2.06298,
+    "max_pitch_deg": 1.51277,
+    "height_mean": 0.33963,
+    "height_min": 0.33298,
+    "height_max": 0.34305,
+    "height_std": 0.00149,
+    "max_ratio_hip_x": 0.2868,
+    "max_ratio_hip_y": 0.50445,
+    "max_ratio_knee": 0.54566,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.151,
+    "rms_ratio_hip_y": 0.1684,
+    "no_contact_frac": 0.4304,
+    "stance_slip_mean": 0.01803,
+    "stance_slip_p95": 0.04894,
+    "mpc_solves": 230,
+    "mpc_ms_mean": 23.62776,
+    "mpc_ms_p95": 28.3454,
+    "mpc_ms_max": 32.0653,
+    "mpc_rejected": 0,
+    "track_rms_vx": 0.03448,
+    "track_rms_vy": 0.02271,
+    "track_rms_wz": 0.02191,
+    "falls": 0,
+    "controller_falls": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "xy_end": [
+     3.98101,
+     -0.03952
+    ],
+    "sim_time": 14.49,
+    "wall": {
+     "physics": 2.46,
+     "controller": 7.06,
+     "perception": 2.87
+    }
+   },
+   "wall_s": 13.46305,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "b_trot",
+   "seed": 1,
+   "ok": true,
+   "criterion": "no fall; mean vx within 20 % of 0.4",
+   "metrics": {
+    "vx_mean": 0.43061,
+    "vy_mean": -0.02113,
+    "wz_mean": 0.00327,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "max_roll_deg": 3.24691,
+    "max_pitch_deg": 4.17309,
+    "height_mean": 0.33968,
+    "height_min": 0.32672,
+    "height_max": 0.37128,
+    "height_std": 0.00545,
+    "max_ratio_hip_x": 0.68661,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 0.79014,
+    "saturation_frac": 0.00025,
+    "rms_ratio_knee": 0.15588,
+    "rms_ratio_hip_y": 0.17828,
+    "no_contact_frac": 0.4794,
+    "stance_slip_mean": 0.0299,
+    "stance_slip_p95": 0.15416,
+    "mpc_solves": 230,
+    "mpc_ms_mean": 23.40302,
+    "mpc_ms_p95": 28.13136,
+    "mpc_ms_max": 31.1522,
+    "mpc_rejected": 0,
+    "track_rms_vx": 0.08103,
+    "track_rms_vy": 0.07507,
+    "track_rms_wz": 0.14601,
+    "falls": 0,
+    "controller_falls": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "xy_end": [
+     4.04165,
+     -0.21383
+    ],
+    "sim_time": 14.49,
+    "wall": {
+     "physics": 2.37,
+     "controller": 6.95,
+     "perception": 2.78
+    }
+   },
+   "wall_s": 13.12378,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "b_trot",
+   "seed": 2,
+   "ok": true,
+   "criterion": "no fall; mean vx within 20 % of 0.4",
+   "metrics": {
+    "vx_mean": 0.42911,
+    "vy_mean": 0.00113,
+    "wz_mean": 6e-05,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "max_roll_deg": 2.87675,
+    "max_pitch_deg": 2.92647,
+    "height_mean": 0.33964,
+    "height_min": 0.32844,
+    "height_max": 0.35908,
+    "height_std": 0.00288,
+    "max_ratio_hip_x": 0.4299,
+    "max_ratio_hip_y": 0.68163,
+    "max_ratio_knee": 0.68198,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.151,
+    "rms_ratio_hip_y": 0.17184,
+    "no_contact_frac": 0.44694,
+    "stance_slip_mean": 0.02212,
+    "stance_slip_p95": 0.08465,
+    "mpc_solves": 230,
+    "mpc_ms_mean": 23.95143,
+    "mpc_ms_p95": 28.24458,
+    "mpc_ms_max": 31.8391,
+    "mpc_rejected": 0,
+    "track_rms_vx": 0.05873,
+    "track_rms_vy": 0.0259,
+    "track_rms_wz": 0.05477,
+    "falls": 0,
+    "controller_falls": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "xy_end": [
+     3.99323,
+     -0.15532
+    ],
+    "sim_time": 14.49,
+    "wall": {
+     "physics": 2.43,
+     "controller": 7.14,
+     "perception": 2.94
+    }
+   },
+   "wall_s": 13.54365,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "c_crawl",
+   "seed": 0,
+   "ok": true,
+   "criterion": "no fall; mean vx within 20 % of 0.2",
+   "metrics": {
+    "vx_mean": 0.19153,
+    "vy_mean": 0.00824,
+    "wz_mean": 0.00422,
+    "cmd": [
+     0.2,
+     0.0,
+     0.0
+    ],
+    "max_roll_deg": 1.992,
+    "max_pitch_deg": 0.94599,
+    "height_mean": 0.33978,
+    "height_min": 0.33048,
+    "height_max": 0.34519,
+    "height_std": 0.00225,
+    "max_ratio_hip_x": 0.40564,
+    "max_ratio_hip_y": 0.47817,
+    "max_ratio_knee": 0.50481,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.13538,
+    "rms_ratio_hip_y": 0.12949,
+    "no_contact_frac": 0.30025,
+    "stance_slip_mean": 0.01506,
+    "stance_slip_p95": 0.03908,
+    "mpc_solves": 230,
+    "mpc_ms_mean": 27.55567,
+    "mpc_ms_p95": 32.35692,
+    "mpc_ms_max": 35.0911,
+    "mpc_rejected": 0,
+    "track_rms_vx": 0.04192,
+    "track_rms_vy": 0.05893,
+    "track_rms_wz": 0.03354,
+    "falls": 0,
+    "controller_falls": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 0.0,
+     "crawl": 1.0
+    },
+    "xy_end": [
+     1.76754,
+     0.11627
+    ],
+    "sim_time": 14.49,
+    "wall": {
+     "physics": 2.38,
+     "controller": 7.84,
+     "perception": 2.77
+    }
+   },
+   "wall_s": 14.00449,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "c_crawl",
+   "seed": 1,
+   "ok": true,
+   "criterion": "no fall; mean vx within 20 % of 0.2",
+   "metrics": {
+    "vx_mean": 0.19487,
+    "vy_mean": 0.01182,
+    "wz_mean": 0.00567,
+    "cmd": [
+     0.2,
+     0.0,
+     0.0
+    ],
+    "max_roll_deg": 1.72059,
+    "max_pitch_deg": 0.8325,
+    "height_mean": 0.33983,
+    "height_min": 0.32995,
+    "height_max": 0.34581,
+    "height_std": 0.00233,
+    "max_ratio_hip_x": 0.41506,
+    "max_ratio_hip_y": 0.40935,
+    "max_ratio_knee": 0.50014,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.13441,
+    "rms_ratio_hip_y": 0.13187,
+    "no_contact_frac": 0.30368,
+    "stance_slip_mean": 0.01742,
+    "stance_slip_p95": 0.0546,
+    "mpc_solves": 230,
+    "mpc_ms_mean": 28.92603,
+    "mpc_ms_p95": 34.13787,
+    "mpc_ms_max": 36.8828,
+    "mpc_rejected": 0,
+    "track_rms_vx": 0.03993,
+    "track_rms_vy": 0.06378,
+    "track_rms_wz": 0.03085,
+    "falls": 0,
+    "controller_falls": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 0.0,
+     "crawl": 1.0
+    },
+    "xy_end": [
+     1.80925,
+     0.11595
+    ],
+    "sim_time": 14.49,
+    "wall": {
+     "physics": 2.44,
+     "controller": 8.24,
+     "perception": 2.89
+    }
+   },
+   "wall_s": 14.6365,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "c_crawl",
+   "seed": 2,
+   "ok": true,
+   "criterion": "no fall; mean vx within 20 % of 0.2",
+   "metrics": {
+    "vx_mean": 0.19237,
+    "vy_mean": 0.0119,
+    "wz_mean": 0.00417,
+    "cmd": [
+     0.2,
+     0.0,
+     0.0
+    ],
+    "max_roll_deg": 1.48587,
+    "max_pitch_deg": 0.69922,
+    "height_mean": 0.33978,
+    "height_min": 0.33125,
+    "height_max": 0.34493,
+    "height_std": 0.00221,
+    "max_ratio_hip_x": 0.47039,
+    "max_ratio_hip_y": 0.4106,
+    "max_ratio_knee": 0.47593,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.13593,
+    "rms_ratio_hip_y": 0.13111,
+    "no_contact_frac": 0.30087,
+    "stance_slip_mean": 0.01494,
+    "stance_slip_p95": 0.04846,
+    "mpc_solves": 230,
+    "mpc_ms_mean": 27.75159,
+    "mpc_ms_p95": 32.88799,
+    "mpc_ms_max": 35.5696,
+    "mpc_rejected": 0,
+    "track_rms_vx": 0.03882,
+    "track_rms_vy": 0.05421,
+    "track_rms_wz": 0.02774,
+    "falls": 0,
+    "controller_falls": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 0.0,
+     "crawl": 1.0
+    },
+    "xy_end": [
+     1.79661,
+     0.10486
+    ],
+    "sim_time": 14.49,
+    "wall": {
+     "physics": 2.48,
+     "controller": 7.92,
+     "perception": 2.74
+    }
+   },
+   "wall_s": 14.1748,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "d_turn",
+   "seed": 0,
+   "ok": true,
+   "criterion": "no fall; mean wz within 20 % of 0.5",
+   "metrics": {
+    "vx_mean": -0.01231,
+    "vy_mean": -0.03772,
+    "wz_mean": 0.49456,
+    "cmd": [
+     0.0,
+     0.0,
+     0.5
+    ],
+    "max_roll_deg": 2.93181,
+    "max_pitch_deg": 1.44962,
+    "height_mean": 0.33954,
+    "height_min": 0.33188,
+    "height_max": 0.34558,
+    "height_std": 0.00206,
+    "max_ratio_hip_x": 0.51991,
+    "max_ratio_hip_y": 0.52973,
+    "max_ratio_knee": 0.62011,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.16981,
+    "rms_ratio_hip_y": 0.14829,
+    "no_contact_frac": 0.47004,
+    "stance_slip_mean": 0.02969,
+    "stance_slip_p95": 0.21522,
+    "mpc_solves": 230,
+    "mpc_ms_mean": 26.22525,
+    "mpc_ms_p95": 31.98235,
+    "mpc_ms_max": 36.7648,
+    "mpc_rejected": 0,
+    "track_rms_vx": 0.02304,
+    "track_rms_vy": 0.08904,
+    "track_rms_wz": 0.03212,
+    "falls": 0,
+    "controller_falls": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "xy_end": [
+     -0.12662,
+     0.16167
+    ],
+    "sim_time": 14.49,
+    "wall": {
+     "physics": 2.39,
+     "controller": 7.6,
+     "perception": 2.73
+    }
+   },
+   "wall_s": 13.73166,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "d_turn",
+   "seed": 1,
+   "ok": true,
+   "criterion": "no fall; mean wz within 20 % of 0.5",
+   "metrics": {
+    "vx_mean": -0.01428,
+    "vy_mean": -0.04412,
+    "wz_mean": 0.48256,
+    "cmd": [
+     0.0,
+     0.0,
+     0.5
+    ],
+    "max_roll_deg": 2.01885,
+    "max_pitch_deg": 1.42462,
+    "height_mean": 0.33955,
+    "height_min": 0.33531,
+    "height_max": 0.34541,
+    "height_std": 0.00193,
+    "max_ratio_hip_x": 0.5301,
+    "max_ratio_hip_y": 0.50078,
+    "max_ratio_knee": 0.52097,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.17005,
+    "rms_ratio_hip_y": 0.14774,
+    "no_contact_frac": 0.46785,
+    "stance_slip_mean": 0.02868,
+    "stance_slip_p95": 0.22492,
+    "mpc_solves": 230,
+    "mpc_ms_mean": 27.06927,
+    "mpc_ms_p95": 32.60998,
+    "mpc_ms_max": 36.1088,
+    "mpc_rejected": 0,
+    "track_rms_vx": 0.03027,
+    "track_rms_vy": 0.09519,
+    "track_rms_wz": 0.04946,
+    "falls": 0,
+    "controller_falls": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "xy_end": [
+     -0.07646,
+     0.21314
+    ],
+    "sim_time": 14.49,
+    "wall": {
+     "physics": 2.43,
+     "controller": 7.88,
+     "perception": 2.85
+    }
+   },
+   "wall_s": 14.2365,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "d_turn",
+   "seed": 2,
+   "ok": true,
+   "criterion": "no fall; mean wz within 20 % of 0.5",
+   "metrics": {
+    "vx_mean": -0.00916,
+    "vy_mean": -0.03511,
+    "wz_mean": 0.49396,
+    "cmd": [
+     0.0,
+     0.0,
+     0.5
+    ],
+    "max_roll_deg": 1.75013,
+    "max_pitch_deg": 1.2435,
+    "height_mean": 0.33955,
+    "height_min": 0.33583,
+    "height_max": 0.34499,
+    "height_std": 0.00183,
+    "max_ratio_hip_x": 0.32139,
+    "max_ratio_hip_y": 0.43247,
+    "max_ratio_knee": 0.47293,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.1692,
+    "rms_ratio_hip_y": 0.14425,
+    "no_contact_frac": 0.46255,
+    "stance_slip_mean": 0.03335,
+    "stance_slip_p95": 0.24925,
+    "mpc_solves": 230,
+    "mpc_ms_mean": 25.69551,
+    "mpc_ms_p95": 30.57505,
+    "mpc_ms_max": 32.7558,
+    "mpc_rejected": 0,
+    "track_rms_vx": 0.02351,
+    "track_rms_vy": 0.07883,
+    "track_rms_wz": 0.02041,
+    "falls": 0,
+    "controller_falls": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "xy_end": [
+     -0.1328,
+     0.18636
+    ],
+    "sim_time": 14.49,
+    "wall": {
+     "physics": 2.4,
+     "controller": 7.52,
+     "perception": 2.75
+    }
+   },
+   "wall_s": 13.71846,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "e_obstacles",
+   "seed": 0,
+   "ok": false,
+   "criterion": "no fall; base passes x = 5.4 m (pipe at x=1.5, step 3.2-4.4)",
+   "metrics": {
+    "t_goal": null,
+    "x_max": 1.85463,
+    "falls": 1,
+    "controller_falls": 1,
+    "max_roll_deg": 180.0,
+    "max_pitch_deg": 24.76328,
+    "height_mean": 0.26249,
+    "height_min": 0.07193,
+    "height_max": 0.57837,
+    "height_std": 0.12309,
+    "max_ratio_hip_x": 1.0,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 1.0,
+    "saturation_frac": 0.00078,
+    "rms_ratio_knee": 0.14271,
+    "rms_ratio_hip_y": 0.12751,
+    "no_contact_frac": 0.59891,
+    "stance_slip_mean": 0.01423,
+    "stance_slip_p95": 0.02069,
+    "mpc_solves": 599,
+    "mpc_ms_mean": 28.04818,
+    "mpc_ms_p95": 35.08012,
+    "mpc_ms_max": 84.6156,
+    "mpc_rejected": 16,
+    "gait_frac": {
+     "stand": 0.05478,
+     "trot": 0.37326,
+     "crawl": 0.57196
+    },
+    "terrain_classes": [
+     "flat",
+     "rough",
+     "stairs"
+    ],
+    "sim_time": 49.99,
+    "wall": {
+     "physics": 9.74,
+     "controller": 22.45,
+     "perception": 8.63
+    }
+   },
+   "wall_s": 44.32514,
+   "events": [
+    {
+     "event": "slip_detected",
+     "t": 8.32,
+     "x": 0.61336,
+     "y": 0.00909,
+     "speed": 0.12507,
+     "mu_est": 0.37451
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 8.32,
+     "x": 0.61336,
+     "y": 0.00909,
+     "source": "detected"
+    },
+    {
+     "event": "fall",
+     "t": 16.55,
+     "x": 1.04102,
+     "y": 0.01189,
+     "roll": -1.78148,
+     "pitch": -0.03121
+    },
+    {
+     "event": "recovery_failed",
+     "t": 29.62,
+     "x": 1.01011,
+     "y": -0.1525,
+     "roll": -3.08448,
+     "pitch": 0.00029
+    },
+    {
+     "event": "assisted_reset",
+     "t": 29.62,
+     "x": 1.01011,
+     "y": -0.1525,
+     "roll": -3.08448,
+     "pitch": 0.00029
+    },
+    {
+     "event": "sim_teleport",
+     "t": 30.12
+    },
+    {
+     "event": "slip_mode_off",
+     "t": 46.41,
+     "x": -1.82732,
+     "y": 0.50644,
+     "source": "detected"
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "8.32 slip detected at (0.61, 0.01): foot speed 0.13 m/s, mu estimate 0.37",
+    "8.32 slip mode on (detected)",
+    "15.77 MPC prediction rejected (status solved)",
+    "15.83 MPC prediction rejected (status solved_inaccurate)",
+    "15.86 MPC prediction rejected (status solved)",
+    "15.93 MPC prediction rejected (status solved_inaccurate)",
+    "15.97 MPC prediction rejected (status solved_inaccurate)",
+    "16.02 MPC prediction rejected (status solved_inaccurate)",
+    "16.07 MPC prediction rejected (status solved_inaccurate)",
+    "16.11 MPC prediction rejected (status solved_inaccurate)",
+    "16.16 MPC prediction rejected (status solved_inaccurate)",
+    "16.21 MPC prediction rejected (status solved_inaccurate)",
+    "16.27 MPC prediction rejected (status solved_inaccurate)",
+    "16.32 MPC prediction rejected (status solved_inaccurate)",
+    "16.37 MPC prediction rejected (status solved_inaccurate)",
+    "16.42 MPC prediction rejected (status solved_inaccurate)",
+    "16.46 MPC prediction rejected (status solved_inaccurate)",
+    "16.53 MPC prediction rejected (status solved_inaccurate)",
+    "16.55 mode WALK -> FALLEN",
+    "17.21 mode FALLEN -> RECOVERING",
+    "21.01 mode RECOVERING -> FALLEN",
+    "21.51 mode FALLEN -> RECOVERING",
+    "25.32 mode RECOVERING -> FALLEN",
+    "25.82 mode FALLEN -> RECOVERING",
+    "31.12 mode RECOVERING -> STANDING_UP",
+    "33.63 mode STANDING_UP -> STAND",
+    "33.64 mode STAND -> WALK",
+    "46.41 slip mode off (detected)"
+   ]
+  },
+  {
+   "key": "e_obstacles",
+   "seed": 1,
+   "ok": false,
+   "criterion": "no fall; base passes x = 5.4 m (pipe at x=1.5, step 3.2-4.4)",
+   "metrics": {
+    "t_goal": null,
+    "x_max": 1.16541,
+    "falls": 3,
+    "controller_falls": 3,
+    "max_roll_deg": 180.0,
+    "max_pitch_deg": 47.15458,
+    "height_mean": 0.18133,
+    "height_min": 0.07166,
+    "height_max": 0.57838,
+    "height_std": 0.13995,
+    "max_ratio_hip_x": 0.95913,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 1.0,
+    "saturation_frac": 0.00188,
+    "rms_ratio_knee": 0.11146,
+    "rms_ratio_hip_y": 0.14025,
+    "no_contact_frac": 0.81973,
+    "stance_slip_mean": 0.02533,
+    "stance_slip_p95": 0.04998,
+    "mpc_solves": 224,
+    "mpc_ms_mean": 34.61828,
+    "mpc_ms_p95": 75.28792,
+    "mpc_ms_max": 82.1281,
+    "mpc_rejected": 47,
+    "gait_frac": {
+     "stand": 0.10913,
+     "trot": 0.0087,
+     "crawl": 0.88217
+    },
+    "terrain_classes": [
+     "flat",
+     "rough",
+     "stairs",
+     "unknown"
+    ],
+    "sim_time": 49.99,
+    "wall": {
+     "physics": 9.97,
+     "controller": 11.15,
+     "perception": 6.71
+    }
+   },
+   "wall_s": 31.23828,
+   "events": [
+    {
+     "event": "fall",
+     "t": 12.06,
+     "x": 0.64529,
+     "y": 0.83236,
+     "roll": -1.93624,
+     "pitch": 0.0
+    },
+    {
+     "event": "recovery_failed",
+     "t": 24.98,
+     "x": 0.65991,
+     "y": 0.99144,
+     "roll": -3.08468,
+     "pitch": 8e-05
+    },
+    {
+     "event": "assisted_reset",
+     "t": 24.98,
+     "x": 0.65991,
+     "y": 0.99144,
+     "roll": -3.08468,
+     "pitch": 8e-05
+    },
+    {
+     "event": "sim_teleport",
+     "t": 25.48
+    },
+    {
+     "event": "fall",
+     "t": 30.07,
+     "x": 0.35317,
+     "y": 1.26514,
+     "roll": -1.81652,
+     "pitch": 0.00871
+    },
+    {
+     "event": "recovery_failed",
+     "t": 42.99,
+     "x": 0.17839,
+     "y": 1.27386,
+     "roll": -3.08477,
+     "pitch": 0.00024
+    },
+    {
+     "event": "assisted_reset",
+     "t": 42.99,
+     "x": 0.17839,
+     "y": 1.27386,
+     "roll": -3.08477,
+     "pitch": 0.00024
+    },
+    {
+     "event": "sim_teleport",
+     "t": 43.491
+    },
+    {
+     "event": "fall",
+     "t": 47.99,
+     "x": -0.14153,
+     "y": 0.84718,
+     "roll": 2.59811,
+     "pitch": -0.04653
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "11.32 MPC prediction rejected (status solved)",
+    "11.36 MPC prediction rejected (status solved)",
+    "11.42 MPC prediction rejected (status solved_inaccurate)",
+    "11.63 MPC prediction rejected (status solved)",
+    "11.68 MPC prediction rejected (status solved)",
+    "11.73 MPC prediction rejected (status solved)",
+    "11.77 MPC prediction rejected (status solved)",
+    "11.82 MPC prediction rejected (status solved)",
+    "11.87 MPC prediction rejected (status solved)",
+    "11.92 MPC prediction rejected (status solved)",
+    "11.97 MPC prediction rejected (status solved_inaccurate)",
+    "12.01 MPC prediction rejected (status solved_inaccurate)",
+    "12.06 mode WALK -> FALLEN",
+    "12.56 mode FALLEN -> RECOVERING",
+    "16.37 mode RECOVERING -> FALLEN",
+    "16.87 mode FALLEN -> RECOVERING",
+    "20.67 mode RECOVERING -> FALLEN",
+    "21.17 mode FALLEN -> RECOVERING",
+    "26.48 mode RECOVERING -> STANDING_UP",
+    "28.98 mode STANDING_UP -> STAND",
+    "28.99 mode STAND -> WALK",
+    "29.00 MPC prediction rejected (status solved)",
+    "29.20 MPC prediction rejected (status solved_inaccurate)",
+    "29.25 MPC prediction rejected (status solved)",
+    "29.31 MPC prediction rejected (status solved)",
+    "29.37 MPC prediction rejected (status solved)",
+    "29.40 MPC prediction rejected (status solved)",
+    "29.45 MPC prediction rejected (status solved)",
+    "29.51 MPC prediction rejected (status solved)",
+    "29.57 MPC prediction rejected (status solved)",
+    "29.62 MPC prediction rejected (status solved)",
+    "29.66 MPC prediction rejected (status solved)",
+    "29.70 MPC prediction rejected (status solved)",
+    "29.76 MPC prediction rejected (status solved)",
+    "29.82 MPC prediction rejected (status solved)",
+    "29.87 MPC prediction rejected (status solved_inaccurate)",
+    "29.91 MPC prediction rejected (status solved_inaccurate)",
+    "29.96 MPC prediction rejected (status solved_inaccurate)"
+   ]
+  },
+  {
+   "key": "e_obstacles",
+   "seed": 2,
+   "ok": false,
+   "criterion": "no fall; base passes x = 5.4 m (pipe at x=1.5, step 3.2-4.4)",
+   "metrics": {
+    "t_goal": null,
+    "x_max": 1.81524,
+    "falls": 4,
+    "controller_falls": 2,
+    "max_roll_deg": 180.0,
+    "max_pitch_deg": 46.37544,
+    "height_mean": 0.24619,
+    "height_min": 0.07174,
+    "height_max": 0.57837,
+    "height_std": 0.12562,
+    "max_ratio_hip_x": 0.68795,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 1.0,
+    "saturation_frac": 0.00107,
+    "rms_ratio_knee": 0.13479,
+    "rms_ratio_hip_y": 0.13978,
+    "no_contact_frac": 0.61864,
+    "stance_slip_mean": 0.02031,
+    "stance_slip_p95": 0.08828,
+    "mpc_solves": 479,
+    "mpc_ms_mean": 26.76923,
+    "mpc_ms_p95": 38.4606,
+    "mpc_ms_max": 81.2327,
+    "mpc_rejected": 25,
+    "gait_frac": {
+     "stand": 0.05478,
+     "trot": 0.30739,
+     "crawl": 0.63783
+    },
+    "terrain_classes": [
+     "flat",
+     "rough",
+     "stairs"
+    ],
+    "sim_time": 49.99,
+    "wall": {
+     "physics": 9.79,
+     "controller": 17.39,
+     "perception": 8.26
+    }
+   },
+   "wall_s": 38.78833,
+   "events": [
+    {
+     "event": "fall",
+     "t": 12.09,
+     "x": 0.86582,
+     "y": 1.03648,
+     "roll": -2.1132,
+     "pitch": 0.0
+    },
+    {
+     "event": "recovery_failed",
+     "t": 25.12,
+     "x": 0.87011,
+     "y": 1.18073,
+     "roll": -3.08516,
+     "pitch": 0.00038
+    },
+    {
+     "event": "assisted_reset",
+     "t": 25.12,
+     "x": 0.87011,
+     "y": 1.18073,
+     "roll": -3.08516,
+     "pitch": 0.00038
+    },
+    {
+     "event": "sim_teleport",
+     "t": 25.62
+    },
+    {
+     "event": "fall",
+     "t": 30.21,
+     "x": 0.51302,
+     "y": 1.4333,
+     "roll": -1.06605,
+     "pitch": 0.11081
+    },
+    {
+     "event": "recovered",
+     "t": 36.26,
+     "x": 0.845,
+     "y": 1.33056,
+     "roll": -5e-05,
+     "pitch": -0.00511
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "11.36 MPC prediction rejected (status solved)",
+    "11.71 MPC prediction rejected (status solved)",
+    "11.77 MPC prediction rejected (status solved)",
+    "11.82 MPC prediction rejected (status solved)",
+    "11.86 MPC prediction rejected (status solved_inaccurate)",
+    "11.91 MPC prediction rejected (status solved_inaccurate)",
+    "11.96 MPC prediction rejected (status solved_inaccurate)",
+    "12.02 MPC prediction rejected (status solved_inaccurate)",
+    "12.07 MPC prediction rejected (status solved_inaccurate)",
+    "12.09 mode WALK -> FALLEN",
+    "12.70 mode FALLEN -> RECOVERING",
+    "16.51 mode RECOVERING -> FALLEN",
+    "17.01 mode FALLEN -> RECOVERING",
+    "20.82 mode RECOVERING -> FALLEN",
+    "21.32 mode FALLEN -> RECOVERING",
+    "26.62 mode RECOVERING -> STANDING_UP",
+    "29.12 mode STANDING_UP -> STAND",
+    "29.13 mode STAND -> WALK",
+    "29.16 MPC prediction rejected (status solved)",
+    "29.40 MPC prediction rejected (status solved_inaccurate)",
+    "29.44 MPC prediction rejected (status solved)",
+    "29.51 MPC prediction rejected (status solved)",
+    "29.56 MPC prediction rejected (status solved)",
+    "29.60 MPC prediction rejected (status solved)",
+    "29.64 MPC prediction rejected (status solved)",
+    "29.70 MPC prediction rejected (status solved)",
+    "29.74 MPC prediction rejected (status solved)",
+    "29.85 MPC prediction rejected (status solved)",
+    "29.90 MPC prediction rejected (status solved)",
+    "29.96 MPC prediction rejected (status solved)",
+    "30.00 MPC prediction rejected (status solved_inaccurate)",
+    "30.06 MPC prediction rejected (status solved_inaccurate)",
+    "30.10 MPC prediction rejected (status solved_inaccurate)",
+    "30.14 MPC prediction rejected (status solved_inaccurate)",
+    "30.21 mode WALK -> FALLEN",
+    "30.71 mode FALLEN -> RECOVERING",
+    "36.26 mode RECOVERING -> STAND",
+    "36.27 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "f_push",
+   "seed": 0,
+   "ok": false,
+   "criterion": "15 N s lateral push (75 N for 0.2 s = the node push_duration) while trotting 0.4 m/s: no fall",
+   "metrics": {
+    "push_t": 8.20855,
+    "push_impulse_Ns": 15.0,
+    "push_dir": 1.0,
+    "falls": 2,
+    "controller_falls": 1,
+    "max_roll_deg": 113.17466,
+    "max_pitch_deg": 66.37095,
+    "height_mean": 0.34698,
+    "height_min": 0.28615,
+    "height_max": 0.41249,
+    "height_std": 0.02618,
+    "peak_vy": 1.97963,
+    "recovery_s": 2.99145,
+    "vx_after": -0.16493,
+    "max_ratio_hip_x": 1.0,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 1.0,
+    "saturation_frac": 0.01111,
+    "rms_ratio_knee": 0.18553,
+    "rms_ratio_hip_y": 0.27019,
+    "mpc_solves": 166,
+    "mpc_ms_mean": 27.58989,
+    "mpc_ms_p95": 39.16842,
+    "mpc_ms_max": 83.3834,
+    "mpc_rejected": 10,
+    "sim_time": 14.49,
+    "wall": {
+     "physics": 2.53,
+     "controller": 5.97,
+     "perception": 2.74
+    }
+   },
+   "wall_s": 12.33954,
+   "events": [
+    {
+     "event": "slip_detected",
+     "t": 10.35,
+     "x": 1.58598,
+     "y": 0.13825,
+     "speed": 0.55445,
+     "mu_est": 0.3
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 10.35,
+     "x": 1.58598,
+     "y": 0.13825,
+     "source": "detected"
+    },
+    {
+     "event": "fall",
+     "t": 11.28,
+     "x": 0.95544,
+     "y": 1.01537,
+     "roll": -1.65013,
+     "pitch": 1.25132
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "10.35 slip detected at (1.59, 0.14): foot speed 0.55 m/s, mu estimate 0.30",
+    "10.35 slip mode on (detected)",
+    "10.76 MPC prediction rejected (status solved_inaccurate)",
+    "10.82 MPC prediction rejected (status solved_inaccurate)",
+    "10.87 MPC prediction rejected (status solved_inaccurate)",
+    "10.91 MPC prediction rejected (status solved_inaccurate)",
+    "10.96 MPC prediction rejected (status solved_inaccurate)",
+    "11.02 MPC prediction rejected (status solved_inaccurate)",
+    "11.07 MPC prediction rejected (status solved)",
+    "11.12 MPC prediction rejected (status solved)",
+    "11.18 MPC prediction rejected (status solved_inaccurate)",
+    "11.21 MPC prediction rejected (status solved)",
+    "11.28 mode WALK -> FALLEN",
+    "11.82 mode FALLEN -> RECOVERING"
+   ]
+  },
+  {
+   "key": "f_push",
+   "seed": 1,
+   "ok": true,
+   "criterion": "15 N s lateral push (75 N for 0.2 s = the node push_duration) while trotting 0.4 m/s: no fall",
+   "metrics": {
+    "push_t": 8.24504,
+    "push_impulse_Ns": 15.0,
+    "push_dir": -1.0,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 2.53395,
+    "max_pitch_deg": 1.38127,
+    "height_mean": 0.33824,
+    "height_min": 0.33193,
+    "height_max": 0.34768,
+    "height_std": 0.00234,
+    "peak_vy": 0.54382,
+    "recovery_s": 0.38496,
+    "vx_after": 0.42763,
+    "max_ratio_hip_x": 0.50762,
+    "max_ratio_hip_y": 0.48811,
+    "max_ratio_knee": 0.5799,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.15269,
+    "rms_ratio_hip_y": 0.1774,
+    "mpc_solves": 230,
+    "mpc_ms_mean": 23.0843,
+    "mpc_ms_p95": 27.79614,
+    "mpc_ms_max": 31.0761,
+    "mpc_rejected": 0,
+    "sim_time": 14.49,
+    "wall": {
+     "physics": 2.57,
+     "controller": 7.0,
+     "perception": 2.67
+    }
+   },
+   "wall_s": 13.35854,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "f_push",
+   "seed": 2,
+   "ok": true,
+   "criterion": "15 N s lateral push (75 N for 0.2 s = the node push_duration) while trotting 0.4 m/s: no fall",
+   "metrics": {
+    "push_t": 8.15233,
+    "push_impulse_Ns": 15.0,
+    "push_dir": 1.0,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 5.15844,
+    "max_pitch_deg": 5.48231,
+    "height_mean": 0.34119,
+    "height_min": 0.3289,
+    "height_max": 0.37293,
+    "height_std": 0.00795,
+    "peak_vy": 0.91691,
+    "recovery_s": 2.99767,
+    "vx_after": 0.09365,
+    "max_ratio_hip_x": 0.68214,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 0.92973,
+    "saturation_frac": 0.00028,
+    "rms_ratio_knee": 0.16099,
+    "rms_ratio_hip_y": 0.20596,
+    "mpc_solves": 230,
+    "mpc_ms_mean": 23.36564,
+    "mpc_ms_p95": 28.58386,
+    "mpc_ms_max": 36.0763,
+    "mpc_rejected": 0,
+    "sim_time": 14.49,
+    "wall": {
+     "physics": 2.44,
+     "controller": 7.09,
+     "perception": 2.74
+    }
+   },
+   "wall_s": 13.37465,
+   "events": [
+    {
+     "event": "slip_detected",
+     "t": 11.96,
+     "x": 2.48377,
+     "y": -0.20732,
+     "speed": 0.55239,
+     "mu_est": 0.3
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 11.96,
+     "x": 2.48377,
+     "y": -0.20732,
+     "source": "detected"
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "11.96 slip detected at (2.48, -0.21): foot speed 0.55 m/s, mu estimate 0.30",
+    "11.96 slip mode on (detected)"
+   ]
+  },
+  {
+   "key": "g_payload",
+   "seed": 0,
+   "ok": true,
+   "criterion": "+3 kg on the trunk: stand height 0.34+-0.03, trot 0.4 m/s within 20 %, no fall",
+   "metrics": {
+    "t_stand": 3.0,
+    "stand_max_roll_deg": 0.0,
+    "stand_max_pitch_deg": 0.20869,
+    "stand_height_mean": 0.33829,
+    "stand_height_min": 0.337,
+    "stand_height_max": 0.33907,
+    "stand_height_std": 0.00058,
+    "vx_mean": 0.41286,
+    "vy_mean": -0.00455,
+    "max_roll_deg": 3.47623,
+    "max_pitch_deg": 2.99858,
+    "height_mean": 0.33957,
+    "height_min": 0.32992,
+    "height_max": 0.34899,
+    "height_std": 0.00274,
+    "max_ratio_hip_x": 0.4433,
+    "max_ratio_hip_y": 0.6396,
+    "max_ratio_knee": 0.59006,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.17117,
+    "rms_ratio_hip_y": 0.14363,
+    "mpc_solves": 250,
+    "mpc_ms_mean": 22.47082,
+    "mpc_ms_p95": 26.96277,
+    "mpc_ms_max": 29.6617,
+    "mpc_rejected": 0,
+    "falls": 0,
+    "sim_time": 15.49,
+    "wall": {
+     "physics": 2.67,
+     "controller": 7.4,
+     "perception": 3.05
+    }
+   },
+   "wall_s": 14.31937,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "7.00 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "g_payload",
+   "seed": 1,
+   "ok": true,
+   "criterion": "+3 kg on the trunk: stand height 0.34+-0.03, trot 0.4 m/s within 20 %, no fall",
+   "metrics": {
+    "t_stand": 3.0,
+    "stand_max_roll_deg": 0.0,
+    "stand_max_pitch_deg": 0.20869,
+    "stand_height_mean": 0.33829,
+    "stand_height_min": 0.337,
+    "stand_height_max": 0.33907,
+    "stand_height_std": 0.00058,
+    "vx_mean": 0.4195,
+    "vy_mean": 0.01446,
+    "max_roll_deg": 2.49823,
+    "max_pitch_deg": 2.26878,
+    "height_mean": 0.33955,
+    "height_min": 0.33152,
+    "height_max": 0.34596,
+    "height_std": 0.00199,
+    "max_ratio_hip_x": 0.46318,
+    "max_ratio_hip_y": 0.67667,
+    "max_ratio_knee": 0.58598,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.16944,
+    "rms_ratio_hip_y": 0.14016,
+    "mpc_solves": 250,
+    "mpc_ms_mean": 22.95345,
+    "mpc_ms_p95": 26.32704,
+    "mpc_ms_max": 31.7157,
+    "mpc_rejected": 0,
+    "falls": 0,
+    "sim_time": 15.49,
+    "wall": {
+     "physics": 2.67,
+     "controller": 7.53,
+     "perception": 2.85
+    }
+   },
+   "wall_s": 14.23046,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "7.00 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "g_payload",
+   "seed": 2,
+   "ok": true,
+   "criterion": "+3 kg on the trunk: stand height 0.34+-0.03, trot 0.4 m/s within 20 %, no fall",
+   "metrics": {
+    "t_stand": 3.0,
+    "stand_max_roll_deg": 0.0,
+    "stand_max_pitch_deg": 0.20869,
+    "stand_height_mean": 0.33829,
+    "stand_height_min": 0.337,
+    "stand_height_max": 0.33907,
+    "stand_height_std": 0.00058,
+    "vx_mean": 0.40826,
+    "vy_mean": -0.0022,
+    "max_roll_deg": 2.62942,
+    "max_pitch_deg": 2.84746,
+    "height_mean": 0.33961,
+    "height_min": 0.33084,
+    "height_max": 0.3499,
+    "height_std": 0.00262,
+    "max_ratio_hip_x": 0.48059,
+    "max_ratio_hip_y": 0.64122,
+    "max_ratio_knee": 0.71741,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.17186,
+    "rms_ratio_hip_y": 0.14229,
+    "mpc_solves": 250,
+    "mpc_ms_mean": 22.29387,
+    "mpc_ms_p95": 26.67892,
+    "mpc_ms_max": 31.8813,
+    "mpc_rejected": 0,
+    "falls": 0,
+    "sim_time": 15.49,
+    "wall": {
+     "physics": 2.69,
+     "controller": 7.39,
+     "perception": 2.92
+    }
+   },
+   "wall_s": 14.22538,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "7.00 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "h_back",
+   "seed": 0,
+   "ok": false,
+   "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+   "metrics": {
+    "controller_falls": 2,
+    "recovery_attempts": 6,
+    "recoveries": 0,
+    "assisted_resets": 1,
+    "t_fall": 0.8,
+    "t_recovered": null,
+    "fall_episodes_metric": 3,
+    "state_sequence": [
+     "NORMAL",
+     "DAMP",
+     "TUCK",
+     "ROCK",
+     "DAMP",
+     "TUCK",
+     "ROCK",
+     "DAMP",
+     "TUCK",
+     "ROCK",
+     "ASSISTED_RESET",
+     "NORMAL",
+     "DAMP",
+     "TUCK",
+     "PREPARE",
+     "STAND_UP",
+     "VERIFY",
+     "DAMP",
+     "TUCK",
+     "PREPARE",
+     "STAND_UP",
+     "VERIFY",
+     "DAMP",
+     "TUCK",
+     "PREPARE"
+    ],
+    "final_mode": "RECOVERING",
+    "final_max_roll_deg": 0.0,
+    "final_max_pitch_deg": 4.9981,
+    "final_height_mean": 0.1562,
+    "final_height_min": 0.07761,
+    "final_height_max": 0.33595,
+    "final_height_std": 0.08097,
+    "max_ratio_hip_x": 0.50195,
+    "max_ratio_hip_y": 0.82119,
+    "max_ratio_knee": 1.0,
+    "saturation_frac": 0.00017,
+    "rms_ratio_knee": 0.1252,
+    "rms_ratio_hip_y": 0.07779,
+    "time_to_recover": null,
+    "sim_time": 29.99,
+    "wall": {
+     "physics": 5.91,
+     "controller": 1.33,
+     "perception": 4.04
+    }
+   },
+   "wall_s": 13.62933,
+   "events": [
+    {
+     "event": "fall",
+     "t": 0.8,
+     "x": -0.00844,
+     "y": -0.01835,
+     "roll": 3.14159,
+     "pitch": 1e-05
+    },
+    {
+     "event": "recovery_failed",
+     "t": 13.71,
+     "x": -0.00464,
+     "y": 0.01228,
+     "roll": -3.08477,
+     "pitch": 0.00024
+    },
+    {
+     "event": "assisted_reset",
+     "t": 13.71,
+     "x": -0.00464,
+     "y": 0.01228,
+     "roll": -3.08477,
+     "pitch": 0.00024
+    },
+    {
+     "event": "sim_teleport",
+     "t": 14.21
+    },
+    {
+     "event": "fall",
+     "t": 15.52,
+     "x": -0.28379,
+     "y": -0.00377,
+     "roll": -2e-05,
+     "pitch": -0.65579
+    }
+   ],
+   "messages": [
+    "0.80 mode STANDING_UP -> FALLEN",
+    "1.30 mode FALLEN -> RECOVERING",
+    "5.10 mode RECOVERING -> FALLEN",
+    "5.60 mode FALLEN -> RECOVERING",
+    "9.41 mode RECOVERING -> FALLEN",
+    "9.91 mode FALLEN -> RECOVERING",
+    "15.21 mode RECOVERING -> STANDING_UP",
+    "15.52 mode STANDING_UP -> FALLEN",
+    "16.02 mode FALLEN -> RECOVERING",
+    "21.82 mode RECOVERING -> FALLEN",
+    "22.32 mode FALLEN -> RECOVERING",
+    "28.12 mode RECOVERING -> FALLEN",
+    "28.62 mode FALLEN -> RECOVERING"
+   ]
+  },
+  {
+   "key": "h_push",
+   "seed": 0,
+   "ok": true,
+   "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+   "metrics": {
+    "controller_falls": 1,
+    "recovery_attempts": 1,
+    "recoveries": 1,
+    "assisted_resets": 0,
+    "t_fall": 5.04,
+    "t_recovered": 10.2,
+    "fall_episodes_metric": 1,
+    "state_sequence": [
+     "NORMAL",
+     "DAMP",
+     "TUCK",
+     "PREPARE",
+     "STAND_UP",
+     "VERIFY",
+     "NORMAL"
+    ],
+    "final_mode": "STAND",
+    "final_max_roll_deg": 1e-05,
+    "final_max_pitch_deg": 0.14268,
+    "final_height_mean": 0.33981,
+    "final_height_min": 0.33981,
+    "final_height_max": 0.33981,
+    "final_height_std": 0.0,
+    "max_ratio_hip_x": 1.0,
+    "max_ratio_hip_y": 0.93087,
+    "max_ratio_knee": 0.67069,
+    "saturation_frac": 6e-05,
+    "rms_ratio_knee": 0.13569,
+    "rms_ratio_hip_y": 0.05245,
+    "time_to_recover": 5.16,
+    "sim_time": 29.99,
+    "wall": {
+     "physics": 4.9,
+     "controller": 12.98,
+     "perception": 5.8
+    }
+   },
+   "wall_s": 26.01995,
+   "events": [
+    {
+     "event": "fall",
+     "t": 5.04,
+     "x": -0.41487,
+     "y": 1.29615,
+     "roll": 1.87429,
+     "pitch": -0.11273
+    },
+    {
+     "event": "recovered",
+     "t": 10.2,
+     "x": -0.71688,
+     "y": 1.75388,
+     "roll": 0.0,
+     "pitch": -0.00472
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.67 MPC prediction rejected (status solved)",
+    "4.72 MPC prediction rejected (status solved_inaccurate)",
+    "4.77 MPC prediction rejected (status solved_inaccurate)",
+    "4.82 MPC prediction rejected (status solved_inaccurate)",
+    "4.88 MPC prediction rejected (status solved_inaccurate)",
+    "4.94 MPC prediction rejected (status solved_inaccurate)",
+    "4.98 MPC prediction rejected (status solved_inaccurate)",
+    "5.02 MPC prediction rejected (status solved_inaccurate)",
+    "5.04 mode STAND -> FALLEN",
+    "5.58 mode FALLEN -> RECOVERING",
+    "10.20 mode RECOVERING -> STAND"
+   ]
+  },
+  {
+   "key": "h_push",
+   "seed": 1,
+   "ok": true,
+   "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+   "metrics": {
+    "controller_falls": 1,
+    "recovery_attempts": 1,
+    "recoveries": 1,
+    "assisted_resets": 0,
+    "t_fall": 5.04,
+    "t_recovered": 10.2,
+    "fall_episodes_metric": 1,
+    "state_sequence": [
+     "NORMAL",
+     "DAMP",
+     "TUCK",
+     "PREPARE",
+     "STAND_UP",
+     "VERIFY",
+     "NORMAL"
+    ],
+    "final_mode": "STAND",
+    "final_max_roll_deg": 1e-05,
+    "final_max_pitch_deg": 0.14268,
+    "final_height_mean": 0.33981,
+    "final_height_min": 0.33981,
+    "final_height_max": 0.33981,
+    "final_height_std": 0.0,
+    "max_ratio_hip_x": 1.0,
+    "max_ratio_hip_y": 0.93087,
+    "max_ratio_knee": 0.67069,
+    "saturation_frac": 6e-05,
+    "rms_ratio_knee": 0.13569,
+    "rms_ratio_hip_y": 0.05245,
+    "time_to_recover": 5.16,
+    "sim_time": 29.99,
+    "wall": {
+     "physics": 4.93,
+     "controller": 13.03,
+     "perception": 5.78
+    }
+   },
+   "wall_s": 26.14652,
+   "events": [
+    {
+     "event": "fall",
+     "t": 5.04,
+     "x": -0.36804,
+     "y": -1.33463,
+     "roll": -1.87429,
+     "pitch": -0.11273
+    },
+    {
+     "event": "recovered",
+     "t": 10.2,
+     "x": -0.66321,
+     "y": -1.79681,
+     "roll": -0.0,
+     "pitch": -0.00472
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.68 MPC prediction rejected (status solved)",
+    "4.72 MPC prediction rejected (status solved_inaccurate)",
+    "4.77 MPC prediction rejected (status solved_inaccurate)",
+    "4.84 MPC prediction rejected (status solved_inaccurate)",
+    "4.89 MPC prediction rejected (status solved_inaccurate)",
+    "4.93 MPC prediction rejected (status solved_inaccurate)",
+    "4.99 MPC prediction rejected (status solved_inaccurate)",
+    "5.04 mode STAND -> FALLEN",
+    "5.58 mode FALLEN -> RECOVERING",
+    "10.20 mode RECOVERING -> STAND"
+   ]
+  },
+  {
+   "key": "h_push",
+   "seed": 2,
+   "ok": true,
+   "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+   "metrics": {
+    "controller_falls": 1,
+    "recovery_attempts": 1,
+    "recoveries": 1,
+    "assisted_resets": 0,
+    "t_fall": 5.04,
+    "t_recovered": 10.2,
+    "fall_episodes_metric": 1,
+    "state_sequence": [
+     "NORMAL",
+     "DAMP",
+     "TUCK",
+     "PREPARE",
+     "STAND_UP",
+     "VERIFY",
+     "NORMAL"
+    ],
+    "final_mode": "STAND",
+    "final_max_roll_deg": 1e-05,
+    "final_max_pitch_deg": 0.14268,
+    "final_height_mean": 0.33981,
+    "final_height_min": 0.33981,
+    "final_height_max": 0.33981,
+    "final_height_std": 0.0,
+    "max_ratio_hip_x": 1.0,
+    "max_ratio_hip_y": 0.93087,
+    "max_ratio_knee": 0.67069,
+    "saturation_frac": 6e-05,
+    "rms_ratio_knee": 0.13569,
+    "rms_ratio_hip_y": 0.05245,
+    "time_to_recover": 5.16,
+    "sim_time": 29.99,
+    "wall": {
+     "physics": 4.93,
+     "controller": 13.62,
+     "perception": 5.81
+    }
+   },
+   "wall_s": 26.72246,
+   "events": [
+    {
+     "event": "fall",
+     "t": 5.04,
+     "x": -0.3641,
+     "y": 1.34138,
+     "roll": 1.87429,
+     "pitch": -0.11273
+    },
+    {
+     "event": "recovered",
+     "t": 10.2,
+     "x": -0.64873,
+     "y": 1.81012,
+     "roll": 0.0,
+     "pitch": -0.00472
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.68 MPC prediction rejected (status solved)",
+    "4.73 MPC prediction rejected (status solved_inaccurate)",
+    "4.77 MPC prediction rejected (status solved_inaccurate)",
+    "4.83 MPC prediction rejected (status solved_inaccurate)",
+    "4.87 MPC prediction rejected (status solved_inaccurate)",
+    "4.92 MPC prediction rejected (status solved_inaccurate)",
+    "4.97 MPC prediction rejected (status solved_inaccurate)",
+    "5.03 MPC prediction rejected (status solved_inaccurate)",
+    "5.04 mode STAND -> FALLEN",
+    "5.58 mode FALLEN -> RECOVERING",
+    "10.20 mode RECOVERING -> STAND"
+   ]
+  },
+  {
+   "key": "h_push100",
+   "seed": 0,
+   "ok": false,
+   "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+   "metrics": {
+    "controller_falls": 2,
+    "recovery_attempts": 5,
+    "recoveries": 0,
+    "assisted_resets": 1,
+    "t_fall": 4.98,
+    "t_recovered": null,
+    "fall_episodes_metric": 3,
+    "state_sequence": [
+     "NORMAL",
+     "DAMP",
+     "TUCK",
+     "ROCK",
+     "DAMP",
+     "TUCK",
+     "ROCK",
+     "DAMP",
+     "TUCK",
+     "ROCK",
+     "ASSISTED_RESET",
+     "NORMAL",
+     "DAMP",
+     "TUCK",
+     "ROCK",
+     "DAMP",
+     "TUCK",
+     "ROCK"
+    ],
+    "final_mode": "RECOVERING",
+    "final_max_roll_deg": 180.0,
+    "final_max_pitch_deg": 0.07541,
+    "final_height_mean": 0.07268,
+    "final_height_min": 0.07194,
+    "final_height_max": 0.07745,
+    "final_height_std": 0.00146,
+    "max_ratio_hip_x": 1.0,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 1.0,
+    "saturation_frac": 0.00081,
+    "rms_ratio_knee": 0.1039,
+    "rms_ratio_hip_y": 0.10934,
+    "time_to_recover": null,
+    "sim_time": 29.99,
+    "wall": {
+     "physics": 6.12,
+     "controller": 4.18,
+     "perception": 3.65
+    }
+   },
+   "wall_s": 16.34047,
+   "events": [
+    {
+     "event": "fall",
+     "t": 4.98,
+     "x": -0.49567,
+     "y": 1.98259,
+     "roll": 1.66341,
+     "pitch": -0.09572
+    },
+    {
+     "event": "recovery_failed",
+     "t": 18.24,
+     "x": -1.46493,
+     "y": 2.78548,
+     "roll": -3.08516,
+     "pitch": 0.00038
+    },
+    {
+     "event": "assisted_reset",
+     "t": 18.24,
+     "x": -1.46493,
+     "y": 2.78548,
+     "roll": -3.08516,
+     "pitch": 0.00038
+    },
+    {
+     "event": "sim_teleport",
+     "t": 18.74
+    },
+    {
+     "event": "fall",
+     "t": 23.19,
+     "x": -1.23754,
+     "y": 1.75716,
+     "roll": 3.038,
+     "pitch": -1.12972
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.64 MPC prediction rejected (status solved)",
+    "4.67 MPC prediction rejected (status solved_inaccurate)",
+    "4.72 MPC prediction rejected (status solved_inaccurate)",
+    "4.77 MPC prediction rejected (status solved_inaccurate)",
+    "4.82 MPC prediction rejected (status solved_inaccurate)",
+    "4.88 MPC prediction rejected (status solved_inaccurate)",
+    "4.94 MPC prediction rejected (status solved_inaccurate)",
+    "4.98 mode STAND -> FALLEN",
+    "5.82 mode FALLEN -> RECOVERING",
+    "9.63 mode RECOVERING -> FALLEN",
+    "10.13 mode FALLEN -> RECOVERING",
+    "13.94 mode RECOVERING -> FALLEN",
+    "14.44 mode FALLEN -> RECOVERING",
+    "19.74 mode RECOVERING -> STANDING_UP",
+    "22.24 mode STANDING_UP -> STAND",
+    "22.27 MPC prediction rejected (status solved)",
+    "22.42 MPC prediction rejected (status solved)",
+    "22.48 MPC prediction rejected (status solved)",
+    "22.52 MPC prediction rejected (status solved)",
+    "22.58 MPC prediction rejected (status solved)",
+    "22.72 MPC prediction rejected (status solved)",
+    "22.77 MPC prediction rejected (status solved)",
+    "22.82 MPC prediction rejected (status solved_inaccurate)",
+    "22.87 MPC prediction rejected (status solved)",
+    "22.92 MPC prediction rejected (status solved_inaccurate)",
+    "22.97 MPC prediction rejected (status solved_inaccurate)",
+    "23.02 MPC prediction rejected (status solved_inaccurate)",
+    "23.07 MPC prediction rejected (status solved_inaccurate)",
+    "23.13 MPC prediction rejected (status solved_inaccurate)",
+    "23.17 MPC prediction rejected (status solved_inaccurate)",
+    "23.19 mode STAND -> FALLEN",
+    "23.69 mode FALLEN -> RECOVERING",
+    "27.49 mode RECOVERING -> FALLEN",
+    "27.99 mode FALLEN -> RECOVERING"
+   ]
+  },
+  {
+   "key": "h_side",
+   "seed": 0,
+   "ok": true,
+   "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+   "metrics": {
+    "controller_falls": 1,
+    "recovery_attempts": 1,
+    "recoveries": 1,
+    "assisted_resets": 0,
+    "t_fall": 0.8,
+    "t_recovered": 6.87,
+    "fall_episodes_metric": 2,
+    "state_sequence": [
+     "NORMAL",
+     "DAMP",
+     "TUCK",
+     "SELF_RIGHT",
+     "PREPARE",
+     "STAND_UP",
+     "VERIFY",
+     "NORMAL"
+    ],
+    "final_mode": "STAND",
+    "final_max_roll_deg": 0.00025,
+    "final_max_pitch_deg": 0.14465,
+    "final_height_mean": 0.33981,
+    "final_height_min": 0.33981,
+    "final_height_max": 0.33981,
+    "final_height_std": 0.0,
+    "max_ratio_hip_x": 0.29699,
+    "max_ratio_hip_y": 0.62458,
+    "max_ratio_knee": 0.91645,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.12829,
+    "rms_ratio_hip_y": 0.0569,
+    "time_to_recover": 6.07,
+    "sim_time": 24.99,
+    "wall": {
+     "physics": 4.17,
+     "controller": 10.8,
+     "perception": 4.59
+    }
+   },
+   "wall_s": 21.46292,
+   "events": [
+    {
+     "event": "fall",
+     "t": 0.8,
+     "x": -0.00926,
+     "y": -0.01924,
+     "roll": 1.56218,
+     "pitch": -0.00022
+    },
+    {
+     "event": "recovered",
+     "t": 6.87,
+     "x": 0.0625,
+     "y": 0.3221,
+     "roll": 6e-05,
+     "pitch": -0.00515
+    }
+   ],
+   "messages": [
+    "0.80 mode STANDING_UP -> FALLEN",
+    "1.30 mode FALLEN -> RECOVERING",
+    "6.87 mode RECOVERING -> STAND"
+   ]
+  },
+  {
+   "key": "h_side",
+   "seed": 1,
+   "ok": true,
+   "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+   "metrics": {
+    "controller_falls": 1,
+    "recovery_attempts": 1,
+    "recoveries": 1,
+    "assisted_resets": 0,
+    "t_fall": 0.8,
+    "t_recovered": 6.87,
+    "fall_episodes_metric": 2,
+    "state_sequence": [
+     "NORMAL",
+     "DAMP",
+     "TUCK",
+     "SELF_RIGHT",
+     "PREPARE",
+     "STAND_UP",
+     "VERIFY",
+     "NORMAL"
+    ],
+    "final_mode": "STAND",
+    "final_max_roll_deg": 0.00025,
+    "final_max_pitch_deg": 0.14465,
+    "final_height_mean": 0.33981,
+    "final_height_min": 0.33981,
+    "final_height_max": 0.33981,
+    "final_height_std": 0.0,
+    "max_ratio_hip_x": 0.29699,
+    "max_ratio_hip_y": 0.62458,
+    "max_ratio_knee": 0.91645,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.12829,
+    "rms_ratio_hip_y": 0.0569,
+    "time_to_recover": 6.07,
+    "sim_time": 24.99,
+    "wall": {
+     "physics": 4.2,
+     "controller": 10.55,
+     "perception": 4.97
+    }
+   },
+   "wall_s": 21.61147,
+   "events": [
+    {
+     "event": "fall",
+     "t": 0.8,
+     "x": 0.01795,
+     "y": -0.01511,
+     "roll": 1.56218,
+     "pitch": -0.00022
+    },
+    {
+     "event": "recovered",
+     "t": 6.87,
+     "x": 0.09399,
+     "y": 0.32531,
+     "roll": 6e-05,
+     "pitch": -0.00515
+    }
+   ],
+   "messages": [
+    "0.80 mode STANDING_UP -> FALLEN",
+    "1.30 mode FALLEN -> RECOVERING",
+    "6.87 mode RECOVERING -> STAND"
+   ]
+  },
+  {
+   "key": "h_side",
+   "seed": 2,
+   "ok": true,
+   "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+   "metrics": {
+    "controller_falls": 1,
+    "recovery_attempts": 1,
+    "recoveries": 1,
+    "assisted_resets": 0,
+    "t_fall": 0.8,
+    "t_recovered": 6.87,
+    "fall_episodes_metric": 2,
+    "state_sequence": [
+     "NORMAL",
+     "DAMP",
+     "TUCK",
+     "SELF_RIGHT",
+     "PREPARE",
+     "STAND_UP",
+     "VERIFY",
+     "NORMAL"
+    ],
+    "final_mode": "STAND",
+    "final_max_roll_deg": 0.00025,
+    "final_max_pitch_deg": 0.14465,
+    "final_height_mean": 0.33981,
+    "final_height_min": 0.33981,
+    "final_height_max": 0.33981,
+    "final_height_std": 0.0,
+    "max_ratio_hip_x": 0.29699,
+    "max_ratio_hip_y": 0.62458,
+    "max_ratio_knee": 0.91645,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.12829,
+    "rms_ratio_hip_y": 0.0569,
+    "time_to_recover": 6.07,
+    "sim_time": 24.99,
+    "wall": {
+     "physics": 4.18,
+     "controller": 10.61,
+     "perception": 4.73
+    }
+   },
+   "wall_s": 21.41467,
+   "events": [
+    {
+     "event": "fall",
+     "t": 0.8,
+     "x": -0.00815,
+     "y": 0.0117,
+     "roll": 1.56218,
+     "pitch": -0.00022
+    },
+    {
+     "event": "recovered",
+     "t": 6.87,
+     "x": 0.07638,
+     "y": 0.3501,
+     "roll": 6e-05,
+     "pitch": -0.00515
+    }
+   ],
+   "messages": [
+    "0.80 mode STANDING_UP -> FALLEN",
+    "1.30 mode FALLEN -> RECOVERING",
+    "6.87 mode RECOVERING -> STAND"
+   ]
+  },
+  {
+   "key": "i_plate_crawl",
+   "seed": 0,
+   "ok": false,
+   "criterion": "best effort: cross the mu 0.15 plate (record slip / falls)",
+   "metrics": {
+    "t_goal": null,
+    "x_max": 2.69355,
+    "falls": 2,
+    "controller_falls": 2,
+    "max_roll_deg": 180.0,
+    "max_pitch_deg": 11.44897,
+    "height_mean": 0.19469,
+    "height_min": 0.07148,
+    "height_max": 0.57863,
+    "height_std": 0.13276,
+    "max_ratio_hip_x": 1.0,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 1.0,
+    "saturation_frac": 0.00045,
+    "rms_ratio_knee": 0.1031,
+    "rms_ratio_hip_y": 0.09409,
+    "no_contact_frac": 0.69902,
+    "stance_slip_mean": 0.11144,
+    "stance_slip_p95": 0.48592,
+    "mpc_solves": 334,
+    "mpc_ms_mean": 30.57354,
+    "mpc_ms_p95": 40.7894,
+    "mpc_ms_max": 81.0506,
+    "mpc_rejected": 21,
+    "gait_frac": {
+     "stand": 0.06122,
+     "trot": 0.0,
+     "crawl": 0.93878
+    },
+    "terrain_classes": [
+     "flat"
+    ],
+    "plate_slip_mean": 0.1447,
+    "plate_slip_p95": 0.56502,
+    "plate_slip_dist": 4.52633,
+    "plate_max_roll_deg": 180.0,
+    "plate_max_pitch_deg": 11.44897,
+    "plate_height_mean": 0.16543,
+    "plate_height_min": 0.07148,
+    "plate_height_max": 0.57863,
+    "plate_height_std": 0.12684,
+    "plate_speed": 0.04046,
+    "sim_time": 44.99,
+    "wall": {
+     "physics": 10.5,
+     "controller": 14.45,
+     "perception": 6.97
+    }
+   },
+   "wall_s": 35.42079,
+   "events": [
+    {
+     "event": "slip_detected",
+     "t": 9.78,
+     "x": 0.89521,
+     "y": 0.11761,
+     "speed": 0.24262,
+     "mu_est": 0.16526
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 9.78,
+     "x": 0.89521,
+     "y": 0.11761,
+     "source": "detected"
+    },
+    {
+     "event": "fall",
+     "t": 12.59,
+     "x": 1.65592,
+     "y": 0.61149,
+     "roll": -2.19987,
+     "pitch": 0.00501
+    },
+    {
+     "event": "recovery_failed",
+     "t": 25.49,
+     "x": 1.62275,
+     "y": 0.76721,
+     "roll": -3.08398,
+     "pitch": 0.0001
+    },
+    {
+     "event": "assisted_reset",
+     "t": 25.49,
+     "x": 1.62275,
+     "y": 0.76721,
+     "roll": -3.08398,
+     "pitch": 0.0001
+    },
+    {
+     "event": "sim_teleport",
+     "t": 25.99
+    },
+    {
+     "event": "fall",
+     "t": 36.6,
+     "x": 2.67578,
+     "y": 0.86059,
+     "roll": 2.86848,
+     "pitch": 0.00015
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "9.78 slip detected at (0.90, 0.12): foot speed 0.24 m/s, mu estimate 0.17",
+    "9.78 slip mode on (detected)",
+    "11.93 MPC prediction rejected (status solved_inaccurate)",
+    "11.97 MPC prediction rejected (status solved_inaccurate)",
+    "12.01 MPC prediction rejected (status solved_inaccurate)",
+    "12.07 MPC prediction rejected (status solved_inaccurate)",
+    "12.12 MPC prediction rejected (status solved_inaccurate)",
+    "12.17 MPC prediction rejected (status solved_inaccurate)",
+    "12.23 MPC prediction rejected (status solved_inaccurate)",
+    "12.28 MPC prediction rejected (status solved_inaccurate)",
+    "12.33 MPC prediction rejected (status solved_inaccurate)",
+    "12.37 MPC prediction rejected (status solved_inaccurate)",
+    "12.42 MPC prediction rejected (status solved_inaccurate)",
+    "12.46 MPC prediction rejected (status solved_inaccurate)",
+    "12.52 MPC prediction rejected (status solved_inaccurate)",
+    "12.58 MPC prediction rejected (status solved)",
+    "12.59 mode WALK -> FALLEN",
+    "13.09 mode FALLEN -> RECOVERING",
+    "16.89 mode RECOVERING -> FALLEN",
+    "17.39 mode FALLEN -> RECOVERING",
+    "21.19 mode RECOVERING -> FALLEN",
+    "21.69 mode FALLEN -> RECOVERING",
+    "26.99 mode RECOVERING -> STANDING_UP",
+    "29.49 mode STANDING_UP -> STAND",
+    "29.50 mode STAND -> WALK",
+    "36.26 MPC prediction rejected (status solved)",
+    "36.31 MPC prediction rejected (status solved)",
+    "36.37 MPC prediction rejected (status solved)",
+    "36.42 MPC prediction rejected (status solved)",
+    "36.47 MPC prediction rejected (status solved)",
+    "36.52 MPC prediction rejected (status solved)",
+    "36.57 MPC prediction rejected (status solved)",
+    "36.60 mode WALK -> FALLEN",
+    "37.10 mode FALLEN -> RECOVERING",
+    "40.91 mode RECOVERING -> FALLEN",
+    "41.41 mode FALLEN -> RECOVERING"
+   ]
+  },
+  {
+   "key": "i_plate_trot",
+   "seed": 0,
+   "ok": false,
+   "criterion": "best effort: cross the mu 0.15 plate (record slip / falls)",
+   "metrics": {
+    "t_goal": null,
+    "x_max": 5.82161,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 3.70079,
+    "max_pitch_deg": 2.33702,
+    "height_mean": 0.34018,
+    "height_min": 0.33058,
+    "height_max": 0.3499,
+    "height_std": 0.0036,
+    "max_ratio_hip_x": 0.33785,
+    "max_ratio_hip_y": 0.50404,
+    "max_ratio_knee": 0.68114,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.17122,
+    "rms_ratio_hip_y": 0.12594,
+    "no_contact_frac": 0.45712,
+    "stance_slip_mean": 0.11271,
+    "stance_slip_p95": 0.39691,
+    "mpc_solves": 540,
+    "mpc_ms_mean": 21.79846,
+    "mpc_ms_p95": 26.9317,
+    "mpc_ms_max": 45.6356,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat"
+    ],
+    "plate_slip_mean": 0.14182,
+    "plate_slip_p95": 0.45285,
+    "plate_slip_dist": 5.24605,
+    "plate_max_roll_deg": 3.70079,
+    "plate_max_pitch_deg": 2.33702,
+    "plate_height_mean": 0.3407,
+    "plate_height_min": 0.33268,
+    "plate_height_max": 0.34974,
+    "plate_height_std": 0.00332,
+    "plate_speed": 0.20053,
+    "sim_time": 29.99,
+    "wall": {
+     "physics": 7.0,
+     "controller": 16.46,
+     "perception": 5.71
+    }
+   },
+   "wall_s": 31.56012,
+   "events": [
+    {
+     "event": "slip_detected",
+     "t": 9.76,
+     "x": 1.91098,
+     "y": -0.06865,
+     "speed": 0.40136,
+     "mu_est": 0.15
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 9.76,
+     "x": 1.91098,
+     "y": -0.06865,
+     "source": "detected"
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "9.76 slip detected at (1.91, -0.07): foot speed 0.40 m/s, mu estimate 0.15",
+    "9.76 slip mode on (detected)"
+   ]
+  },
+  {
+   "key": "j_ramp",
+   "seed": 0,
+   "ok": false,
+   "criterion": "no fall; base passes x = 8.2 m (16 deg, 2 m up, 1.5 m top, 2 m down)",
+   "metrics": {
+    "t_goal": null,
+    "x_max": 1.5054,
+    "falls": 4,
+    "controller_falls": 2,
+    "max_roll_deg": 180.0,
+    "max_pitch_deg": 46.49162,
+    "height_mean": 0.26391,
+    "height_min": 0.07192,
+    "height_max": 0.57864,
+    "height_std": 0.1181,
+    "max_ratio_hip_x": 0.89381,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 1.0,
+    "saturation_frac": 0.00082,
+    "rms_ratio_knee": 0.14246,
+    "rms_ratio_hip_y": 0.14109,
+    "no_contact_frac": 0.59429,
+    "stance_slip_mean": 0.02115,
+    "stance_slip_p95": 0.09386,
+    "mpc_solves": 682,
+    "mpc_ms_mean": 25.49817,
+    "mpc_ms_p95": 40.96677,
+    "mpc_ms_max": 79.1901,
+    "mpc_rejected": 37,
+    "gait_frac": {
+     "stand": 0.045,
+     "trot": 0.43804,
+     "crawl": 0.51696
+    },
+    "terrain_classes": [
+     "flat",
+     "obstacle",
+     "rough",
+     "slope"
+    ],
+    "sim_time": 59.99,
+    "wall": {
+     "physics": 12.92,
+     "controller": 23.73,
+     "perception": 10.54
+    }
+   },
+   "wall_s": 51.51111,
+   "events": [
+    {
+     "event": "fall",
+     "t": 14.97,
+     "x": 0.92535,
+     "y": 0.78446,
+     "roll": -1.62813,
+     "pitch": -0.0041
+    },
+    {
+     "event": "recovery_failed",
+     "t": 27.89,
+     "x": 0.8494,
+     "y": 0.9454,
+     "roll": -3.08468,
+     "pitch": 8e-05
+    },
+    {
+     "event": "assisted_reset",
+     "t": 27.89,
+     "x": 0.8494,
+     "y": 0.9454,
+     "roll": -3.08468,
+     "pitch": 8e-05
+    },
+    {
+     "event": "sim_teleport",
+     "t": 28.39
+    },
+    {
+     "event": "fall",
+     "t": 33.02,
+     "x": 0.46993,
+     "y": 1.01013,
+     "roll": -1.02144,
+     "pitch": 0.05979
+    },
+    {
+     "event": "recovered",
+     "t": 39.05,
+     "x": 0.83508,
+     "y": 0.98028,
+     "roll": -5e-05,
+     "pitch": -0.00512
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "13.91 MPC prediction rejected (status solved)",
+    "14.02 MPC prediction rejected (status solved)",
+    "14.07 MPC prediction rejected (status solved_inaccurate)",
+    "14.13 MPC prediction rejected (status solved_inaccurate)",
+    "14.17 MPC prediction rejected (status solved_inaccurate)",
+    "14.23 MPC prediction rejected (status solved_inaccurate)",
+    "14.27 MPC prediction rejected (status solved_inaccurate)",
+    "14.32 MPC prediction rejected (status solved_inaccurate)",
+    "14.37 MPC prediction rejected (status solved_inaccurate)",
+    "14.43 MPC prediction rejected (status solved_inaccurate)",
+    "14.48 MPC prediction rejected (status solved)",
+    "14.52 MPC prediction rejected (status solved)",
+    "14.58 MPC prediction rejected (status solved)",
+    "14.62 MPC prediction rejected (status solved)",
+    "14.67 MPC prediction rejected (status solved)",
+    "14.72 MPC prediction rejected (status solved)",
+    "14.77 MPC prediction rejected (status solved_inaccurate)",
+    "14.82 MPC prediction rejected (status solved_inaccurate)",
+    "14.87 MPC prediction rejected (status solved_inaccurate)",
+    "14.92 MPC prediction rejected (status solved_inaccurate)",
+    "14.97 mode WALK -> FALLEN",
+    "15.47 mode FALLEN -> RECOVERING",
+    "19.28 mode RECOVERING -> FALLEN",
+    "19.78 mode FALLEN -> RECOVERING",
+    "23.58 mode RECOVERING -> FALLEN",
+    "24.08 mode FALLEN -> RECOVERING",
+    "29.39 mode RECOVERING -> STANDING_UP",
+    "31.89 mode STANDING_UP -> STAND",
+    "31.90 mode STAND -> WALK",
+    "31.91 MPC prediction rejected (status solved)",
+    "32.17 MPC prediction rejected (status solved)",
+    "32.23 MPC prediction rejected (status solved)",
+    "32.28 MPC prediction rejected (status solved)",
+    "32.32 MPC prediction rejected (status solved)",
+    "32.37 MPC prediction rejected (status solved)",
+    "32.41 MPC prediction rejected (status solved)",
+    "32.46 MPC prediction rejected (status solved)",
+    "32.53 MPC prediction rejected (status solved)"
+   ]
+  },
+  {
+   "key": "j_stairs",
+   "seed": 0,
+   "ok": false,
+   "criterion": "no fall; base passes x = 6.3 m (4 x 0.17 m up, landing, 4 down)",
+   "metrics": {
+    "t_goal": null,
+    "x_max": 1.13357,
+    "falls": 6,
+    "controller_falls": 4,
+    "max_roll_deg": 180.0,
+    "max_pitch_deg": 88.60454,
+    "height_mean": 0.17642,
+    "height_min": 0.07166,
+    "height_max": 0.57858,
+    "height_std": 0.1326,
+    "max_ratio_hip_x": 1.0,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 1.0,
+    "saturation_frac": 0.00157,
+    "rms_ratio_knee": 0.10924,
+    "rms_ratio_hip_y": 0.14086,
+    "no_contact_frac": 0.80898,
+    "stance_slip_mean": 0.03812,
+    "stance_slip_p95": 0.1513,
+    "mpc_solves": 294,
+    "mpc_ms_mean": 36.9703,
+    "mpc_ms_p95": 78.12669,
+    "mpc_ms_max": 89.7542,
+    "mpc_rejected": 67,
+    "gait_frac": {
+     "stand": 0.07621,
+     "trot": 0.48303,
+     "crawl": 0.44076
+    },
+    "terrain_classes": [
+     "flat",
+     "obstacle",
+     "rough",
+     "stairs",
+     "unknown"
+    ],
+    "sim_time": 69.99,
+    "wall": {
+     "physics": 16.08,
+     "controller": 15.96,
+     "perception": 11.33
+    }
+   },
+   "wall_s": 48.40495,
+   "events": [
+    {
+     "event": "fall",
+     "t": 12.21,
+     "x": 0.72745,
+     "y": 0.67263,
+     "roll": -2.00721,
+     "pitch": -0.00335
+    },
+    {
+     "event": "recovery_failed",
+     "t": 25.21,
+     "x": 0.8045,
+     "y": 0.79486,
+     "roll": -3.08481,
+     "pitch": 0.00026
+    },
+    {
+     "event": "assisted_reset",
+     "t": 25.21,
+     "x": 0.8045,
+     "y": 0.79486,
+     "roll": -3.08481,
+     "pitch": 0.00026
+    },
+    {
+     "event": "sim_teleport",
+     "t": 25.71
+    },
+    {
+     "event": "fall",
+     "t": 30.31,
+     "x": 0.71417,
+     "y": 1.1254,
+     "roll": -0.86642,
+     "pitch": 0.11552
+    },
+    {
+     "event": "recovered",
+     "t": 36.41,
+     "x": 0.86226,
+     "y": 0.90137,
+     "roll": -3e-05,
+     "pitch": -0.00532
+    },
+    {
+     "event": "slip_detected",
+     "t": 37.67,
+     "x": 0.97252,
+     "y": 1.08253,
+     "speed": 0.14189,
+     "mu_est": 0.3029
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 37.67,
+     "x": 0.97252,
+     "y": 1.08253,
+     "source": "detected"
+    },
+    {
+     "event": "fall",
+     "t": 39.66,
+     "x": -1.1648,
+     "y": 0.69419,
+     "roll": 2.33585,
+     "pitch": -0.20481
+    },
+    {
+     "event": "recovery_failed",
+     "t": 52.68,
+     "x": -1.01971,
+     "y": 0.70027,
+     "roll": -3.08442,
+     "pitch": 0.0003
+    },
+    {
+     "event": "assisted_reset",
+     "t": 52.68,
+     "x": -1.01971,
+     "y": 0.70027,
+     "roll": -3.08442,
+     "pitch": 0.0003
+    },
+    {
+     "event": "sim_teleport",
+     "t": 53.181
+    },
+    {
+     "event": "slip_mode_off",
+     "t": 54.67,
+     "x": -0.79033,
+     "y": 0.7997,
+     "source": "detected"
+    },
+    {
+     "event": "fall",
+     "t": 57.79,
+     "x": -0.4353,
+     "y": 1.59292,
+     "roll": 0.75091,
+     "pitch": 1.34035
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "11.28 MPC prediction rejected (status solved)",
+    "11.33 MPC prediction rejected (status solved_inaccurate)",
+    "11.37 MPC prediction rejected (status solved_inaccurate)",
+    "11.43 MPC prediction rejected (status solved_inaccurate)",
+    "11.47 MPC prediction rejected (status solved_inaccurate)",
+    "11.51 MPC prediction rejected (status solved_inaccurate)",
+    "11.58 MPC prediction rejected (status solved_inaccurate)",
+    "11.62 MPC prediction rejected (status solved_inaccurate)",
+    "11.68 MPC prediction rejected (status solved)",
+    "11.73 MPC prediction rejected (status solved)",
+    "11.76 MPC prediction rejected (status solved)",
+    "11.81 MPC prediction rejected (status solved_inaccurate)",
+    "11.87 MPC prediction rejected (status solved)",
+    "11.93 MPC prediction rejected (status solved_inaccurate)",
+    "11.97 MPC prediction rejected (status solved_inaccurate)",
+    "12.01 MPC prediction rejected (status solved_inaccurate)",
+    "12.07 MPC prediction rejected (status solved_inaccurate)",
+    "12.12 MPC prediction rejected (status solved_inaccurate)",
+    "12.17 MPC prediction rejected (status solved_inaccurate)",
+    "12.21 mode WALK -> FALLEN",
+    "12.80 mode FALLEN -> RECOVERING",
+    "16.61 mode RECOVERING -> FALLEN",
+    "17.11 mode FALLEN -> RECOVERING",
+    "20.91 mode RECOVERING -> FALLEN",
+    "21.41 mode FALLEN -> RECOVERING",
+    "26.71 mode RECOVERING -> STANDING_UP",
+    "29.21 mode STANDING_UP -> STAND",
+    "29.22 mode STAND -> WALK",
+    "29.24 MPC prediction rejected (status solved)",
+    "29.49 MPC prediction rejected (status solved)",
+    "29.54 MPC prediction rejected (status solved_inaccurate)",
+    "29.60 MPC prediction rejected (status solved)",
+    "29.64 MPC prediction rejected (status solved)",
+    "29.69 MPC prediction rejected (status solved)",
+    "29.74 MPC prediction rejected (status solved_inaccurate)",
+    "29.78 MPC prediction rejected (status solved_inaccurate)",
+    "29.84 MPC prediction rejected (status solved)",
+    "30.00 MPC prediction rejected (status solved)"
+   ]
+  },
+  {
+   "key": "k_slip02_both",
+   "seed": 0,
+   "ok": true,
+   "criterion": "mu 0.2 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": 33.25,
+    "x_max": 6.20142,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 2.78729,
+    "max_pitch_deg": 2.78514,
+    "height_mean": 0.34,
+    "height_min": 0.33106,
+    "height_max": 0.34997,
+    "height_std": 0.00352,
+    "max_ratio_hip_x": 0.3487,
+    "max_ratio_hip_y": 0.88609,
+    "max_ratio_knee": 0.49371,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.17473,
+    "rms_ratio_hip_y": 0.1242,
+    "no_contact_frac": 0.45899,
+    "stance_slip_mean": 0.07611,
+    "stance_slip_p95": 0.32095,
+    "mpc_solves": 622,
+    "mpc_ms_mean": 19.91646,
+    "mpc_ms_p95": 26.32341,
+    "mpc_ms_max": 31.4358,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 0.99795,
+     "crawl": 0.00205
+    },
+    "terrain_classes": [
+     "flat",
+     "slippery",
+     "unknown"
+    ],
+    "avg_speed": 0.21154,
+    "plate_slip_mean": 0.1004,
+    "plate_slip_p95": 0.35414,
+    "plate_slip_dist": 3.91341,
+    "plate_max_roll_deg": 1.47407,
+    "plate_max_pitch_deg": 0.72477,
+    "plate_height_mean": 0.34007,
+    "plate_height_min": 0.33573,
+    "plate_height_max": 0.34557,
+    "plate_height_std": 0.00302,
+    "plate_speed": 0.18948,
+    "t_plate_entry": 7.83,
+    "t_slip_detected": 33.47,
+    "slip_detections": 1,
+    "t_slip_mode": 5.2,
+    "detect_latency": 25.64,
+    "mode_lead_time": 2.63,
+    "slip_mode_frac_plate": 1.0,
+    "mpc_mu_plate_min": 0.2,
+    "torque_ff_plate_mean": 1.0,
+    "mu_est_min": 0.21738,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 34.09,
+    "wall": {
+     "physics": 6.98,
+     "controller": 16.97,
+     "perception": 5.82
+    }
+   },
+   "wall_s": 32.04352,
+   "events": [
+    {
+     "event": "slip_mode_on",
+     "t": 5.2,
+     "x": 0.03037,
+     "y": -0.0331,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_mode_off",
+     "t": 32.0,
+     "x": 5.58427,
+     "y": 0.03512,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_detected",
+     "t": 33.47,
+     "x": 6.05466,
+     "y": 0.06124,
+     "speed": 0.28519,
+     "mu_est": 0.3
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 33.47,
+     "x": 6.05466,
+     "y": 0.06124,
+     "source": "detected"
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "5.20 slip mode on (terrain)",
+    "32.00 slip mode off (terrain)",
+    "33.47 slip detected at (6.05, 0.06): foot speed 0.29 m/s, mu estimate 0.30",
+    "33.47 slip mode on (detected)"
+   ]
+  },
+  {
+   "key": "k_slip02_both",
+   "seed": 1,
+   "ok": true,
+   "criterion": "mu 0.2 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": 32.86,
+    "x_max": 6.20025,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 2.91228,
+    "max_pitch_deg": 2.70943,
+    "height_mean": 0.34001,
+    "height_min": 0.33066,
+    "height_max": 0.3504,
+    "height_std": 0.00353,
+    "max_ratio_hip_x": 0.47415,
+    "max_ratio_hip_y": 0.88043,
+    "max_ratio_knee": 0.53186,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.1751,
+    "rms_ratio_hip_y": 0.12482,
+    "no_contact_frac": 0.45982,
+    "stance_slip_mean": 0.07574,
+    "stance_slip_p95": 0.3182,
+    "mpc_solves": 616,
+    "mpc_ms_mean": 20.9323,
+    "mpc_ms_p95": 26.6214,
+    "mpc_ms_max": 32.9563,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 0.99758,
+     "crawl": 0.00242
+    },
+    "terrain_classes": [
+     "flat",
+     "slippery",
+     "unknown"
+    ],
+    "avg_speed": 0.21346,
+    "plate_slip_mean": 0.09851,
+    "plate_slip_p95": 0.34576,
+    "plate_slip_dist": 3.81533,
+    "plate_max_roll_deg": 1.50784,
+    "plate_max_pitch_deg": 0.77183,
+    "plate_height_mean": 0.34011,
+    "plate_height_min": 0.33569,
+    "plate_height_max": 0.34535,
+    "plate_height_std": 0.00303,
+    "plate_speed": 0.19033,
+    "t_plate_entry": 7.78,
+    "t_slip_detected": 33.07,
+    "slip_detections": 1,
+    "t_slip_mode": 5.2,
+    "detect_latency": 25.29,
+    "mode_lead_time": 2.58,
+    "slip_mode_frac_plate": 1.0,
+    "mpc_mu_plate_min": 0.2,
+    "torque_ff_plate_mean": 1.0,
+    "mu_est_min": 0.15,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 33.78,
+    "wall": {
+     "physics": 6.83,
+     "controller": 17.41,
+     "perception": 5.79
+    }
+   },
+   "wall_s": 32.2706,
+   "events": [
+    {
+     "event": "slip_mode_on",
+     "t": 0.51,
+     "x": 0.01025,
+     "y": -0.01424,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_mode_off",
+     "t": 1.8,
+     "x": -0.08586,
+     "y": -0.01436,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 5.2,
+     "x": 0.05914,
+     "y": -0.0343,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_mode_off",
+     "t": 31.6,
+     "x": 5.57509,
+     "y": -0.09281,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_detected",
+     "t": 33.07,
+     "x": 6.04625,
+     "y": -0.07501,
+     "speed": 0.26357,
+     "mu_est": 0.3
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 33.07,
+     "x": 6.04625,
+     "y": -0.07501,
+     "source": "detected"
+    }
+   ],
+   "messages": [
+    "0.51 slip mode on (terrain)",
+    "1.80 slip mode off (terrain)",
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "5.20 slip mode on (terrain)",
+    "31.60 slip mode off (terrain)",
+    "33.07 slip detected at (6.05, -0.08): foot speed 0.26 m/s, mu estimate 0.30",
+    "33.07 slip mode on (detected)"
+   ]
+  },
+  {
+   "key": "k_slip02_both",
+   "seed": 2,
+   "ok": true,
+   "criterion": "mu 0.2 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": 34.15,
+    "x_max": 6.20071,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 2.47875,
+    "max_pitch_deg": 2.0203,
+    "height_mean": 0.34,
+    "height_min": 0.33073,
+    "height_max": 0.35065,
+    "height_std": 0.00352,
+    "max_ratio_hip_x": 0.30147,
+    "max_ratio_hip_y": 0.42423,
+    "max_ratio_knee": 0.60337,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.1748,
+    "rms_ratio_hip_y": 0.12411,
+    "no_contact_frac": 0.46137,
+    "stance_slip_mean": 0.07683,
+    "stance_slip_p95": 0.32132,
+    "mpc_solves": 646,
+    "mpc_ms_mean": 17.90741,
+    "mpc_ms_p95": 23.90092,
+    "mpc_ms_max": 31.1429,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat",
+     "slippery",
+     "unknown"
+    ],
+    "avg_speed": 0.20519,
+    "plate_slip_mean": 0.1,
+    "plate_slip_p95": 0.36447,
+    "plate_slip_dist": 3.90916,
+    "plate_max_roll_deg": 1.59899,
+    "plate_max_pitch_deg": 0.79813,
+    "plate_height_mean": 0.34006,
+    "plate_height_min": 0.33579,
+    "plate_height_max": 0.34544,
+    "plate_height_std": 0.00304,
+    "plate_speed": 0.18825,
+    "t_plate_entry": 7.71,
+    "t_slip_detected": null,
+    "slip_detections": 0,
+    "t_slip_mode": 5.2,
+    "detect_latency": null,
+    "mode_lead_time": 2.51,
+    "slip_mode_frac_plate": 1.0,
+    "mpc_mu_plate_min": 0.2,
+    "torque_ff_plate_mean": 1.0,
+    "mu_est_min": 0.5,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 35.27,
+    "wall": {
+     "physics": 6.35,
+     "controller": 15.6,
+     "perception": 5.48
+    }
+   },
+   "wall_s": 29.46372,
+   "events": [
+    {
+     "event": "slip_mode_on",
+     "t": 5.2,
+     "x": 0.03465,
+     "y": -0.00467,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_mode_off",
+     "t": 33.0,
+     "x": 5.61297,
+     "y": -0.28679,
+     "source": "terrain"
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "5.20 slip mode on (terrain)",
+    "33.00 slip mode off (terrain)"
+   ]
+  },
+  {
+   "key": "k_slip02_detect",
+   "seed": 0,
+   "ok": true,
+   "criterion": "mu 0.2 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": 19.42,
+    "x_max": 6.20207,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 2.05223,
+    "max_pitch_deg": 1.96116,
+    "height_mean": 0.33948,
+    "height_min": 0.33152,
+    "height_max": 0.34893,
+    "height_std": 0.00252,
+    "max_ratio_hip_x": 0.35779,
+    "max_ratio_hip_y": 0.50404,
+    "max_ratio_knee": 0.5516,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.13829,
+    "rms_ratio_hip_y": 0.161,
+    "no_contact_frac": 0.44167,
+    "stance_slip_mean": 0.11701,
+    "stance_slip_p95": 0.55916,
+    "mpc_solves": 351,
+    "mpc_ms_mean": 23.08815,
+    "mpc_ms_p95": 27.7861,
+    "mpc_ms_max": 32.7286,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat",
+     "unknown"
+    ],
+    "avg_speed": 0.40127,
+    "plate_slip_mean": 0.16957,
+    "plate_slip_p95": 0.73157,
+    "plate_slip_dist": 3.13529,
+    "plate_max_roll_deg": 1.69498,
+    "plate_max_pitch_deg": 0.98797,
+    "plate_height_mean": 0.33997,
+    "plate_height_min": 0.33631,
+    "plate_height_max": 0.34364,
+    "plate_height_std": 0.00144,
+    "plate_speed": 0.41093,
+    "t_plate_entry": 7.02,
+    "t_slip_detected": null,
+    "slip_detections": 0,
+    "t_slip_mode": null,
+    "detect_latency": null,
+    "mode_lead_time": null,
+    "slip_mode_frac_plate": 0.0,
+    "mpc_mu_plate_min": 0.5,
+    "torque_ff_plate_mean": 0.0,
+    "mu_est_min": 0.5,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 20.52,
+    "wall": {
+     "physics": 4.81,
+     "controller": 10.85,
+     "perception": 3.9
+    }
+   },
+   "wall_s": 21.21558,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "k_slip02_detect",
+   "seed": 1,
+   "ok": true,
+   "criterion": "mu 0.2 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": 30.4,
+    "x_max": 6.20121,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 3.87365,
+    "max_pitch_deg": 3.98069,
+    "height_mean": 0.3402,
+    "height_min": 0.32786,
+    "height_max": 0.36473,
+    "height_std": 0.00384,
+    "max_ratio_hip_x": 0.78269,
+    "max_ratio_hip_y": 0.74906,
+    "max_ratio_knee": 0.75151,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.1712,
+    "rms_ratio_hip_y": 0.13258,
+    "no_contact_frac": 0.46706,
+    "stance_slip_mean": 0.08937,
+    "stance_slip_p95": 0.37191,
+    "mpc_solves": 576,
+    "mpc_ms_mean": 19.6451,
+    "mpc_ms_p95": 24.70445,
+    "mpc_ms_max": 32.5471,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 0.99924,
+     "crawl": 0.00076
+    },
+    "terrain_classes": [
+     "flat",
+     "unknown"
+    ],
+    "avg_speed": 0.23335,
+    "plate_slip_mean": 0.11095,
+    "plate_slip_p95": 0.39801,
+    "plate_slip_dist": 4.02637,
+    "plate_max_roll_deg": 3.75077,
+    "plate_max_pitch_deg": 2.66433,
+    "plate_height_mean": 0.34063,
+    "plate_height_min": 0.33042,
+    "plate_height_max": 0.34916,
+    "plate_height_std": 0.00318,
+    "plate_speed": 0.20237,
+    "t_plate_entry": 6.91,
+    "t_slip_detected": 9.36,
+    "slip_detections": 1,
+    "t_slip_mode": 9.36,
+    "detect_latency": 2.45,
+    "mode_lead_time": -2.45,
+    "slip_mode_frac_plate": 0.92262,
+    "mpc_mu_plate_min": 0.15,
+    "torque_ff_plate_mean": 0.90804,
+    "mu_est_min": 0.15,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 31.75,
+    "wall": {
+     "physics": 6.73,
+     "controller": 15.69,
+     "perception": 5.34
+    }
+   },
+   "wall_s": 30.00893,
+   "events": [
+    {
+     "event": "slip_detected",
+     "t": 9.36,
+     "x": 1.79651,
+     "y": -0.22024,
+     "speed": 0.5092,
+     "mu_est": 0.17095
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 9.36,
+     "x": 1.79651,
+     "y": -0.22024,
+     "source": "detected"
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "9.36 slip detected at (1.80, -0.22): foot speed 0.51 m/s, mu estimate 0.17",
+    "9.36 slip mode on (detected)"
+   ]
+  },
+  {
+   "key": "k_slip02_detect",
+   "seed": 2,
+   "ok": true,
+   "criterion": "mu 0.2 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": 31.89,
+    "x_max": 6.2007,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 4.44159,
+    "max_pitch_deg": 3.53181,
+    "height_mean": 0.34017,
+    "height_min": 0.32769,
+    "height_max": 0.35933,
+    "height_std": 0.0037,
+    "max_ratio_hip_x": 0.43341,
+    "max_ratio_hip_y": 0.70394,
+    "max_ratio_knee": 0.73916,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.17377,
+    "rms_ratio_hip_y": 0.13086,
+    "no_contact_frac": 0.46586,
+    "stance_slip_mean": 0.08774,
+    "stance_slip_p95": 0.36714,
+    "mpc_solves": 604,
+    "mpc_ms_mean": 19.88706,
+    "mpc_ms_p95": 24.91529,
+    "mpc_ms_max": 30.0728,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 0.98925,
+     "crawl": 0.01075
+    },
+    "terrain_classes": [
+     "flat",
+     "unknown"
+    ],
+    "avg_speed": 0.22181,
+    "plate_slip_mean": 0.1052,
+    "plate_slip_p95": 0.37701,
+    "plate_slip_dist": 4.13217,
+    "plate_max_roll_deg": 4.44159,
+    "plate_max_pitch_deg": 3.53181,
+    "plate_height_mean": 0.34055,
+    "plate_height_min": 0.33582,
+    "plate_height_max": 0.34957,
+    "plate_height_std": 0.0032,
+    "plate_speed": 0.18709,
+    "t_plate_entry": 7.11,
+    "t_slip_detected": 7.74,
+    "slip_detections": 1,
+    "t_slip_mode": 7.74,
+    "detect_latency": 0.63,
+    "mode_lead_time": -0.63,
+    "slip_mode_frac_plate": 1.0,
+    "mpc_mu_plate_min": 0.15,
+    "torque_ff_plate_mean": 0.99769,
+    "mu_est_min": 0.15,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 33.15,
+    "wall": {
+     "physics": 6.87,
+     "controller": 16.48,
+     "perception": 5.56
+    }
+   },
+   "wall_s": 31.15459,
+   "events": [
+    {
+     "event": "slip_detected",
+     "t": 7.74,
+     "x": 1.15242,
+     "y": -0.01612,
+     "speed": 0.18498,
+     "mu_est": 0.15
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 7.74,
+     "x": 1.15242,
+     "y": -0.01612,
+     "source": "detected"
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "7.74 slip detected at (1.15, -0.02): foot speed 0.18 m/s, mu estimate 0.15",
+    "7.74 slip mode on (detected)"
+   ]
+  },
+  {
+   "key": "k_slip02_off",
+   "seed": 0,
+   "ok": true,
+   "criterion": "mu 0.2 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": 19.42,
+    "x_max": 6.20207,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 2.05223,
+    "max_pitch_deg": 1.96116,
+    "height_mean": 0.33948,
+    "height_min": 0.33152,
+    "height_max": 0.34893,
+    "height_std": 0.00252,
+    "max_ratio_hip_x": 0.35779,
+    "max_ratio_hip_y": 0.50404,
+    "max_ratio_knee": 0.5516,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.13829,
+    "rms_ratio_hip_y": 0.161,
+    "no_contact_frac": 0.44167,
+    "stance_slip_mean": 0.11701,
+    "stance_slip_p95": 0.55916,
+    "mpc_solves": 351,
+    "mpc_ms_mean": 22.61255,
+    "mpc_ms_p95": 27.81275,
+    "mpc_ms_max": 31.1733,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat",
+     "unknown"
+    ],
+    "avg_speed": 0.40127,
+    "plate_slip_mean": 0.16957,
+    "plate_slip_p95": 0.73157,
+    "plate_slip_dist": 3.13529,
+    "plate_max_roll_deg": 1.69498,
+    "plate_max_pitch_deg": 0.98797,
+    "plate_height_mean": 0.33997,
+    "plate_height_min": 0.33631,
+    "plate_height_max": 0.34364,
+    "plate_height_std": 0.00144,
+    "plate_speed": 0.41093,
+    "t_plate_entry": 7.02,
+    "t_slip_detected": null,
+    "slip_detections": 0,
+    "t_slip_mode": null,
+    "detect_latency": null,
+    "mode_lead_time": null,
+    "slip_mode_frac_plate": 0.0,
+    "mpc_mu_plate_min": 0.5,
+    "torque_ff_plate_mean": 0.0,
+    "mu_est_min": 0.5,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 20.52,
+    "wall": {
+     "physics": 4.88,
+     "controller": 10.17,
+     "perception": 3.95
+    }
+   },
+   "wall_s": 20.6587,
+   "events": [],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "k_slip02_off",
+   "seed": 1,
+   "ok": false,
+   "criterion": "mu 0.2 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": null,
+    "x_max": 4.18229,
+    "falls": 4,
+    "controller_falls": 3,
+    "max_roll_deg": 180.0,
+    "max_pitch_deg": 33.68094,
+    "height_mean": 0.21832,
+    "height_min": 0.0716,
+    "height_max": 0.42022,
+    "height_std": 0.11385,
+    "max_ratio_hip_x": 1.0,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 1.0,
+    "saturation_frac": 0.00191,
+    "rms_ratio_knee": 0.11944,
+    "rms_ratio_hip_y": 0.13924,
+    "no_contact_frac": 0.68354,
+    "stance_slip_mean": 0.14028,
+    "stance_slip_p95": 0.77594,
+    "mpc_solves": 348,
+    "mpc_ms_mean": 23.69783,
+    "mpc_ms_p95": 28.76618,
+    "mpc_ms_max": 35.8223,
+    "mpc_rejected": 22,
+    "gait_frac": {
+     "stand": 0.00049,
+     "trot": 0.99951,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat"
+    ],
+    "plate_slip_mean": 0.1531,
+    "plate_slip_p95": 0.82511,
+    "plate_slip_dist": 6.67202,
+    "plate_max_roll_deg": 180.0,
+    "plate_max_pitch_deg": 33.68094,
+    "plate_height_mean": 0.20511,
+    "plate_height_min": 0.0716,
+    "plate_height_max": 0.42022,
+    "plate_height_std": 0.11234,
+    "plate_speed": 0.07779,
+    "t_plate_entry": 6.91,
+    "t_slip_detected": null,
+    "slip_detections": 0,
+    "t_slip_mode": null,
+    "detect_latency": null,
+    "mode_lead_time": null,
+    "slip_mode_frac_plate": 0.0,
+    "mpc_mu_plate_min": 0.5,
+    "torque_ff_plate_mean": 0.0,
+    "mu_est_min": 0.5,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 44.99,
+    "wall": {
+     "physics": 10.53,
+     "controller": 11.55,
+     "perception": 7.56
+    }
+   },
+   "wall_s": 32.93415,
+   "events": [
+    {
+     "event": "fall",
+     "t": 11.83,
+     "x": 2.10834,
+     "y": -0.36357,
+     "roll": -1.54275,
+     "pitch": 0.0095
+    },
+    {
+     "event": "recovered",
+     "t": 18.46,
+     "x": 2.30286,
+     "y": -0.51723,
+     "roll": 0.0,
+     "pitch": -0.00464
+    },
+    {
+     "event": "fall",
+     "t": 22.7,
+     "x": 3.32923,
+     "y": -0.11129,
+     "roll": 1.71261,
+     "pitch": -0.00137
+    },
+    {
+     "event": "recovered",
+     "t": 29.32,
+     "x": 3.22162,
+     "y": 0.12705,
+     "roll": -0.0,
+     "pitch": -0.00464
+    },
+    {
+     "event": "fall",
+     "t": 33.59,
+     "x": 4.0393,
+     "y": 0.63175,
+     "roll": 2.39319,
+     "pitch": 0.01375
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "11.52 MPC prediction rejected (status solved)",
+    "11.58 MPC prediction rejected (status solved)",
+    "11.63 MPC prediction rejected (status solved)",
+    "11.68 MPC prediction rejected (status solved)",
+    "11.73 MPC prediction rejected (status solved)",
+    "11.77 MPC prediction rejected (status solved)",
+    "11.82 MPC prediction rejected (status solved)",
+    "11.83 mode WALK -> FALLEN",
+    "12.33 mode FALLEN -> RECOVERING",
+    "18.46 mode RECOVERING -> STAND",
+    "18.47 mode STAND -> WALK",
+    "22.34 MPC prediction rejected (status solved)",
+    "22.40 MPC prediction rejected (status solved)",
+    "22.44 MPC prediction rejected (status solved)",
+    "22.48 MPC prediction rejected (status solved)",
+    "22.54 MPC prediction rejected (status solved)",
+    "22.59 MPC prediction rejected (status solved)",
+    "22.64 MPC prediction rejected (status solved)",
+    "22.68 MPC prediction rejected (status solved)",
+    "22.70 mode WALK -> FALLEN",
+    "23.20 mode FALLEN -> RECOVERING",
+    "29.32 mode RECOVERING -> STAND",
+    "29.33 mode STAND -> WALK",
+    "33.24 MPC prediction rejected (status solved)",
+    "33.30 MPC prediction rejected (status solved)",
+    "33.34 MPC prediction rejected (status solved)",
+    "33.40 MPC prediction rejected (status solved)",
+    "33.45 MPC prediction rejected (status solved)",
+    "33.50 MPC prediction rejected (status solved)",
+    "33.55 MPC prediction rejected (status solved)",
+    "33.59 mode WALK -> FALLEN",
+    "34.09 mode FALLEN -> RECOVERING",
+    "37.90 mode RECOVERING -> FALLEN",
+    "38.40 mode FALLEN -> RECOVERING",
+    "42.20 mode RECOVERING -> FALLEN",
+    "42.70 mode FALLEN -> RECOVERING"
+   ]
+  },
+  {
+   "key": "k_slip02_off",
+   "seed": 2,
+   "ok": false,
+   "criterion": "mu 0.2 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": null,
+    "x_max": 2.32864,
+    "falls": 2,
+    "controller_falls": 1,
+    "max_roll_deg": 180.0,
+    "max_pitch_deg": 88.07225,
+    "height_mean": 0.25862,
+    "height_min": 0.07144,
+    "height_max": 0.57865,
+    "height_std": 0.12086,
+    "max_ratio_hip_x": 0.87046,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 1.0,
+    "saturation_frac": 0.00067,
+    "rms_ratio_knee": 0.12475,
+    "rms_ratio_hip_y": 0.14561,
+    "no_contact_frac": 0.59976,
+    "stance_slip_mean": 0.07199,
+    "stance_slip_p95": 0.44026,
+    "mpc_solves": 502,
+    "mpc_ms_mean": 21.54948,
+    "mpc_ms_p95": 27.01455,
+    "mpc_ms_max": 35.5537,
+    "mpc_rejected": 12,
+    "gait_frac": {
+     "stand": 0.06122,
+     "trot": 0.93878,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat"
+    ],
+    "plate_slip_mean": 0.12671,
+    "plate_slip_p95": 0.6707,
+    "plate_slip_dist": 3.28065,
+    "plate_max_roll_deg": 180.0,
+    "plate_max_pitch_deg": 88.07225,
+    "plate_height_mean": 0.19672,
+    "plate_height_min": 0.07144,
+    "plate_height_max": 0.57865,
+    "plate_height_std": 0.13018,
+    "plate_speed": 1e-05,
+    "t_plate_entry": 7.11,
+    "t_slip_detected": null,
+    "slip_detections": 0,
+    "t_slip_mode": null,
+    "detect_latency": null,
+    "mode_lead_time": null,
+    "slip_mode_frac_plate": 0.0,
+    "mpc_mu_plate_min": 0.5,
+    "torque_ff_plate_mean": 0.0,
+    "mu_est_min": 0.5,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 44.99,
+    "wall": {
+     "physics": 9.82,
+     "controller": 14.57,
+     "perception": 7.38
+    }
+   },
+   "wall_s": 35.00134,
+   "events": [
+    {
+     "event": "fall",
+     "t": 10.74,
+     "x": 2.06581,
+     "y": 0.11315,
+     "roll": 0.00768,
+     "pitch": 0.91007
+    },
+    {
+     "event": "recovery_failed",
+     "t": 23.65,
+     "x": 2.23976,
+     "y": 0.11454,
+     "roll": -3.08385,
+     "pitch": 5e-05
+    },
+    {
+     "event": "assisted_reset",
+     "t": 23.65,
+     "x": 2.23976,
+     "y": 0.11454,
+     "roll": -3.08385,
+     "pitch": 5e-05
+    },
+    {
+     "event": "sim_teleport",
+     "t": 24.15
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "10.18 MPC prediction rejected (status solved)",
+    "10.22 MPC prediction rejected (status solved)",
+    "10.27 MPC prediction rejected (status solved)",
+    "10.31 MPC prediction rejected (status solved)",
+    "10.38 MPC prediction rejected (status solved)",
+    "10.42 MPC prediction rejected (status solved)",
+    "10.46 MPC prediction rejected (status solved)",
+    "10.53 MPC prediction rejected (status solved)",
+    "10.57 MPC prediction rejected (status solved)",
+    "10.62 MPC prediction rejected (status solved)",
+    "10.68 MPC prediction rejected (status solved)",
+    "10.71 MPC prediction rejected (status solved)",
+    "10.74 mode WALK -> FALLEN",
+    "11.24 mode FALLEN -> RECOVERING",
+    "15.04 mode RECOVERING -> FALLEN",
+    "15.54 mode FALLEN -> RECOVERING",
+    "19.35 mode RECOVERING -> FALLEN",
+    "19.85 mode FALLEN -> RECOVERING",
+    "25.15 mode RECOVERING -> STANDING_UP",
+    "27.65 mode STANDING_UP -> STAND",
+    "27.66 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "k_slip_both",
+   "seed": 0,
+   "ok": true,
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": 34.3,
+    "x_max": 6.20045,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 3.04103,
+    "max_pitch_deg": 2.04525,
+    "height_mean": 0.34015,
+    "height_min": 0.33012,
+    "height_max": 0.35039,
+    "height_std": 0.00358,
+    "max_ratio_hip_x": 0.34833,
+    "max_ratio_hip_y": 0.47859,
+    "max_ratio_knee": 0.54991,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.17732,
+    "rms_ratio_hip_y": 0.11839,
+    "no_contact_frac": 0.45868,
+    "stance_slip_mean": 0.09943,
+    "stance_slip_p95": 0.34788,
+    "mpc_solves": 655,
+    "mpc_ms_mean": 24.97644,
+    "mpc_ms_p95": 30.68785,
+    "mpc_ms_max": 65.2389,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat",
+     "slippery",
+     "unknown"
+    ],
+    "avg_speed": 0.20421,
+    "plate_slip_mean": 0.12898,
+    "plate_slip_p95": 0.37237,
+    "plate_slip_dist": 5.1862,
+    "plate_max_roll_deg": 2.14324,
+    "plate_max_pitch_deg": 1.111,
+    "plate_height_mean": 0.34009,
+    "plate_height_min": 0.33544,
+    "plate_height_max": 0.34731,
+    "plate_height_std": 0.00325,
+    "plate_speed": 0.18448,
+    "t_plate_entry": 7.83,
+    "t_slip_detected": 9.98,
+    "slip_detections": 1,
+    "t_slip_mode": 5.2,
+    "detect_latency": 2.15,
+    "mode_lead_time": 2.63,
+    "slip_mode_frac_plate": 1.0,
+    "mpc_mu_plate_min": 0.15,
+    "torque_ff_plate_mean": 1.0,
+    "mu_est_min": 0.15,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 35.7,
+    "wall": {
+     "physics": 8.16,
+     "controller": 21.99,
+     "perception": 6.86
+    }
+   },
+   "wall_s": 39.82299,
+   "events": [
+    {
+     "event": "slip_mode_on",
+     "t": 5.2,
+     "x": 0.03037,
+     "y": -0.0331,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_detected",
+     "t": 9.98,
+     "x": 1.28822,
+     "y": 0.00815,
+     "speed": 0.23735,
+     "mu_est": 0.15
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "5.20 slip mode on (terrain)",
+    "9.98 slip detected at (1.29, 0.01): foot speed 0.24 m/s, mu estimate 0.15"
+   ]
+  },
+  {
+   "key": "k_slip_both",
+   "seed": 1,
+   "ok": true,
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": 33.43,
+    "x_max": 6.20067,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 2.71431,
+    "max_pitch_deg": 2.0762,
+    "height_mean": 0.34001,
+    "height_min": 0.3307,
+    "height_max": 0.35016,
+    "height_std": 0.00367,
+    "max_ratio_hip_x": 0.37052,
+    "max_ratio_hip_y": 0.42515,
+    "max_ratio_knee": 0.58501,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.17625,
+    "rms_ratio_hip_y": 0.11983,
+    "no_contact_frac": 0.45542,
+    "stance_slip_mean": 0.09834,
+    "stance_slip_p95": 0.34238,
+    "mpc_solves": 635,
+    "mpc_ms_mean": 22.26969,
+    "mpc_ms_p95": 26.94013,
+    "mpc_ms_max": 34.6607,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat",
+     "slippery",
+     "unknown"
+    ],
+    "avg_speed": 0.20932,
+    "plate_slip_mean": 0.12765,
+    "plate_slip_p95": 0.36057,
+    "plate_slip_dist": 5.06385,
+    "plate_max_roll_deg": 1.54239,
+    "plate_max_pitch_deg": 0.79524,
+    "plate_height_mean": 0.34009,
+    "plate_height_min": 0.33533,
+    "plate_height_max": 0.34586,
+    "plate_height_std": 0.00323,
+    "plate_speed": 0.18762,
+    "t_plate_entry": 7.79,
+    "t_slip_detected": null,
+    "slip_detections": 0,
+    "t_slip_mode": 5.2,
+    "detect_latency": null,
+    "mode_lead_time": 2.59,
+    "slip_mode_frac_plate": 1.0,
+    "mpc_mu_plate_min": 0.15,
+    "torque_ff_plate_mean": 1.0,
+    "mu_est_min": 0.5,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 34.74,
+    "wall": {
+     "physics": 7.97,
+     "controller": 19.5,
+     "perception": 6.45
+    }
+   },
+   "wall_s": 36.64615,
+   "events": [
+    {
+     "event": "slip_mode_on",
+     "t": 0.51,
+     "x": 0.01025,
+     "y": -0.01424,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_mode_off",
+     "t": 1.8,
+     "x": -0.08586,
+     "y": -0.01436,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 5.2,
+     "x": 0.05914,
+     "y": -0.0343,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_mode_off",
+     "t": 32.2,
+     "x": 5.58458,
+     "y": -0.05264,
+     "source": "terrain"
+    }
+   ],
+   "messages": [
+    "0.51 slip mode on (terrain)",
+    "1.80 slip mode off (terrain)",
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "5.20 slip mode on (terrain)",
+    "32.20 slip mode off (terrain)"
+   ]
+  },
+  {
+   "key": "k_slip_both",
+   "seed": 2,
+   "ok": true,
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": 33.43,
+    "x_max": 6.20016,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 1.97925,
+    "max_pitch_deg": 1.97952,
+    "height_mean": 0.33998,
+    "height_min": 0.33075,
+    "height_max": 0.35065,
+    "height_std": 0.00367,
+    "max_ratio_hip_x": 0.26951,
+    "max_ratio_hip_y": 0.41462,
+    "max_ratio_knee": 0.51564,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.17576,
+    "rms_ratio_hip_y": 0.11946,
+    "no_contact_frac": 0.45559,
+    "stance_slip_mean": 0.09744,
+    "stance_slip_p95": 0.3358,
+    "mpc_solves": 634,
+    "mpc_ms_mean": 24.43248,
+    "mpc_ms_p95": 29.44374,
+    "mpc_ms_max": 45.3515,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat",
+     "slippery",
+     "unknown"
+    ],
+    "avg_speed": 0.21021,
+    "plate_slip_mean": 0.12808,
+    "plate_slip_p95": 0.36132,
+    "plate_slip_dist": 5.03231,
+    "plate_max_roll_deg": 1.52362,
+    "plate_max_pitch_deg": 0.83298,
+    "plate_height_mean": 0.3401,
+    "plate_height_min": 0.33546,
+    "plate_height_max": 0.34578,
+    "plate_height_std": 0.00327,
+    "plate_speed": 0.18874,
+    "t_plate_entry": 7.73,
+    "t_slip_detected": null,
+    "slip_detections": 0,
+    "t_slip_mode": 5.2,
+    "detect_latency": null,
+    "mode_lead_time": 2.53,
+    "slip_mode_frac_plate": 1.0,
+    "mpc_mu_plate_min": 0.15,
+    "torque_ff_plate_mean": 1.0,
+    "mu_est_min": 0.5,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 34.68,
+    "wall": {
+     "physics": 7.93,
+     "controller": 20.88,
+     "perception": 6.52
+    }
+   },
+   "wall_s": 38.04944,
+   "events": [
+    {
+     "event": "slip_mode_on",
+     "t": 5.2,
+     "x": 0.03465,
+     "y": -0.00467,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_mode_off",
+     "t": 32.2,
+     "x": 5.58885,
+     "y": -0.16596,
+     "source": "terrain"
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "5.20 slip mode on (terrain)",
+    "32.20 slip mode off (terrain)"
+   ]
+  },
+  {
+   "key": "k_slip_detect",
+   "seed": 0,
+   "ok": true,
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": 30.76,
+    "x_max": 6.20132,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 3.70079,
+    "max_pitch_deg": 2.33702,
+    "height_mean": 0.34017,
+    "height_min": 0.33058,
+    "height_max": 0.3499,
+    "height_std": 0.00357,
+    "max_ratio_hip_x": 0.33785,
+    "max_ratio_hip_y": 0.50404,
+    "max_ratio_knee": 0.68114,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.17144,
+    "rms_ratio_hip_y": 0.12588,
+    "no_contact_frac": 0.45807,
+    "stance_slip_mean": 0.10973,
+    "stance_slip_p95": 0.3949,
+    "mpc_solves": 584,
+    "mpc_ms_mean": 24.54987,
+    "mpc_ms_p95": 30.70317,
+    "mpc_ms_max": 38.1666,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat",
+     "unknown"
+    ],
+    "avg_speed": 0.23122,
+    "plate_slip_mean": 0.14182,
+    "plate_slip_p95": 0.45285,
+    "plate_slip_dist": 5.24605,
+    "plate_max_roll_deg": 3.70079,
+    "plate_max_pitch_deg": 2.33702,
+    "plate_height_mean": 0.3407,
+    "plate_height_min": 0.33268,
+    "plate_height_max": 0.34974,
+    "plate_height_std": 0.00332,
+    "plate_speed": 0.20053,
+    "t_plate_entry": 7.02,
+    "t_slip_detected": 9.76,
+    "slip_detections": 1,
+    "t_slip_mode": 9.76,
+    "detect_latency": 2.74,
+    "mode_lead_time": -2.74,
+    "slip_mode_frac_plate": 0.90389,
+    "mpc_mu_plate_min": 0.15,
+    "torque_ff_plate_mean": 0.88945,
+    "mu_est_min": 0.15,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 32.15,
+    "wall": {
+     "physics": 7.42,
+     "controller": 19.34,
+     "perception": 6.0
+    }
+   },
+   "wall_s": 35.32986,
+   "events": [
+    {
+     "event": "slip_detected",
+     "t": 9.76,
+     "x": 1.91098,
+     "y": -0.06865,
+     "speed": 0.40136,
+     "mu_est": 0.15
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 9.76,
+     "x": 1.91098,
+     "y": -0.06865,
+     "source": "detected"
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "9.76 slip detected at (1.91, -0.07): foot speed 0.40 m/s, mu estimate 0.15",
+    "9.76 slip mode on (detected)"
+   ]
+  },
+  {
+   "key": "k_slip_detect",
+   "seed": 1,
+   "ok": true,
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": 32.83,
+    "x_max": 6.20045,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 4.34358,
+    "max_pitch_deg": 4.84485,
+    "height_mean": 0.34005,
+    "height_min": 0.32055,
+    "height_max": 0.36473,
+    "height_std": 0.00406,
+    "max_ratio_hip_x": 0.78452,
+    "max_ratio_hip_y": 0.74906,
+    "max_ratio_knee": 0.84823,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.17597,
+    "rms_ratio_hip_y": 0.12489,
+    "no_contact_frac": 0.4655,
+    "stance_slip_mean": 0.10417,
+    "stance_slip_p95": 0.35567,
+    "mpc_solves": 625,
+    "mpc_ms_mean": 23.25126,
+    "mpc_ms_p95": 28.22832,
+    "mpc_ms_max": 35.733,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 0.99827,
+     "crawl": 0.00173
+    },
+    "terrain_classes": [
+     "flat",
+     "unknown"
+    ],
+    "avg_speed": 0.21368,
+    "plate_slip_mean": 0.12759,
+    "plate_slip_p95": 0.36065,
+    "plate_slip_dist": 5.00143,
+    "plate_max_roll_deg": 1.61029,
+    "plate_max_pitch_deg": 0.89616,
+    "plate_height_mean": 0.3402,
+    "plate_height_min": 0.33541,
+    "plate_height_max": 0.34678,
+    "plate_height_std": 0.00326,
+    "plate_speed": 0.18984,
+    "t_plate_entry": 6.91,
+    "t_slip_detected": 7.58,
+    "slip_detections": 1,
+    "t_slip_mode": 7.58,
+    "detect_latency": 0.67,
+    "mode_lead_time": -0.67,
+    "slip_mode_frac_plate": 1.0,
+    "mpc_mu_plate_min": 0.15,
+    "torque_ff_plate_mean": 1.0,
+    "mu_est_min": 0.15,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 34.21,
+    "wall": {
+     "physics": 7.82,
+     "controller": 19.87,
+     "perception": 6.43
+    }
+   },
+   "wall_s": 36.82968,
+   "events": [
+    {
+     "event": "slip_detected",
+     "t": 7.58,
+     "x": 1.02453,
+     "y": -0.06275,
+     "speed": 0.41202,
+     "mu_est": 0.20945
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 7.58,
+     "x": 1.02453,
+     "y": -0.06275,
+     "source": "detected"
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "7.58 slip detected at (1.02, -0.06): foot speed 0.41 m/s, mu estimate 0.21",
+    "7.58 slip mode on (detected)"
+   ]
+  },
+  {
+   "key": "k_slip_detect",
+   "seed": 2,
+   "ok": false,
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": null,
+    "x_max": 4.80149,
+    "falls": 1,
+    "controller_falls": 1,
+    "max_roll_deg": 180.0,
+    "max_pitch_deg": 12.93539,
+    "height_mean": 0.25269,
+    "height_min": 0.07148,
+    "height_max": 0.57832,
+    "height_std": 0.12695,
+    "max_ratio_hip_x": 1.0,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 1.0,
+    "saturation_frac": 0.00098,
+    "rms_ratio_knee": 0.15385,
+    "rms_ratio_hip_y": 0.11382,
+    "no_contact_frac": 0.63024,
+    "stance_slip_mean": 0.11399,
+    "stance_slip_p95": 0.51416,
+    "mpc_solves": 502,
+    "mpc_ms_mean": 22.68453,
+    "mpc_ms_p95": 28.2369,
+    "mpc_ms_max": 33.7952,
+    "mpc_rejected": 7,
+    "gait_frac": {
+     "stand": 0.06122,
+     "trot": 0.93878,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat"
+    ],
+    "plate_slip_mean": 0.1214,
+    "plate_slip_p95": 0.52401,
+    "plate_slip_dist": 6.22684,
+    "plate_max_roll_deg": 180.0,
+    "plate_max_pitch_deg": 12.93539,
+    "plate_height_mean": 0.24211,
+    "plate_height_min": 0.07148,
+    "plate_height_max": 0.57832,
+    "plate_height_std": 0.13066,
+    "plate_speed": 0.09299,
+    "t_plate_entry": 7.11,
+    "t_slip_detected": 7.74,
+    "slip_detections": 1,
+    "t_slip_mode": 7.74,
+    "detect_latency": 0.63,
+    "mode_lead_time": -0.63,
+    "slip_mode_frac_plate": 1.0,
+    "mpc_mu_plate_min": 0.15,
+    "torque_ff_plate_mean": 0.99885,
+    "mu_est_min": 0.15,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 44.99,
+    "wall": {
+     "physics": 10.18,
+     "controller": 16.65,
+     "perception": 7.51
+    }
+   },
+   "wall_s": 37.79952,
+   "events": [
+    {
+     "event": "slip_detected",
+     "t": 7.74,
+     "x": 1.15342,
+     "y": -0.0175,
+     "speed": 0.24588,
+     "mu_est": 0.15
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 7.74,
+     "x": 1.15342,
+     "y": -0.0175,
+     "source": "detected"
+    },
+    {
+     "event": "fall",
+     "t": 10.33,
+     "x": 1.70642,
+     "y": -0.06119,
+     "roll": -3.11602,
+     "pitch": -0.00052
+    },
+    {
+     "event": "recovery_failed",
+     "t": 23.24,
+     "x": 1.73584,
+     "y": -0.11448,
+     "roll": -3.08398,
+     "pitch": 0.0001
+    },
+    {
+     "event": "assisted_reset",
+     "t": 23.24,
+     "x": 1.73584,
+     "y": -0.11448,
+     "roll": -3.08398,
+     "pitch": 0.0001
+    },
+    {
+     "event": "sim_teleport",
+     "t": 23.74
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "7.74 slip detected at (1.15, -0.02): foot speed 0.25 m/s, mu estimate 0.15",
+    "7.74 slip mode on (detected)",
+    "10.01 MPC prediction rejected (status solved)",
+    "10.07 MPC prediction rejected (status solved)",
+    "10.13 MPC prediction rejected (status solved)",
+    "10.18 MPC prediction rejected (status solved)",
+    "10.22 MPC prediction rejected (status solved)",
+    "10.27 MPC prediction rejected (status solved)",
+    "10.31 MPC prediction rejected (status solved)",
+    "10.33 mode WALK -> FALLEN",
+    "10.83 mode FALLEN -> RECOVERING",
+    "14.63 mode RECOVERING -> FALLEN",
+    "15.13 mode FALLEN -> RECOVERING",
+    "18.94 mode RECOVERING -> FALLEN",
+    "19.44 mode FALLEN -> RECOVERING",
+    "24.74 mode RECOVERING -> STANDING_UP",
+    "27.24 mode STANDING_UP -> STAND",
+    "27.25 mode STAND -> WALK"
+   ]
+  },
+  {
+   "key": "k_slip_off",
+   "seed": 0,
+   "ok": false,
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": null,
+    "x_max": 3.09647,
+    "falls": 3,
+    "controller_falls": 1,
+    "max_roll_deg": 180.0,
+    "max_pitch_deg": 58.58394,
+    "height_mean": 0.22726,
+    "height_min": 0.07148,
+    "height_max": 0.57832,
+    "height_std": 0.11308,
+    "max_ratio_hip_x": 0.86019,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 1.0,
+    "saturation_frac": 0.00189,
+    "rms_ratio_knee": 0.11328,
+    "rms_ratio_hip_y": 0.18188,
+    "no_contact_frac": 0.69256,
+    "stance_slip_mean": 0.1639,
+    "stance_slip_p95": 0.7618,
+    "mpc_solves": 502,
+    "mpc_ms_mean": 25.6223,
+    "mpc_ms_p95": 30.77286,
+    "mpc_ms_max": 36.9668,
+    "mpc_rejected": 292,
+    "gait_frac": {
+     "stand": 0.06122,
+     "trot": 0.93878,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat"
+    ],
+    "plate_slip_mean": 0.18858,
+    "plate_slip_p95": 0.80487,
+    "plate_slip_dist": 7.77518,
+    "plate_max_roll_deg": 180.0,
+    "plate_max_pitch_deg": 58.58394,
+    "plate_height_mean": 0.21487,
+    "plate_height_min": 0.07148,
+    "plate_height_max": 0.57832,
+    "plate_height_std": 0.11266,
+    "plate_speed": 0.04873,
+    "t_plate_entry": 7.02,
+    "t_slip_detected": null,
+    "slip_detections": 0,
+    "t_slip_mode": null,
+    "detect_latency": null,
+    "mode_lead_time": null,
+    "slip_mode_frac_plate": 0.0,
+    "mpc_mu_plate_min": 0.5,
+    "torque_ff_plate_mean": 0.0,
+    "mu_est_min": 0.5,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 44.99,
+    "wall": {
+     "physics": 10.84,
+     "controller": 16.83,
+     "perception": 6.92
+    }
+   },
+   "wall_s": 38.05748,
+   "events": [
+    {
+     "event": "fall",
+     "t": 11.2,
+     "x": 2.35748,
+     "y": -0.10967,
+     "roll": -2.54657,
+     "pitch": 0.00471
+    },
+    {
+     "event": "recovery_failed",
+     "t": 24.12,
+     "x": 2.37468,
+     "y": -0.09673,
+     "roll": -3.08398,
+     "pitch": 0.0001
+    },
+    {
+     "event": "assisted_reset",
+     "t": 24.12,
+     "x": 2.37468,
+     "y": -0.09673,
+     "roll": -3.08398,
+     "pitch": 0.0001
+    },
+    {
+     "event": "sim_teleport",
+     "t": 24.62
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "10.87 MPC prediction rejected (status solved)",
+    "10.91 MPC prediction rejected (status solved)",
+    "10.96 MPC prediction rejected (status solved)",
+    "11.02 MPC prediction rejected (status solved)",
+    "11.07 MPC prediction rejected (status solved)",
+    "11.12 MPC prediction rejected (status solved)",
+    "11.18 MPC prediction rejected (status solved)",
+    "11.20 mode WALK -> FALLEN",
+    "11.70 mode FALLEN -> RECOVERING",
+    "15.51 mode RECOVERING -> FALLEN",
+    "16.01 mode FALLEN -> RECOVERING",
+    "19.82 mode RECOVERING -> FALLEN",
+    "20.32 mode FALLEN -> RECOVERING",
+    "25.62 mode RECOVERING -> STANDING_UP",
+    "28.12 mode STANDING_UP -> STAND",
+    "28.13 mode STAND -> WALK",
+    "30.81 MPC prediction rejected (status solved)",
+    "30.85 MPC prediction rejected (status solved)",
+    "30.91 MPC prediction rejected (status solved)",
+    "30.95 MPC prediction rejected (status solved)",
+    "31.01 MPC prediction rejected (status solved)",
+    "31.06 MPC prediction rejected (status solved)",
+    "31.10 MPC prediction rejected (status solved)",
+    "31.15 MPC prediction rejected (status solved)",
+    "31.20 MPC prediction rejected (status solved)",
+    "31.24 MPC prediction rejected (status solved)",
+    "31.31 MPC prediction rejected (status solved)",
+    "31.34 MPC prediction rejected (status solved)",
+    "31.39 MPC prediction rejected (status solved)",
+    "31.44 MPC prediction rejected (status solved)",
+    "31.49 MPC prediction rejected (status solved)",
+    "31.54 MPC prediction rejected (status solved)",
+    "31.61 MPC prediction rejected (status solved)",
+    "31.65 MPC prediction rejected (status solved)",
+    "31.71 MPC prediction rejected (status solved)",
+    "31.75 MPC prediction rejected (status solved)",
+    "31.81 MPC prediction rejected (status solved)",
+    "31.86 MPC prediction rejected (status solved)"
+   ]
+  },
+  {
+   "key": "k_slip_off",
+   "seed": 1,
+   "ok": false,
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": null,
+    "x_max": 3.73707,
+    "falls": 2,
+    "controller_falls": 2,
+    "max_roll_deg": 180.0,
+    "max_pitch_deg": 27.75684,
+    "height_mean": 0.19543,
+    "height_min": 0.07148,
+    "height_max": 0.57863,
+    "height_std": 0.1359,
+    "max_ratio_hip_x": 1.0,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 1.0,
+    "saturation_frac": 0.00376,
+    "rms_ratio_knee": 0.14067,
+    "rms_ratio_hip_y": 0.14348,
+    "no_contact_frac": 0.8086,
+    "stance_slip_mean": 0.2634,
+    "stance_slip_p95": 1.4961,
+    "mpc_solves": 328,
+    "mpc_ms_mean": 25.29466,
+    "mpc_ms_p95": 29.86828,
+    "mpc_ms_max": 38.485,
+    "mpc_rejected": 14,
+    "gait_frac": {
+     "stand": 0.06122,
+     "trot": 0.93878,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat"
+    ],
+    "plate_slip_mean": 0.33001,
+    "plate_slip_p95": 1.65103,
+    "plate_slip_dist": 7.5605,
+    "plate_max_roll_deg": 180.0,
+    "plate_max_pitch_deg": 27.75684,
+    "plate_height_mean": 0.1758,
+    "plate_height_min": 0.07148,
+    "plate_height_max": 0.57863,
+    "plate_height_std": 0.13322,
+    "plate_speed": 0.06259,
+    "t_plate_entry": 6.91,
+    "t_slip_detected": null,
+    "slip_detections": 0,
+    "t_slip_mode": null,
+    "detect_latency": null,
+    "mode_lead_time": null,
+    "slip_mode_frac_plate": 0.0,
+    "mpc_mu_plate_min": 0.5,
+    "torque_ff_plate_mean": 0.0,
+    "mu_est_min": 0.5,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 44.99,
+    "wall": {
+     "physics": 9.95,
+     "controller": 11.64,
+     "perception": 6.96
+    }
+   },
+   "wall_s": 31.85242,
+   "events": [
+    {
+     "event": "fall",
+     "t": 12.96,
+     "x": 2.8816,
+     "y": -0.05342,
+     "roll": 2.91711,
+     "pitch": 0.00072
+    },
+    {
+     "event": "recovery_failed",
+     "t": 25.87,
+     "x": 2.86626,
+     "y": -0.08944,
+     "roll": -3.08398,
+     "pitch": 0.0001
+    },
+    {
+     "event": "assisted_reset",
+     "t": 25.87,
+     "x": 2.86626,
+     "y": -0.08944,
+     "roll": -3.08398,
+     "pitch": 0.0001
+    },
+    {
+     "event": "sim_teleport",
+     "t": 26.37
+    },
+    {
+     "event": "fall",
+     "t": 36.26,
+     "x": 3.60114,
+     "y": -1.00613,
+     "roll": 3.0723,
+     "pitch": -0.00182
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "12.62 MPC prediction rejected (status solved)",
+    "12.68 MPC prediction rejected (status solved)",
+    "12.72 MPC prediction rejected (status solved)",
+    "12.77 MPC prediction rejected (status solved)",
+    "12.82 MPC prediction rejected (status solved)",
+    "12.86 MPC prediction rejected (status solved)",
+    "12.92 MPC prediction rejected (status solved)",
+    "12.96 mode WALK -> FALLEN",
+    "13.46 mode FALLEN -> RECOVERING",
+    "17.27 mode RECOVERING -> FALLEN",
+    "17.77 mode FALLEN -> RECOVERING",
+    "21.57 mode RECOVERING -> FALLEN",
+    "22.07 mode FALLEN -> RECOVERING",
+    "27.37 mode RECOVERING -> STANDING_UP",
+    "29.87 mode STANDING_UP -> STAND",
+    "29.88 mode STAND -> WALK",
+    "35.95 MPC prediction rejected (status solved)",
+    "35.99 MPC prediction rejected (status solved)",
+    "36.04 MPC prediction rejected (status solved)",
+    "36.10 MPC prediction rejected (status solved)",
+    "36.15 MPC prediction rejected (status solved)",
+    "36.20 MPC prediction rejected (status solved)",
+    "36.24 MPC prediction rejected (status solved)",
+    "36.26 mode WALK -> FALLEN",
+    "36.76 mode FALLEN -> RECOVERING",
+    "40.56 mode RECOVERING -> FALLEN",
+    "41.06 mode FALLEN -> RECOVERING",
+    "44.87 mode RECOVERING -> FALLEN"
+   ]
+  },
+  {
+   "key": "k_slip_off",
+   "seed": 2,
+   "ok": false,
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": null,
+    "x_max": 2.49363,
+    "falls": 2,
+    "controller_falls": 2,
+    "max_roll_deg": 180.0,
+    "max_pitch_deg": 15.78955,
+    "height_mean": 0.16429,
+    "height_min": 0.07148,
+    "height_max": 0.57832,
+    "height_std": 0.12902,
+    "max_ratio_hip_x": 1.0,
+    "max_ratio_hip_y": 1.0,
+    "max_ratio_knee": 1.0,
+    "saturation_frac": 0.00069,
+    "rms_ratio_knee": 0.10133,
+    "rms_ratio_hip_y": 0.09665,
+    "no_contact_frac": 0.8211,
+    "stance_slip_mean": 0.14745,
+    "stance_slip_p95": 0.7968,
+    "mpc_solves": 227,
+    "mpc_ms_mean": 26.02723,
+    "mpc_ms_p95": 30.92143,
+    "mpc_ms_max": 43.833,
+    "mpc_rejected": 12,
+    "gait_frac": {
+     "stand": 0.06122,
+     "trot": 0.93878,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat"
+    ],
+    "plate_slip_mean": 0.17629,
+    "plate_slip_p95": 0.94989,
+    "plate_slip_dist": 3.68276,
+    "plate_max_roll_deg": 180.0,
+    "plate_max_pitch_deg": 15.78955,
+    "plate_height_mean": 0.1451,
+    "plate_height_min": 0.07148,
+    "plate_height_max": 0.57832,
+    "plate_height_std": 0.12153,
+    "plate_speed": 0.03049,
+    "t_plate_entry": 7.11,
+    "t_slip_detected": null,
+    "slip_detections": 0,
+    "t_slip_mode": null,
+    "detect_latency": null,
+    "mode_lead_time": null,
+    "slip_mode_frac_plate": 0.0,
+    "mpc_mu_plate_min": 0.5,
+    "torque_ff_plate_mean": 0.0,
+    "mu_est_min": 0.5,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 44.99,
+    "wall": {
+     "physics": 10.2,
+     "controller": 8.89,
+     "perception": 6.48
+    }
+   },
+   "wall_s": 28.87164,
+   "events": [
+    {
+     "event": "fall",
+     "t": 11.52,
+     "x": 2.07237,
+     "y": 0.20142,
+     "roll": -3.10487,
+     "pitch": -0.01218
+    },
+    {
+     "event": "recovery_failed",
+     "t": 24.42,
+     "x": 2.06974,
+     "y": 0.1534,
+     "roll": -3.08398,
+     "pitch": 0.0001
+    },
+    {
+     "event": "assisted_reset",
+     "t": 24.42,
+     "x": 2.06974,
+     "y": 0.1534,
+     "roll": -3.08398,
+     "pitch": 0.0001
+    },
+    {
+     "event": "sim_teleport",
+     "t": 24.92
+    },
+    {
+     "event": "fall",
+     "t": 31.21,
+     "x": 2.47547,
+     "y": 0.2331,
+     "roll": -3.09809,
+     "pitch": -0.00048
+    },
+    {
+     "event": "recovery_failed",
+     "t": 44.13,
+     "x": 2.46331,
+     "y": 0.212,
+     "roll": -3.08398,
+     "pitch": 0.0001
+    },
+    {
+     "event": "assisted_reset",
+     "t": 44.13,
+     "x": 2.46331,
+     "y": 0.212,
+     "roll": -3.08398,
+     "pitch": 0.0001
+    },
+    {
+     "event": "sim_teleport",
+     "t": 44.631
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "11.23 MPC prediction rejected (status solved)",
+    "11.26 MPC prediction rejected (status solved)",
+    "11.32 MPC prediction rejected (status solved)",
+    "11.36 MPC prediction rejected (status solved)",
+    "11.43 MPC prediction rejected (status solved)",
+    "11.48 MPC prediction rejected (status solved)",
+    "11.52 mode WALK -> FALLEN",
+    "12.02 mode FALLEN -> RECOVERING",
+    "15.82 mode RECOVERING -> FALLEN",
+    "16.32 mode FALLEN -> RECOVERING",
+    "20.12 mode RECOVERING -> FALLEN",
+    "20.62 mode FALLEN -> RECOVERING",
+    "25.92 mode RECOVERING -> STANDING_UP",
+    "28.42 mode STANDING_UP -> STAND",
+    "28.43 mode STAND -> WALK",
+    "30.89 MPC prediction rejected (status solved)",
+    "30.95 MPC prediction rejected (status solved)",
+    "31.00 MPC prediction rejected (status solved)",
+    "31.04 MPC prediction rejected (status solved)",
+    "31.10 MPC prediction rejected (status solved)",
+    "31.16 MPC prediction rejected (status solved)",
+    "31.21 mode WALK -> FALLEN",
+    "31.71 mode FALLEN -> RECOVERING",
+    "35.52 mode RECOVERING -> FALLEN",
+    "36.02 mode FALLEN -> RECOVERING",
+    "39.83 mode RECOVERING -> FALLEN",
+    "40.33 mode FALLEN -> RECOVERING"
+   ]
+  },
+  {
+   "key": "k_slip_prior",
+   "seed": 0,
+   "ok": true,
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": 33.8,
+    "x_max": 6.20066,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 3.04103,
+    "max_pitch_deg": 2.04525,
+    "height_mean": 0.34,
+    "height_min": 0.33005,
+    "height_max": 0.35039,
+    "height_std": 0.00365,
+    "max_ratio_hip_x": 0.32602,
+    "max_ratio_hip_y": 0.47859,
+    "max_ratio_knee": 0.6189,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.17619,
+    "rms_ratio_hip_y": 0.11965,
+    "no_contact_frac": 0.45647,
+    "stance_slip_mean": 0.0998,
+    "stance_slip_p95": 0.34413,
+    "mpc_solves": 640,
+    "mpc_ms_mean": 23.1836,
+    "mpc_ms_p95": 28.63381,
+    "mpc_ms_max": 46.045,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat",
+     "slippery",
+     "unknown"
+    ],
+    "avg_speed": 0.20764,
+    "plate_slip_mean": 0.12844,
+    "plate_slip_p95": 0.37298,
+    "plate_slip_dist": 5.17864,
+    "plate_max_roll_deg": 2.18597,
+    "plate_max_pitch_deg": 1.24755,
+    "plate_height_mean": 0.3401,
+    "plate_height_min": 0.33542,
+    "plate_height_max": 0.34668,
+    "plate_height_std": 0.00324,
+    "plate_speed": 0.18404,
+    "t_plate_entry": 7.83,
+    "t_slip_detected": null,
+    "slip_detections": 0,
+    "t_slip_mode": 5.2,
+    "detect_latency": null,
+    "mode_lead_time": 2.63,
+    "slip_mode_frac_plate": 1.0,
+    "mpc_mu_plate_min": 0.15,
+    "torque_ff_plate_mean": 1.0,
+    "mu_est_min": 0.5,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 34.96,
+    "wall": {
+     "physics": 7.97,
+     "controller": 19.21,
+     "perception": 6.5
+    }
+   },
+   "wall_s": 36.42406,
+   "events": [
+    {
+     "event": "slip_mode_on",
+     "t": 5.2,
+     "x": 0.03037,
+     "y": -0.0331,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_mode_off",
+     "t": 32.6,
+     "x": 5.59826,
+     "y": -0.08662,
+     "source": "terrain"
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "5.20 slip mode on (terrain)",
+    "32.60 slip mode off (terrain)"
+   ]
+  },
+  {
+   "key": "k_slip_prior",
+   "seed": 1,
+   "ok": true,
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": 33.43,
+    "x_max": 6.20067,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 2.71431,
+    "max_pitch_deg": 2.0762,
+    "height_mean": 0.34001,
+    "height_min": 0.3307,
+    "height_max": 0.35016,
+    "height_std": 0.00367,
+    "max_ratio_hip_x": 0.37052,
+    "max_ratio_hip_y": 0.42515,
+    "max_ratio_knee": 0.58501,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.17625,
+    "rms_ratio_hip_y": 0.11983,
+    "no_contact_frac": 0.45542,
+    "stance_slip_mean": 0.09834,
+    "stance_slip_p95": 0.34238,
+    "mpc_solves": 635,
+    "mpc_ms_mean": 23.91651,
+    "mpc_ms_p95": 28.63166,
+    "mpc_ms_max": 37.9799,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat",
+     "slippery",
+     "unknown"
+    ],
+    "avg_speed": 0.20932,
+    "plate_slip_mean": 0.12765,
+    "plate_slip_p95": 0.36057,
+    "plate_slip_dist": 5.06385,
+    "plate_max_roll_deg": 1.54239,
+    "plate_max_pitch_deg": 0.79524,
+    "plate_height_mean": 0.34009,
+    "plate_height_min": 0.33533,
+    "plate_height_max": 0.34586,
+    "plate_height_std": 0.00323,
+    "plate_speed": 0.18762,
+    "t_plate_entry": 7.79,
+    "t_slip_detected": null,
+    "slip_detections": 0,
+    "t_slip_mode": 5.2,
+    "detect_latency": null,
+    "mode_lead_time": 2.59,
+    "slip_mode_frac_plate": 1.0,
+    "mpc_mu_plate_min": 0.15,
+    "torque_ff_plate_mean": 1.0,
+    "mu_est_min": 0.5,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 34.74,
+    "wall": {
+     "physics": 7.98,
+     "controller": 19.59,
+     "perception": 6.65
+    }
+   },
+   "wall_s": 36.92512,
+   "events": [
+    {
+     "event": "slip_mode_on",
+     "t": 0.51,
+     "x": 0.01025,
+     "y": -0.01424,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_mode_off",
+     "t": 1.8,
+     "x": -0.08586,
+     "y": -0.01436,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_mode_on",
+     "t": 5.2,
+     "x": 0.05914,
+     "y": -0.0343,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_mode_off",
+     "t": 32.2,
+     "x": 5.58458,
+     "y": -0.05264,
+     "source": "terrain"
+    }
+   ],
+   "messages": [
+    "0.51 slip mode on (terrain)",
+    "1.80 slip mode off (terrain)",
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "5.20 slip mode on (terrain)",
+    "32.20 slip mode off (terrain)"
+   ]
+  },
+  {
+   "key": "k_slip_prior",
+   "seed": 2,
+   "ok": true,
+   "criterion": "mu 0.15 plate, trot command 0.4 m/s, auto gait: no fall; base passes x = 6 m",
+   "metrics": {
+    "t_goal": 33.43,
+    "x_max": 6.20016,
+    "falls": 0,
+    "controller_falls": 0,
+    "max_roll_deg": 1.97925,
+    "max_pitch_deg": 1.97952,
+    "height_mean": 0.33998,
+    "height_min": 0.33075,
+    "height_max": 0.35065,
+    "height_std": 0.00367,
+    "max_ratio_hip_x": 0.26951,
+    "max_ratio_hip_y": 0.41462,
+    "max_ratio_knee": 0.51564,
+    "saturation_frac": 0.0,
+    "rms_ratio_knee": 0.17576,
+    "rms_ratio_hip_y": 0.11946,
+    "no_contact_frac": 0.45559,
+    "stance_slip_mean": 0.09744,
+    "stance_slip_p95": 0.3358,
+    "mpc_solves": 634,
+    "mpc_ms_mean": 23.69983,
+    "mpc_ms_p95": 28.43627,
+    "mpc_ms_max": 36.2122,
+    "mpc_rejected": 0,
+    "gait_frac": {
+     "stand": 0.0,
+     "trot": 1.0,
+     "crawl": 0.0
+    },
+    "terrain_classes": [
+     "flat",
+     "slippery",
+     "unknown"
+    ],
+    "avg_speed": 0.21021,
+    "plate_slip_mean": 0.12808,
+    "plate_slip_p95": 0.36132,
+    "plate_slip_dist": 5.03231,
+    "plate_max_roll_deg": 1.52362,
+    "plate_max_pitch_deg": 0.83298,
+    "plate_height_mean": 0.3401,
+    "plate_height_min": 0.33546,
+    "plate_height_max": 0.34578,
+    "plate_height_std": 0.00327,
+    "plate_speed": 0.18874,
+    "t_plate_entry": 7.73,
+    "t_slip_detected": null,
+    "slip_detections": 0,
+    "t_slip_mode": 5.2,
+    "detect_latency": null,
+    "mode_lead_time": 2.53,
+    "slip_mode_frac_plate": 1.0,
+    "mpc_mu_plate_min": 0.15,
+    "torque_ff_plate_mean": 1.0,
+    "mu_est_min": 0.5,
+    "cmd": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "sim_time": 34.68,
+    "wall": {
+     "physics": 7.88,
+     "controller": 19.36,
+     "perception": 6.85
+    }
+   },
+   "wall_s": 36.78763,
+   "events": [
+    {
+     "event": "slip_mode_on",
+     "t": 5.2,
+     "x": 0.03465,
+     "y": -0.00467,
+     "source": "terrain"
+    },
+    {
+     "event": "slip_mode_off",
+     "t": 32.2,
+     "x": 5.58885,
+     "y": -0.16596,
+     "source": "terrain"
+    }
+   ],
+   "messages": [
+    "3.00 mode STANDING_UP -> STAND",
+    "4.00 mode STAND -> WALK",
+    "5.20 slip mode on (terrain)",
+    "32.20 slip mode off (terrain)"
+   ]
+  }
+ ],
+ "figures": [
+  "docs/images/physics_timelines.png",
+  "docs/images/physics_trajectories.png",
+  "docs/images/physics_torque.png",
+  "docs/images/physics_sticks.png",
+  "docs/images/physics_recovery.png",
+  "docs/images/physics_summary.png",
+  "docs/images/physics_slippery.png"
+ ],
+ "before_fixes": {
+  "label": "before fixes (original module1)",
+  "date": "2026-10-12 20:13",
+  "plant": null,
+  "summary": [
+   {
+    "key": "a_stand",
+    "title": "(a) stand-up + 5 s stand",
+    "required": true,
+    "passed": 3,
+    "runs": 3,
+    "ok": true,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "STAND reached; 5 s window: height 0.34+-0.03, |roll|,|pitch| < 3 deg, no fall",
+    "key_metrics": {
+     "falls_total": 0,
+     "height": 0.34005,
+     "roll_max": 0.31424,
+     "pitch_max": 0.39491,
+     "sat": 0.08405,
+     "drift_mm": 150.20615
+    }
+   },
+   {
+    "key": "b_trot",
+    "title": "(b) trot 0.4 m/s, 10 s",
+    "required": true,
+    "passed": 0,
+    "runs": 3,
+    "ok": false,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "no fall; mean vx within 20 % of 0.4",
+    "key_metrics": {
+     "falls_total": 3,
+     "vx": 0.00118,
+     "vy": 0.00145,
+     "wz": 0.00738,
+     "height": 0.07615,
+     "roll_max": 180.0,
+     "pitch_max": 3.12553,
+     "knee_max": 1.0,
+     "sat": 0.27908,
+     "mpc_ms": 28.77797
+    }
+   },
+   {
+    "key": "c_crawl",
+    "title": "(c) crawl 0.2 m/s, 10 s",
+    "required": true,
+    "passed": 0,
+    "runs": 3,
+    "ok": false,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "no fall; mean vx within 20 % of 0.2",
+    "key_metrics": {
+     "falls_total": 4,
+     "vx": 0.07312,
+     "vy": 0.05209,
+     "wz": -0.17942,
+     "height": 0.12918,
+     "roll_max": 180.0,
+     "pitch_max": 85.43233,
+     "knee_max": 1.0,
+     "sat": 0.2742,
+     "mpc_ms": 35.56531
+    }
+   },
+   {
+    "key": "d_turn",
+    "title": "(d) turn in place 0.5 rad/s",
+    "required": true,
+    "passed": 0,
+    "runs": 3,
+    "ok": false,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "no fall; mean wz within 20 % of 0.5",
+    "key_metrics": {
+     "falls_total": 4,
+     "vx": -0.00332,
+     "vy": 0.00225,
+     "wz": 0.10739,
+     "height": 0.09922,
+     "roll_max": 180.0,
+     "pitch_max": 37.87297,
+     "knee_max": 1.0,
+     "sat": 0.28255,
+     "mpc_ms": 29.04648
+    }
+   },
+   {
+    "key": "e_obstacles",
+    "title": "(e) 0.10 m pipe + 0.10 m step, auto gait",
+    "required": true,
+    "passed": 0,
+    "runs": 3,
+    "ok": false,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "no fall; base passes x = 5.4 m (pipe at x=1.5, step 3.2-4.4)",
+    "key_metrics": {
+     "falls_total": 9,
+     "t_goal": null,
+     "x_max": 0.12781,
+     "roll_max": 180.0,
+     "pitch_max": 63.09346,
+     "slip": null,
+     "slip_dist": null
+    }
+   },
+   {
+    "key": "f_push",
+    "title": "(f) 15 N s lateral push while trotting",
+    "required": true,
+    "passed": 0,
+    "runs": 3,
+    "ok": false,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "15 N s lateral push (150 N, 0.1 s) while trotting 0.4 m/s: no fall",
+    "key_metrics": {
+     "falls_total": 3,
+     "peak_roll": 179.99987,
+     "peak_vy": 0.39319,
+     "recovery_s": 1.60136,
+     "vx_after": -0.00129
+    }
+   },
+   {
+    "key": "g_payload",
+    "title": "(g) +3 kg payload: stand + trot 0.4 m/s",
+    "required": true,
+    "passed": 0,
+    "runs": 3,
+    "ok": false,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "+3 kg on the trunk: stand height 0.34+-0.03, trot 0.4 m/s within 20 %, no fall",
+    "key_metrics": {
+     "falls_total": 4,
+     "stand_height": 0.33997,
+     "vx": 0.06504,
+     "knee_max": 1.0,
+     "sat": 0.19909
+    }
+   },
+   {
+    "key": "h_side",
+    "title": "(h1) start lying on the side -> self-righting",
+    "required": true,
+    "passed": 0,
+    "runs": 3,
+    "ok": false,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+    "key_metrics": {
+     "falls_total": 6,
+     "attempts": 3.0,
+     "recoveries": 0.0,
+     "assisted": 1.0,
+     "t_recover": null
+    }
+   },
+   {
+    "key": "h_push",
+    "title": "(h2) 100 N s push while standing -> fall -> recovery",
+    "required": true,
+    "passed": 0,
+    "runs": 3,
+    "ok": false,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+    "key_metrics": {
+     "falls_total": 8,
+     "attempts": 3.0,
+     "recoveries": 0.0,
+     "assisted": 1.0,
+     "t_recover": null
+    }
+   },
+   {
+    "key": "h_back",
+    "title": "(h3) start on the back -> rock + self-righting",
+    "required": false,
+    "passed": 0,
+    "runs": 1,
+    "ok": false,
+    "seeds": [
+     0
+    ],
+    "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+    "key_metrics": {
+     "falls_total": 1,
+     "attempts": 6.0,
+     "recoveries": 0.0,
+     "assisted": 1.0,
+     "t_recover": null
+    }
+   },
+   {
+    "key": "i_plate_trot",
+    "title": "(i) mu 0.15 plate, trot 0.4 m/s",
+    "required": false,
+    "passed": 0,
+    "runs": 1,
+    "ok": false,
+    "seeds": [
+     0
+    ],
+    "criterion": "best effort: cross the mu 0.15 plate (record slip / falls)",
+    "key_metrics": {
+     "falls_total": 3,
+     "t_goal": null,
+     "x_max": 0.10896,
+     "roll_max": 180.0,
+     "pitch_max": 32.58552,
+     "slip": null,
+     "slip_dist": null
+    }
+   },
+   {
+    "key": "i_plate_crawl",
+    "title": "(i) mu 0.15 plate, crawl 0.2 m/s",
+    "required": false,
+    "passed": 0,
+    "runs": 1,
+    "ok": false,
+    "seeds": [
+     0
+    ],
+    "criterion": "best effort: cross the mu 0.15 plate (record slip / falls)",
+    "key_metrics": {
+     "falls_total": 2,
+     "t_goal": null,
+     "x_max": 0.12505,
+     "roll_max": 180.0,
+     "pitch_max": 31.31139,
+     "slip": null,
+     "slip_dist": null
+    }
+   },
+   {
+    "key": "j_stairs",
+    "title": "(j) 0.17 m stairs up + down, auto gait",
+    "required": false,
+    "passed": 0,
+    "runs": 1,
+    "ok": false,
+    "seeds": [
+     0
+    ],
+    "criterion": "no fall; base passes x = 6.3 m (4 x 0.17 m up, landing, 4 down)",
+    "key_metrics": {
+     "falls_total": 4,
+     "t_goal": null,
+     "x_max": 0.12707,
+     "roll_max": 180.0,
+     "pitch_max": 65.25273,
+     "slip": null,
+     "slip_dist": null
+    }
+   },
+   {
+    "key": "j_ramp",
+    "title": "(j) 16 deg ramp up + down, auto gait",
+    "required": false,
+    "passed": 0,
+    "runs": 1,
+    "ok": false,
+    "seeds": [
+     0
+    ],
+    "criterion": "no fall; base passes x = 8.2 m (16 deg, 2 m up, 1.5 m top, 2 m down)",
+    "key_metrics": {
+     "falls_total": 4,
+     "t_goal": null,
+     "x_max": 0.10896,
+     "roll_max": 180.0,
+     "pitch_max": 65.34896,
+     "slip": null,
+     "slip_dist": null
+    }
+   }
+  ]
+ },
+ "previous_run": {
+  "label": "after fixes: gz PID force-mode servo (p 450, d 3) + crawl 1.2 s / 0.8 without re-targeting; before = original module1 + velocity-mode servo (h2 then 100 N s, push 150 N x 0.1 s)",
+  "date": "2026-10-13 00:09",
+  "plant": {
+   "servo": "urdf"
+  },
+  "summary": [
+   {
+    "key": "a_stand",
+    "title": "(a) stand-up + 5 s stand",
+    "required": true,
+    "passed": 3,
+    "runs": 3,
+    "ok": true,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "STAND reached; 5 s window: height 0.34+-0.03, |roll|,|pitch| < 3 deg, no fall",
+    "key_metrics": {
+     "falls_total": 0,
+     "height": 0.33867,
+     "roll_max": 0.0,
+     "pitch_max": 0.19186,
+     "sat": 0.0,
+     "drift_mm": 2.21579
+    }
+   },
+   {
+    "key": "b_trot",
+    "title": "(b) trot 0.4 m/s, 10 s",
+    "required": true,
+    "passed": 3,
+    "runs": 3,
+    "ok": true,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "no fall; mean vx within 20 % of 0.4",
+    "key_metrics": {
+     "falls_total": 0,
+     "vx": 0.42893,
+     "vy": -0.00701,
+     "wz": 0.00137,
+     "height": 0.33965,
+     "roll_max": 3.24691,
+     "pitch_max": 4.17309,
+     "knee_max": 0.79014,
+     "sat": 8e-05,
+     "mpc_ms": 23.56118
+    }
+   },
+   {
+    "key": "c_crawl",
+    "title": "(c) crawl 0.2 m/s, 10 s",
+    "required": true,
+    "passed": 3,
+    "runs": 3,
+    "ok": true,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "no fall; mean vx within 20 % of 0.2",
+    "key_metrics": {
+     "falls_total": 0,
+     "vx": 0.19292,
+     "vy": 0.01065,
+     "wz": 0.00468,
+     "height": 0.3398,
+     "roll_max": 1.992,
+     "pitch_max": 0.94599,
+     "knee_max": 0.50481,
+     "sat": 0.0,
+     "mpc_ms": 28.07091
+    }
+   },
+   {
+    "key": "d_turn",
+    "title": "(d) turn in place 0.5 rad/s",
+    "required": true,
+    "passed": 3,
+    "runs": 3,
+    "ok": true,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "no fall; mean wz within 20 % of 0.5",
+    "key_metrics": {
+     "falls_total": 0,
+     "vx": -0.01192,
+     "vy": -0.03898,
+     "wz": 0.49036,
+     "height": 0.33955,
+     "roll_max": 2.93181,
+     "pitch_max": 1.44962,
+     "knee_max": 0.62011,
+     "sat": 0.0,
+     "mpc_ms": 26.53515
+    }
+   },
+   {
+    "key": "e_obstacles",
+    "title": "(e) 0.10 m pipe + 0.10 m step, auto gait",
+    "required": true,
+    "passed": 0,
+    "runs": 3,
+    "ok": false,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "no fall; base passes x = 5.4 m (pipe at x=1.5, step 3.2-4.4)",
+    "key_metrics": {
+     "falls_total": 12,
+     "t_goal": null,
+     "x_max": 1.36086,
+     "roll_max": 180.0,
+     "pitch_max": 47.15458,
+     "slip": null,
+     "slip_dist": null
+    }
+   },
+   {
+    "key": "f_push",
+    "title": "(f) 15 N s lateral push while trotting",
+    "required": true,
+    "passed": 2,
+    "runs": 3,
+    "ok": false,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "15 N s lateral push (75 N for 0.2 s = the node push_duration) while trotting 0.4 m/s: no fall",
+    "key_metrics": {
+     "falls_total": 1,
+     "peak_roll": 25.15052,
+     "peak_vy": 1.62409,
+     "recovery_s": 2.12469,
+     "vx_after": 0.31403
+    }
+   },
+   {
+    "key": "g_payload",
+    "title": "(g) +3 kg payload: stand + trot 0.4 m/s",
+    "required": true,
+    "passed": 3,
+    "runs": 3,
+    "ok": true,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "+3 kg on the trunk: stand height 0.34+-0.03, trot 0.4 m/s within 20 %, no fall",
+    "key_metrics": {
+     "falls_total": 0,
+     "stand_height": 0.33829,
+     "vx": 0.41354,
+     "knee_max": 0.71741,
+     "sat": 0.0
+    }
+   },
+   {
+    "key": "h_side",
+    "title": "(h1) start lying on the side -> self-righting",
+    "required": true,
+    "passed": 3,
+    "runs": 3,
+    "ok": true,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+    "key_metrics": {
+     "falls_total": 6,
+     "attempts": 1.0,
+     "recoveries": 1.0,
+     "assisted": 0.0,
+     "t_recover": 6.07
+    }
+   },
+   {
+    "key": "h_push",
+    "title": "(h2) 60 N s push while standing -> fall -> recovery",
+    "required": true,
+    "passed": 3,
+    "runs": 3,
+    "ok": true,
+    "seeds": [
+     0,
+     1,
+     2
+    ],
+    "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+    "key_metrics": {
+     "falls_total": 3,
+     "attempts": 1.0,
+     "recoveries": 1.0,
+     "assisted": 0.0,
+     "t_recover": 5.16
+    }
+   },
+   {
+    "key": "h_push100",
+    "title": "(h4) 100 N s push while standing (lands on the back)",
+    "required": false,
+    "passed": 0,
+    "runs": 1,
+    "ok": false,
+    "seeds": [
+     0
+    ],
+    "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+    "key_metrics": {
+     "falls_total": 3,
+     "attempts": 5.0,
+     "recoveries": 0.0,
+     "assisted": 1.0,
+     "t_recover": null
+    }
+   },
+   {
+    "key": "h_back",
+    "title": "(h3) start on the back -> rock + self-righting",
+    "required": false,
+    "passed": 0,
+    "runs": 1,
+    "ok": false,
+    "seeds": [
+     0
+    ],
+    "criterion": "fall detected -> self-righting -> upright STAND (no assisted reset)",
+    "key_metrics": {
+     "falls_total": 3,
+     "attempts": 6.0,
+     "recoveries": 0.0,
+     "assisted": 1.0,
+     "t_recover": null
+    }
+   },
+   {
+    "key": "i_plate_trot",
+    "title": "(i) mu 0.15 plate, trot 0.4 m/s",
+    "required": false,
+    "passed": 0,
+    "runs": 1,
+    "ok": false,
+    "seeds": [
+     0
+    ],
+    "criterion": "best effort: cross the mu 0.15 plate (record slip / falls)",
+    "key_metrics": {
+     "falls_total": 1,
+     "t_goal": null,
+     "x_max": 2.53952,
+     "roll_max": 180.0,
+     "pitch_max": 29.58292,
+     "slip": 0.15444,
+     "slip_dist": 3.05644
+    }
+   },
+   {
+    "key": "i_plate_crawl",
+    "title": "(i) mu 0.15 plate, crawl 0.2 m/s",
+    "required": false,
+    "passed": 0,
+    "runs": 1,
+    "ok": false,
+    "seeds": [
+     0
+    ],
+    "criterion": "best effort: cross the mu 0.15 plate (record slip / falls)",
+    "key_metrics": {
+     "falls_total": 2,
+     "t_goal": null,
+     "x_max": 1.6939,
+     "roll_max": 179.98786,
+     "pitch_max": 28.20826,
+     "slip": 0.24932,
+     "slip_dist": 5.70203
+    }
+   },
+   {
+    "key": "j_stairs",
+    "title": "(j) 0.17 m stairs up + down, auto gait",
+    "required": false,
+    "passed": 0,
+    "runs": 1,
+    "ok": false,
+    "seeds": [
+     0
+    ],
+    "criterion": "no fall; base passes x = 6.3 m (4 x 0.17 m up, landing, 4 down)",
+    "key_metrics": {
+     "falls_total": 4,
+     "t_goal": 66.15,
+     "x_max": 6.5015,
+     "roll_max": 180.0,
+     "pitch_max": 46.66737,
+     "slip": null,
+     "slip_dist": null
+    }
+   },
+   {
+    "key": "j_ramp",
+    "title": "(j) 16 deg ramp up + down, auto gait",
+    "required": false,
+    "passed": 0,
+    "runs": 1,
+    "ok": false,
+    "seeds": [
+     0
+    ],
+    "criterion": "no fall; base passes x = 8.2 m (16 deg, 2 m up, 1.5 m top, 2 m down)",
+    "key_metrics": {
+     "falls_total": 4,
+     "t_goal": null,
+     "x_max": 1.5054,
+     "roll_max": 180.0,
+     "pitch_max": 46.34067,
+     "slip": null,
+     "slip_dist": null
+    }
+   }
+  ]
+ },
+ "slippery": {
+  "k_slip_off": {
+   "title": "(k) mu 0.15 plate, trot 0.4: no slip handling (before)",
+   "passed": 0,
+   "runs": 3,
+   "falls": 7,
+   "plate_speed": 0.04727,
+   "slip_dist": 6.33948,
+   "slip": 0.23163,
+   "slip_p95": 1.13526,
+   "t_goal": null,
+   "detect_latency": null,
+   "mode_lead": null,
+   "mode_frac": 0.0,
+   "mpc_mu": 0.5
+  },
+  "k_slip_prior": {
+   "title": "(k) mu 0.15 plate, trot 0.4: friction prior only",
+   "passed": 3,
+   "runs": 3,
+   "falls": 0,
+   "plate_speed": 0.1868,
+   "slip_dist": 5.0916,
+   "slip": 0.12806,
+   "slip_p95": 0.36496,
+   "t_goal": 33.55333,
+   "detect_latency": null,
+   "mode_lead": 2.58333,
+   "mode_frac": 1.0,
+   "mpc_mu": 0.15
+  },
+  "k_slip_detect": {
+   "title": "(k) mu 0.15 plate, trot 0.4: online slip detection only",
+   "passed": 2,
+   "runs": 3,
+   "falls": 1,
+   "plate_speed": 0.16112,
+   "slip_dist": 5.49144,
+   "slip": 0.13027,
+   "slip_p95": 0.44584,
+   "t_goal": 31.795,
+   "detect_latency": 1.34667,
+   "mode_lead": -1.34667,
+   "mode_frac": 0.96796,
+   "mpc_mu": 0.15
+  },
+  "k_slip_both": {
+   "title": "(k) mu 0.15 plate, trot 0.4: prior + detection (deployed)",
+   "passed": 3,
+   "runs": 3,
+   "falls": 0,
+   "plate_speed": 0.18694,
+   "slip_dist": 5.09412,
+   "slip": 0.12824,
+   "slip_p95": 0.36475,
+   "t_goal": 33.72,
+   "detect_latency": 2.15,
+   "mode_lead": 2.58333,
+   "mode_frac": 1.0,
+   "mpc_mu": 0.15
+  },
+  "k_slip02_off": {
+   "title": "(k) mu 0.2 plate, trot 0.4: no slip handling (before)",
+   "passed": 1,
+   "runs": 3,
+   "falls": 6,
+   "plate_speed": 0.16291,
+   "slip_dist": 4.36265,
+   "slip": 0.14979,
+   "slip_p95": 0.74246,
+   "t_goal": 19.42,
+   "detect_latency": null,
+   "mode_lead": null,
+   "mode_frac": 0.0,
+   "mpc_mu": 0.5
+  },
+  "k_slip02_detect": {
+   "title": "(k) mu 0.2 plate, trot 0.4: online slip detection only",
+   "passed": 3,
+   "runs": 3,
+   "falls": 0,
+   "plate_speed": 0.2668,
+   "slip_dist": 3.76461,
+   "slip": 0.12857,
+   "slip_p95": 0.5022,
+   "t_goal": 27.23667,
+   "detect_latency": 1.54,
+   "mode_lead": -1.54,
+   "mode_frac": 0.64087,
+   "mpc_mu": 0.26667
+  },
+  "k_slip02_both": {
+   "title": "(k) mu 0.2 plate, trot 0.4: prior + detection (deployed)",
+   "passed": 3,
+   "runs": 3,
+   "falls": 0,
+   "plate_speed": 0.18936,
+   "slip_dist": 3.8793,
+   "slip": 0.09964,
+   "slip_p95": 0.35479,
+   "t_goal": 33.42,
+   "detect_latency": 25.465,
+   "mode_lead": 2.57333,
+   "mode_frac": 1.0,
+   "mpc_mu": 0.2
+  },
+  "note": "plate x 1..5 m, trot command 0.4 m/s, auto gait; slip_dist = summed horizontal speed of the feet in contact x dt on the plate [m]; plate_speed = base speed over the plate; detect_latency = slip detection - front feet on the plate [s]; mode_lead = slip mode on before the front feet reach the plate [s]"
+ }
+}

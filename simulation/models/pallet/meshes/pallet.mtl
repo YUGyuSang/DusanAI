@@ -1,0 +1,10 @@
+# pallet: converted from obs_palette.unitypackage/Plastic_Pallet_01.fbx by tools/convert_environment.py
+
+newmtl pallet_plastic_pallet_01
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd pallet_plastic_pallet_01_basemap.jpg

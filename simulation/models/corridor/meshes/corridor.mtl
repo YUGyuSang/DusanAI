@@ -1,0 +1,144 @@
+# corridor: converted from factory_hall.unitypackage/Corridor_Wall_02.fbx by tools/convert_environment.py
+
+newmtl corridor_corridor_wall_01
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd corridor_wall_01_basemap.jpg
+
+newmtl corridor_corridor_door_hand_01
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd corridor_factory_wall_trimsheet_01_basemap.jpg
+
+newmtl corridor_corridor_door_01
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd corridor_factory_wall_trimsheet_01_basemap.jpg
+
+newmtl corridor_corridor_door_frame_01
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd corridor_floor_01_basemap.jpg
+
+newmtl corridor_corridor_wall_02
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd corridor_floor_01_basemap.jpg
+
+newmtl corridor_corridor_ceiling_01
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd corridor_floor_01_basemap.jpg
+
+newmtl corridor_corridor_floor_01
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd corridor_floor_01_basemap.jpg
+
+newmtl corridor_corridor_pipe_01
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd corridor_factory_wall_trimsheet_01_basemap.jpg
+
+newmtl corridor_walltrimsheet_01
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd corridor_factory_wall_trimsheet_01_basemap.jpg
+
+newmtl corridor_window_01
+Ka 0.8773 0.9340 0.8679
+Kd 0.8773 0.9340 0.8679
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+
+newmtl corridor_light_01
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+Ke 1.0000 1.0000 1.0000
+d 1.0000
+illum 2
+
+newmtl corridor_uphill_road_01
+Ka 0.5120 0.5322 0.5566
+Kd 0.5120 0.5322 0.5566
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd corridor_factory_wall_trimsheet_01_basemap.jpg
+
+newmtl corridor_material_006_basecolor_1001
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd corridor_material_006_basecolor_1001.jpg
+
+newmtl corridor_material_001_basecolor_1001
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd corridor_material_001_basecolor_1001.jpg
+
+newmtl corridor_rainwatertrim1
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd corridor_rainwatertrim1_diff_4k.jpg
+
+newmtl corridor_control_01
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd corridor_control_buttons_defaultmaterial_basecolor.jpg

@@ -1,0 +1,123 @@
+# mission_manager parameters (plant_simulation/mission_logic.py MISSION_DEFAULTS).
+# Floats keep their decimal point: rclpy rejects an INTEGER override of a DOUBLE parameter.
+mission_manager:
+  ros__parameters:
+    control_rate: 10.0            # Hz state machine + /cmd_vel/patrol
+    state_publish_period: 0.5     # s /mission/state republish (also on every change)
+    layout_file: ""               # '' -> installed world_layout.yaml
+    map_yaml: ""                  # only used when /map never arrives
+    # ---------------------------------------------------------- navigation
+    robot_radius: 0.35            # m A* inflation
+    max_vx: 0.40                  # m/s
+    max_wz: 0.60                  # rad/s
+    lookahead: 0.60               # m pure pursuit
+    goal_tolerance: 0.25          # m
+    slow_down_dist: 0.8           # m
+    rotate_in_place_angle: 0.9    # rad heading error -> rotate in place
+    k_heading: 1.6
+    use_plan_legs: true           # follow the patrol planner's legs when starting on them
+    leg_start_tolerance: 1.0      # m
+    replan_deviation: 1.2         # m cross-track error -> re-plan
+    replan_min_interval: 3.0      # s
+    pose_timeout: 1.0             # s without /odom -> hold
+    follow_spacing: 0.10          # m vertex spacing of the followed path
+    # terrain cost (dusan_common/terrain_cost.py): pipes / rubble are crossed only where the
+    # map leaves no free detour (C-OBS1 north end, C-OBS3 north passage are taken)
+    terrain_cost_enabled: true
+    terrain_w_pipe: 25.0          # extra A* cost per cell inside a lying pipe (+0.12 m)
+    terrain_w_rubble: 25.0        # ... inside a rubble field
+    terrain_w_plate: 1.0          # ... on a steel plate (slippery, crossable)
+    terrain_w_platform: 2.0       # ... on the low step platform
+    terrain_margin: 0.25          # m margin around each item (capped at 0.25 m)
+    terrain_margin_fraction: 0.15 # margin cost = fraction x inside cost
+    # ------------------------------ novel (unmapped) obstacles (dusan_common/obstacle_layer.py)
+    # elevation map step >= step_height, confirmed over frames -> slow down / stop -> left/right
+    # detour rejoining the route -> re-plan on static + dynamic -> keep the map route (stuck logic)
+    obstacle_enabled: true        # false = legacy behaviour (no /elevation_map subscription)
+    obstacle_detour_enabled: true
+    obstacle_replan_enabled: true
+    obstacle_slowdown_enabled: true
+    obstacle_static_fallback: true  # no path around -> keep the map route; false -> skip ('no path')
+    obstacle_source: elevation    # elevation (cloud step test) | traversability (cost grid)
+    obstacle_elevation_topic: /elevation_map/points
+    obstacle_traversability_topic: /elevation_map/traversability
+    obstacle_frames: odom,map,world  # frame ids equal to the /odom pose frame (others rejected)
+    obstacle_step_height: 0.22    # m = terrain.yaml map.step_crit
+    obstacle_step_window: 5       # cells = terrain.yaml map.step_window
+    obstacle_cost_threshold: 100  # traversability source: evidence at >= this cost
+    obstacle_max_range: 3.5       # m from base_link
+    obstacle_resolution: 0.10     # m memory lattice
+    obstacle_memory_size: 20.0    # m robot-centred rolling memory
+    obstacle_confirm_hits: 2      # frames with evidence before a cell is confirmed
+    obstacle_max_hits: 5          # free frames needed to clear a confirmed cell
+    obstacle_min_known_fraction: 0.5
+    obstacle_ignore_radius: 0.55  # m own body / legs
+    obstacle_forget_time: 60.0    # s without evidence -> forgotten (0 = never)
+    obstacle_min_cluster: 2       # confirmed cells in the 3x3 block (speckle filter)
+    obstacle_static_tolerance: 0.30  # m from the nav map = mapped structure (ignored)
+    obstacle_shadow_depth: 1.0    # m assumed unseen back of an obstacle (line of sight until seen free; planning)
+    obstacle_idle_period: 1.0     # s frame period while not driving (0 = every frame)
+    obstacle_margin: 0.10         # m detour clearance beyond robot_radius
+    obstacle_lookahead: 2.5       # m of path checked for blockage
+    obstacle_detour_window: 2.5   # m padding of the local planning window
+    obstacle_rejoin_gap: 0.8      # m beyond the obstacle where the detour rejoins the route
+    obstacle_detour_max_ratio: 3.0
+    obstacle_switch_ratio: 1.5    # committed side kept unless the other is 1.5x shorter
+    obstacle_commit_time: 15.0    # s
+    obstacle_min_interval: 0.5    # s between detour computations
+    obstacle_max_detours: 8       # per viewpoint, then re-plan
+    obstacle_max_replans: 3       # obstacle re-plans per viewpoint, then hold + stuck logic
+    obstacle_slow_dist: 1.0       # m free travel: slow down below ...
+    obstacle_stop_dist: 0.35      # m ... stop below
+    obstacle_unconfirmed_scale: 0.5  # speed floor for unconfirmed evidence
+    # ---------------------------------------------------- stuck detection
+    stuck_time: 8.0               # s without progress while driving
+    stuck_distance: 0.15          # m counted as progress
+    stuck_yaw: 0.35               # rad counted as progress
+    max_replans: 4                # per viewpoint, then it is skipped
+    backup_time: 1.5              # s reversing before a stuck re-plan
+    backup_speed: 0.15            # m/s
+    # ---------------------------------------------- alignment / inspection
+    align_yaw_tolerance: 0.10     # rad
+    align_timeout: 8.0            # s
+    align_k: 1.5
+    align_min_wz: 0.12            # rad/s
+    dwell_time: 4.0               # s at each viewpoint ...
+    min_dwell_time: 1.0           # s ... or until min_readings after this
+    min_readings: 5               # readings of the target gauge
+    min_confidence: 0.0
+    scan_on_miss: true            # no reading after dwell_time -> look left/right once
+    scan_yaw_offset: 0.25         # rad
+    scan_time: 3.0                # s per side
+    # ------------------------------------------------------------ start-up
+    start_timeout: 6.0            # s waiting for STAND after 'stand'
+    min_start_time: 1.0           # s
+    send_walk_after_stand: false  # true: also send 'walk' (module1 then trots in place, even while dwelling)
+    restand_period: 5.0           # s between repeated 'stand' while SIT in a mission
+    recover_after: 20.0           # s FALLEN (module1 recovery not getting up) -> 'recover', repeated; 0 = off
+    # ------------------------------------------------------------------ gas
+    gas_alarm_ppm: 25.0           # ppm ...
+    gas_alarm_hold: 1.0           # ... sustained for this long -> SEEK
+    gas_timeout: 2.0              # s, /gas/sensor stale after this
+    gas_rearm_ppm: 10.0           # re-arm after FAILED/timeout below this ...
+    gas_rearm_cooldown: 60.0      # ... and after this many seconds
+    seek_timeout: 180.0           # s
+    seek_start_timeout: 10.0      # s seeker never active -> FAILED
+    # ------------------------------------------------------------ RTH / dock
+    rth_ack_timeout: 8.0          # s without /safety/rth_active after our 'rth' -> drive home ourselves
+    rth_release_grace: 2.0        # s
+    teleop_active_timeout: 1.5    # s without /teleop/active (2 Hz heartbeat) -> MANUAL released (0 = latched)
+    safety_timeout: 3.0           # s, older /safety/status is not trusted for the docked flag
+    self_rth_fallback: true
+    dock_tolerance: 0.35          # m
+    auto_resume_after_rth: false
+    undock_distance: 1.5          # m from the dock -> DOCKED becomes IDLE
+    dock_detect_radius: 1.0       # m: return_to_home released this close to the dock = docked
+    release_rth_on_start: true    # 'start'/'patrol' while CHARGING: send 'resume' to return_to_home ...
+    release_min_battery_pct: 50.0 # ... when the battery is at least this charged
+    # ----------------------------------------------- plan fallback / autostart
+    fallback_viewpoints: true     # no /patrol/plan_json -> viewpoints straight in front of each gauge
+    fallback_standoff: 1.4        # m
+    autostart: false              # bringup.launch.py mission_autostart:=true overrides
+    autostart_delay: 15.0         # s (sim time); bringup passes autostart_delay
+    plan_wait_timeout: 20.0       # s autostart waits for the patrol plan before falling back

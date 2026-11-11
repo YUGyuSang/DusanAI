@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>플랜트 디지털 트윈 관제탑</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <h1>플랜트 디지털 트윈 관제탑</h1>
+      <span class="sub">4족 보행 점검 로봇 &middot; 터빈 홀 + 통로 &middot; ROS 2 / Gazebo</span>
+    </div>
+    <div class="conn" title="monitor_dashboard 노드와의 실시간 연결 (Server-Sent Events)">
+      <span id="connDot" class="dot"></span><span id="connText">연결 중&hellip;</span>
+    </div>
+    <div class="clock">시뮬레이션 시간 <b id="simTime">--</b></div>
+    <span id="missionBadge" class="badge big" title="IDLE">대기</span>
+  </header>
+
+  <nav class="commands" aria-label="운영자 명령">
+    <div class="group" role="group" aria-label="임무">
+      <span class="glabel">임무</span>
+      <button type="button" class="primary" data-target="mission" data-cmd="start"
+              title="전체 임무: 모든 계기 순찰 → (가스 경보 시) 누출원 추적 → 충전소 복귀">임무 시작</button>
+      <button type="button" data-target="mission" data-cmd="patrol"
+              title="계기 순찰만 수행 (끝나면 그 자리에서 완료)">순찰</button>
+      <button type="button" data-target="mission" data-cmd="seek"
+              title="지금 바로 가스 누출원 추적 시작">가스 추적</button>
+      <button type="button" class="warn" data-target="mission" data-cmd="rth"
+              title="충전소로 복귀 (RTH)">충전소 복귀</button>
+      <button type="button" id="btnPause" data-target="mission" data-cmd="pause"
+              title="임무를 일시정지하고 제자리에서 대기">일시정지</button>
+      <button type="button" class="danger" data-target="mission" data-cmd="abort"
+              title="임무를 중단하고 남은 점검 지점 취소"
+              data-confirm="임무를 중단할까요? 로봇이 멈추고 남은 점검 지점은 취소됩니다.">임무 중단</button>
+    </div>
+    <div class="group" role="group" aria-label="로봇">
+      <span class="glabel">로봇</span>
+      <button type="button" data-target="locomotion" data-cmd="stand" title="일어서서 서 있기">서기</button>
+      <button type="button" data-target="locomotion" data-cmd="sit" title="앉기">앉기</button>
+      <button type="button" data-target="locomotion" data-cmd="recover" title="넘어진 로봇의 자세 복구 시도">복구</button>
+      <button type="button" class="danger" data-target="locomotion" data-cmd="estop"
+              title="비상정지: 관절을 그 자리에 고정">비상정지</button>
+      <button type="button" data-target="locomotion" data-cmd="release"
+              title="비상정지 해제 후 다시 일어서기">비상정지 해제</button>
+    </div>
+    <div id="cmdFeedback" class="feedback" role="status" aria-live="polite"></div>
+  </nav>
+
+  <main class="layout">
+    <!-- ============================================================ map -->
+    <section class="card map-card" aria-labelledby="mapTitle">
+      <div class="card-head">
+        <h2 id="mapTitle">트윈 지도</h2>
+        <div class="toggles">
+          <label title="가스 농도 분포 표시"><input type="checkbox" id="tgGas" checked> 가스 확산</label>
+          <label title="통신 신호 세기 지도 표시"><input type="checkbox" id="tgRssi"> 신호 세기 (RSSI)</label>
+          <label title="계획된 순찰 경로와 점검 지점 표시"><input type="checkbox" id="tgRoute" checked> 순찰 경로</label>
+          <label title="지도 위 이름과 값 표시"><input type="checkbox" id="tgLabels" checked> 이름표</label>
+          <label title="레이아웃 구역 경계 표시"><input type="checkbox" id="tgZones"> 구역</label>
+          <label title="미끄러운 바닥판 표시"><input type="checkbox" id="tgFriction" checked> 저마찰 바닥</label>
+          <button type="button" class="small" id="btnFit" title="플랜트 전체가 보이도록 맞춤">전체 보기</button>
+          <button type="button" class="small" id="btnFollow" aria-pressed="false" title="지도 중심을 로봇에 고정">로봇 따라가기</button>
+        </div>
+      </div>
+      <div class="map-wrap" id="mapWrap">
+        <canvas id="map" aria-label="플랜트 2차원 디지털 트윈 지도" role="img"></canvas>
+        <div id="mapTip" class="tooltip" hidden></div>
+        <div class="map-hint">드래그: 이동 &middot; 휠 / 핀치: 확대·축소 &middot; 더블클릭: 확대</div>
+      </div>
+      <div class="legend" aria-label="지도 범례">
+        <span class="k"><span class="key-line" style="border-color: var(--series-1)"></span>현재 경로</span>
+        <span class="k"><span class="key-line dashed" style="border-color: var(--text-secondary)"></span>순찰 경로</span>
+        <span class="k"><span class="key-line" style="border-color: var(--series-3)"></span>추적 경로 / 누출원 추정</span>
+        <span class="k"><span class="key-line dotted" style="border-color: var(--text-primary)"></span>MPC 5 s 예측</span>
+        <span class="k"><span class="status normal"><i class="ico">&#9679;</i>정상</span></span>
+        <span class="k"><span class="status warning"><i class="ico">&#9650;</i>경고</span></span>
+        <span class="k"><span class="status alarm"><i class="ico">&#9670;</i>경보</span></span>
+        <span class="k"><span class="status unread"><i class="ico">&#9675;</i>미판독</span></span>
+        <span class="k">계기 = 기호 &middot; 열점 = &#9633; 안의 기호</span>
+        <span class="k"><span class="key-hatch"></span>저마찰 바닥판 (&mu;) &middot; <span class="key-hatch on"></span>로봇이 위 / 바로 앞</span>
+        <span class="k"><span class="key-ramp gas"></span>가스 <span id="gasScale" class="muted">0 &ndash; ? ppm</span></span>
+        <span class="k"><span class="key-ramp rssi"></span>RSSI &minus;100 &hellip; &minus;30 dBm (회색 = 음영 한계)</span>
+      </div>
+    </section>
+
+    <!-- ===================================================== side panels -->
+    <div class="side">
+      <section class="card" id="cardRobot" aria-labelledby="robotTitle">
+        <div class="card-head"><h2 id="robotTitle">로봇</h2><span class="age" id="robotAge"></span></div>
+        <div class="headline">
+          <span class="badges">
+            <span id="locoMode" class="badge">&mdash;</span>
+            <span id="slipBadge" class="badge s-warn" hidden>&#9650; 미끄럼 모드</span>
+          </span>
+          <span class="muted" id="robotZone"></span>
+        </div>
+        <div class="kv">
+          <div><div class="k">보행 방식</div><div class="v" id="locoGait">&mdash;</div></div>
+          <div><div class="k">몸체 높이</div><div class="v" id="locoHeight">&mdash;</div></div>
+          <div><div class="k">롤 / 피치</div><div class="v" id="locoRP">&mdash;</div></div>
+          <div><div class="k">넘어짐 / 복구</div><div class="v" id="locoFalls">&mdash;</div></div>
+          <div><div class="k">MPC 계산</div><div class="v" id="locoMpc">&mdash;</div></div>
+          <div><div class="k">안정 여유</div><div class="v" id="locoMargin">&mdash;</div></div>
+          <div><div class="k">속도</div><div class="v" id="robotVel">&mdash;</div></div>
+          <div><div class="k">주행 명령 출처</div><div class="v" id="cmdSource">&mdash;</div></div>
+          <div><div class="k">위치 &middot; 방향</div><div class="v" id="robotPose">&mdash;</div></div>
+          <div><div class="k">마찰 <span class="nt">&mu;</span> 추정 / MPC</div><div class="v" id="locoMu">&mdash;</div></div>
+          <div class="wide"><div class="k">지형</div><div class="v" id="terrain">&mdash;</div></div>
+          <div class="wide"><div class="k">미끄럼 모드</div><div class="v" id="slipMode">&mdash;</div></div>
+        </div>
+      </section>
+
+      <section class="card" id="cardMission" aria-labelledby="missionTitle">
+        <div class="card-head"><h2 id="missionTitle">임무</h2><span class="age" id="missionAge"></span></div>
+        <div class="headline">
+          <span id="missionState" class="badge" title="IDLE">대기</span>
+          <span class="muted" id="missionPhase"></span>
+        </div>
+        <div class="kv">
+          <div><div class="k">목표</div><div class="v" id="missionTarget">&mdash;</div></div>
+          <div><div class="k">진행</div><div class="v" id="missionProgress">&mdash;</div></div>
+          <div><div class="k">경과 시간</div><div class="v" id="missionElapsed">&mdash;</div></div>
+          <div><div class="k">재계획</div><div class="v" id="missionReplans">&mdash;</div></div>
+        </div>
+        <div class="chips" id="missionChips" aria-label="점검 지점"></div>
+        <div class="message" id="missionMessage"></div>
+      </section>
+
+      <section class="card" id="cardSafety" aria-labelledby="safetyTitle">
+        <div class="card-head"><h2 id="safetyTitle">안전 &middot; 전원</h2><span class="age" id="safetyAge"></span></div>
+        <div class="row">
+          <div class="big-value" id="battPct">&mdash;<small>%</small></div>
+          <span id="safetyState" class="badge">&mdash;</span>
+        </div>
+        <div class="meter" id="battMeter" role="meter" aria-label="배터리" aria-valuemin="0" aria-valuemax="100"><span id="battFill"></span></div>
+        <div class="kv" style="margin-top: 10px">
+          <div><div class="k">신호 세기 (RSSI)</div><div class="v" id="rssi">&mdash;</div></div>
+          <div><div class="k">예상 최저 RSSI</div><div class="v" id="rssiPred">&mdash;</div></div>
+          <div><div class="k">복귀 사유</div><div class="v" id="rthReason">&mdash;</div></div>
+          <div><div class="k">충전소까지 거리</div><div class="v" id="distHome">&mdash;</div></div>
+          <div><div class="k">복귀 필요 에너지</div><div class="v" id="energyHome">&mdash;</div></div>
+          <div><div class="k">충전</div><div class="v" id="charging">&mdash;</div></div>
+        </div>
+        <div class="row" style="margin-top: 10px">
+          <span class="muted">배터리 시험</span>
+          <div class="mini-actions">
+            <button type="button" class="small" data-target="battery" data-cmd="19"
+                    title="배터리를 19 %로 설정 (저전력 복귀 시험)">19 %로 설정</button>
+            <button type="button" class="small" data-target="battery" data-cmd="100"
+                    title="배터리를 100 %로 설정">100 %로 설정</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="cardGas" aria-labelledby="gasTitle">
+        <div class="card-head"><h2 id="gasTitle">가스</h2><span class="age" id="gasAge"></span></div>
+        <div class="row">
+          <div class="big-value" id="gasPpm">&mdash;<small>ppm</small></div>
+          <span id="gasAlarm" class="badge">&mdash;</span>
+        </div>
+        <div class="spark-wrap" id="sparkWrap">
+          <canvas id="gasSpark" aria-label="로봇 위치의 가스 농도, 최근 120 s" role="img"></canvas>
+          <div id="sparkTip" class="tooltip" hidden></div>
+        </div>
+        <div class="kv" style="margin-top: 10px">
+          <div><div class="k">추적기 상태</div><div class="v" id="seekState">&mdash;</div></div>
+          <div><div class="k">추정 오차</div><div class="v" id="seekErr">&mdash;</div></div>
+          <div><div class="k">누출원 추정 위치</div><div class="v" id="seekEst">&mdash;</div></div>
+          <div><div class="k">확산 최대 농도</div><div class="v" id="gasMax">&mdash;</div></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ========================================================= gauges -->
+    <section class="card gauges-card" aria-labelledby="gaugesTitle">
+      <div class="card-head"><h2 id="gaugesTitle">계기 판독</h2><span class="age" id="gaugeSummary"></span></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>태그</th><th class="num">판독값</th><th>상태</th><th class="num">신뢰도</th>
+              <th class="num">실제값</th><th class="num">오차 % FS</th><th class="num">갱신</th>
+            </tr>
+          </thead>
+          <tbody id="gaugeRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ======================================================== cameras -->
+    <section class="card cams-card" aria-labelledby="camsTitle">
+      <div class="card-head"><h2 id="camsTitle">카메라 영상</h2></div>
+      <div class="cams">
+        <figure>
+          <img id="imgGauge" src="image/gauge.jpg" alt="계기 검출 결과가 겹쳐진 점검 카메라 영상">
+          <figcaption><span>계기 판독 화면</span><span id="imgGaugeAge" class="age"></span></figcaption>
+        </figure>
+        <figure>
+          <img id="imgThermal" src="image/thermal.jpg" alt="RGB 영상과 융합한 열화상 카메라 영상">
+          <figcaption><span>열화상 융합</span><span id="imgThermalAge" class="age"></span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ========================================================= events -->
+    <section class="card events-card" aria-labelledby="eventsTitle">
+      <div class="card-head"><h2 id="eventsTitle">이벤트 기록</h2><span class="age" id="eventCount"></span></div>
+      <ul class="events" id="eventList" aria-live="polite"></ul>
+    </section>
+
+    <!-- ======================================================== thermal -->
+    <section class="card thermal-card" aria-labelledby="thermalTitle">
+      <div class="card-head"><h2 id="thermalTitle">열화상 경보</h2><span class="age" id="thermalSummary"></span></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>ID</th><th>태그</th><th class="num">최고 &deg;C</th><th>상태</th><th class="num">실제 &deg;C</th><th class="num">갱신</th></tr>
+          </thead>
+          <tbody id="thermalRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================================== links -->
+    <section class="card links-card" aria-labelledby="linksTitle">
+      <div class="card-head"><h2 id="linksTitle">토픽 수신 상태</h2><span class="age" id="linksSummary"></span></div>
+      <ul class="links" id="linkList"></ul>
+    </section>
+  </main>
+
+  <footer>
+    monitor_dashboard 노드 &middot; Server-Sent Events 5 Hz &middot; 실제값 출처: simulation/config/world_layout.yaml
+  </footer>
+  <script src="i18n_ko.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

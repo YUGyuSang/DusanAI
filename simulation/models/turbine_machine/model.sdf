@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="turbine_machine">
+    <static>true</static>
+    <link name="link">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://turbine_machine/meshes/turbine_machine.obj</uri>
+          </mesh>
+        </geometry>
+        <plugin filename="gz-sim-thermal-system" name="gz::sim::systems::Thermal">
+          <temperature>303.15</temperature>
+        </plugin>
+      </visual>
+    </link>
+  </model>
+</sdf>

@@ -1,0 +1,455 @@
+generated_by: tools/convert_environment.py
+note: Converted Unity environment models (visual meshes). bbox_native = G frame of the FBX (metres, Z up); bbox_model = model
+  frame after recentring.
+total_size_bytes: 17899631
+models:
+  pallet:
+    source: obs_palette.unitypackage / Plastic_Pallet_01.fbx
+    fbx_models: all
+    triangles_source: 540
+    triangles_single_sided: 540
+    triangles_obj: 540
+    vertices: 274
+    bbox_native_min:
+    - -0.6564
+    - -0.5349
+    - 0.0
+    bbox_native_max:
+    - 0.5636
+    - 0.8651
+    - 0.18
+    recentre_offset:
+    - 0.0464
+    - -0.1651
+    - 0.0
+    bbox_model_min:
+    - -0.61
+    - -0.7
+    - 0.0
+    bbox_model_max:
+    - 0.61
+    - 0.7
+    - 0.18
+    size_bytes: 174586
+    materials:
+    - name: Plastic_Pallet_01
+      mtl: pallet_plastic_pallet_01
+      texture: pallet_plastic_pallet_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: false
+      source: Plastic_Pallet_01.mat (name match) -> Plastic_Pallet_01_BaseMap.png
+    collision_box:
+    - 0.0
+    - 0.0
+    - 0.09
+    - 1.22
+    - 1.4
+    - 0.18
+    preview: docs/images/world_model_pallet.png
+  turbine_machine:
+    source: fac_gastank.unitypackage / Main_Machine_01.fbx
+    fbx_models:
+    - Main_Machine_01
+    - Gauge_01_003
+    - Gauge_01_004
+    - Gauge_01_005
+    triangles_source: 18927
+    triangles_single_sided: 18927
+    triangles_obj: 18927
+    vertices: 11469
+    bbox_native_min:
+    - -1.6411
+    - -3.5246
+    - -0.0031
+    bbox_native_max:
+    - 1.6411
+    - 4.8492
+    - 3.0738
+    recentre_offset:
+    - 0.0
+    - -0.6623
+    - 0.0031
+    bbox_model_min:
+    - -1.6411
+    - -4.1869
+    - 0.0
+    bbox_model_max:
+    - 1.6411
+    - 4.1869
+    - 3.0769
+    size_bytes: 1563511
+    materials:
+    - name: Main_Machine_01
+      mtl: turbine_machine_main_machine_01
+      texture: turbine_machine_main_machine_01_albedotransparency.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: false
+      source: Main_Machine_01.mat (prefab slot) -> Main_Machine_01_AlbedoTransparency.png
+    - name: Pressure_01
+      mtl: turbine_machine_pressure_01
+      texture: turbine_machine_pressure_01.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: false
+      source: Pressure_01.mat (prefab slot) -> Pressure_01.png
+    preview: docs/images/world_model_turbine_machine.png
+  gas_tank:
+    source: fac_gastank.unitypackage / Main_Machine_01.fbx
+    fbx_models:
+    - Main_Machine_02
+    triangles_source: 104593
+    triangles_single_sided: 104593
+    triangles_obj: 104593
+    vertices: 65204
+    bbox_native_min:
+    - -5.4488
+    - -4.1069
+    - -0.1999
+    bbox_native_max:
+    - 1.6568
+    - 7.6731
+    - 8.022
+    recentre_offset:
+    - 1.896
+    - -1.7831
+    - 0.1999
+    bbox_model_min:
+    - -3.5528
+    - -5.89
+    - 0.0
+    bbox_model_max:
+    - 3.5528
+    - 5.89
+    - 8.2218
+    size_bytes: 7945142
+    materials:
+    - name: Main_Machine_02
+      mtl: gas_tank_main_machine_02
+      texture: gas_tank_main_machine_02_albedotransparency.jpg
+      tint:
+      - 0.7264
+      - 0.7264
+      - 0.7264
+      double_sided: false
+      source: Main_Machine_02.mat (prefab slot) -> Main_Machine_02_AlbedoTransparency.png
+    - name: Pressure_01
+      mtl: gas_tank_pressure_01
+      texture: gas_tank_pressure_01.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: false
+      source: Pressure_01.mat (prefab slot) -> Pressure_01.png
+    preview: docs/images/world_model_gas_tank.png
+  factory_hall:
+    source: factory_inner_1.unitypackage / Factory_03.fbx
+    fbx_models: all
+    triangles_source: 36675
+    triangles_single_sided: 36675
+    triangles_obj: 71828
+    vertices: 21333
+    bbox_native_min:
+    - -10.1207
+    - -9.5295
+    - -0.0663
+    bbox_native_max:
+    - 15.0729
+    - 9.1238
+    - 8.2159
+    recentre_offset:
+    - 0.0
+    - 0.0
+    - 0.0
+    bbox_model_min:
+    - -10.1207
+    - -9.5295
+    - -0.0663
+    bbox_model_max:
+    - 15.0729
+    - 9.1238
+    - 8.2159
+    size_bytes: 5533721
+    materials:
+    - name: Wall_01
+      mtl: factory_hall_wall_01
+      texture: factory_hall_wall_01_basemap.jpg
+      tint:
+      - 0.8396
+      - 0.8396
+      - 0.8396
+      double_sided: true
+      source: Wall_01_AlbedoTransparency.mat (prefab slot) -> Wall_01_BaseMap.png
+    - name: WallTrimSheet_01
+      mtl: factory_hall_walltrimsheet_01
+      texture: factory_hall_factory_wall_trimsheet_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Factory_Wall_TrimSheet_01_AlbedoTransparency.mat (prefab slot) -> Factory_Wall_TrimSheet_01_BaseMap.png
+    - name: Factory_Wall_TrimSheet_01_AlbedoTransparency
+      mtl: factory_hall_factory_wall_trimsheet_01_albedotransparency
+      texture: factory_hall_factory_wall_trimsheet_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Factory_Wall_TrimSheet_01_AlbedoTransparency.mat (prefab slot) -> Factory_Wall_TrimSheet_01_BaseMap.png
+    - name: Floor_01
+      mtl: factory_hall_floor_01
+      texture: factory_hall_floor_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Floor_01.mat (prefab slot) -> Floor_01_BaseMap.png
+    - name: Wall_01
+      mtl: factory_hall_wall_01_2
+      texture: factory_hall_wall_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Wall_01.mat (prefab slot) -> Wall_01_BaseMap.png
+    - name: WallTrimSheet_01
+      mtl: factory_hall_walltrimsheet_01_2
+      texture: factory_hall_factory_wall_trimsheet_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: WallTrimSheet_01.mat (prefab slot) -> Factory_Wall_TrimSheet_01_BaseMap.png
+    - name: Light_01
+      mtl: factory_hall_light_01
+      texture: null
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Light_01.mat (prefab slot)
+    - name: Window_01
+      mtl: factory_hall_window_01
+      texture: null
+      tint:
+      - 0.5283
+      - 0.5283
+      - 0.5283
+      double_sided: false
+      source: Window_01.mat (prefab slot)
+    - name: Material.001
+      mtl: factory_hall_material_001
+      texture: factory_hall_factory_wall_trimsheet_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Factory_Wall_TrimSheet_01_AlbedoTransparency.mat (prefab slot) -> Factory_Wall_TrimSheet_01_BaseMap.png
+    - name: Material.006
+      mtl: factory_hall_material_006
+      texture: factory_hall_material_006_basecolor_1001.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Material.006_BaseColor.1001.mat (prefab slot) -> Material.006_BaseColor.1001.jpg
+    - name: Material.004
+      mtl: factory_hall_material_004
+      texture: factory_hall_material_001_basecolor_1001.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Material.001_BaseColor.1001.mat (prefab slot) -> Material.001_BaseColor.1001.jpg
+    preview: docs/images/world_model_factory_hall.png
+  corridor:
+    source: factory_hall.unitypackage / Corridor_Wall_02.fbx
+    fbx_models: all
+    triangles_source: 10476
+    triangles_single_sided: 10476
+    triangles_obj: 20952
+    vertices: 6229
+    bbox_native_min:
+    - 9.7729
+    - -1.9091
+    - -0.8601
+    bbox_native_max:
+    - 58.3596
+    - 1.8816
+    - 5.3998
+    recentre_offset:
+    - 0.0
+    - 0.0
+    - 0.0
+    bbox_model_min:
+    - 9.7729
+    - -1.9091
+    - -0.8601
+    bbox_model_max:
+    - 58.3596
+    - 1.8816
+    - 5.3998
+    size_bytes: 2682671
+    materials:
+    - name: Corridor_Wall_01
+      mtl: corridor_corridor_wall_01
+      texture: corridor_wall_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Corridor_Wall_01.mat (prefab slot) -> Wall_01_BaseMap.png
+    - name: Corridor_Door_Hand_01
+      mtl: corridor_corridor_door_hand_01
+      texture: corridor_factory_wall_trimsheet_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Corridor_Door_Hand_01.mat (prefab slot) -> Factory_Wall_TrimSheet_01_BaseMap.png
+    - name: Corridor_Door_01
+      mtl: corridor_corridor_door_01
+      texture: corridor_factory_wall_trimsheet_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Corridor_Door_01.mat (prefab slot) -> Factory_Wall_TrimSheet_01_BaseMap.png
+    - name: Corridor_Door_Frame_01
+      mtl: corridor_corridor_door_frame_01
+      texture: corridor_floor_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Corridor_Ceiling_01.mat (prefab slot) -> Floor_01_BaseMap.png
+    - name: Corridor_Wall_02
+      mtl: corridor_corridor_wall_02
+      texture: corridor_floor_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Corridor_Wall_02.mat (prefab slot) -> Floor_01_BaseMap.png
+    - name: Corridor_Ceiling_01
+      mtl: corridor_corridor_ceiling_01
+      texture: corridor_floor_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Corridor_Ceiling_01.mat (prefab slot) -> Floor_01_BaseMap.png
+    - name: Corridor_Floor_01
+      mtl: corridor_corridor_floor_01
+      texture: corridor_floor_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Corridor_Floor_01.mat (prefab slot) -> Floor_01_BaseMap.png
+    - name: Corridor_Pipe_01
+      mtl: corridor_corridor_pipe_01
+      texture: corridor_factory_wall_trimsheet_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Factory_Wall_TrimSheet_01_AlbedoTransparency.mat (prefab slot) -> Factory_Wall_TrimSheet_01_BaseMap.png
+    - name: WallTrimSheet_01
+      mtl: corridor_walltrimsheet_01
+      texture: corridor_factory_wall_trimsheet_01_basemap.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Factory_Wall_TrimSheet_01_AlbedoTransparency.mat (prefab slot) -> Factory_Wall_TrimSheet_01_BaseMap.png
+    - name: Window_01
+      mtl: corridor_window_01
+      texture: null
+      tint:
+      - 0.8773
+      - 0.934
+      - 0.8679
+      double_sided: true
+      source: Window_01.mat (prefab slot)
+    - name: Light_01
+      mtl: corridor_light_01
+      texture: null
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Light_01.mat (prefab slot)
+    - name: Uphill_Road_01
+      mtl: corridor_uphill_road_01
+      texture: corridor_factory_wall_trimsheet_01_basemap.jpg
+      tint:
+      - 0.512
+      - 0.5322
+      - 0.5566
+      double_sided: true
+      source: Uphill_Road_01.mat (prefab slot) -> Factory_Wall_TrimSheet_01_BaseMap.png
+    - name: Material.006_BaseColor.1001
+      mtl: corridor_material_006_basecolor_1001
+      texture: corridor_material_006_basecolor_1001.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Material.006_BaseColor.1001.mat (prefab slot) -> Material.006_BaseColor.1001.jpg
+    - name: Material.001_BaseColor.1001
+      mtl: corridor_material_001_basecolor_1001
+      texture: corridor_material_001_basecolor_1001.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Material.001_BaseColor.1001.mat (prefab slot) -> Material.001_BaseColor.1001.jpg
+    - name: rainwatertrim1
+      mtl: corridor_rainwatertrim1
+      texture: corridor_rainwatertrim1_diff_4k.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: rainwatertrim1_diff 4k.mat (prefab slot) -> rainwatertrim1_diff 4k.jpg
+    - name: Control_01
+      mtl: corridor_control_01
+      texture: corridor_control_buttons_defaultmaterial_basecolor.jpg
+      tint:
+      - 1.0
+      - 1.0
+      - 1.0
+      double_sided: true
+      source: Control Buttons_DefaultMaterial_BaseColor.mat (prefab slot) -> Control Buttons_DefaultMaterial_BaseColor.jpg
+    preview: docs/images/world_model_corridor.png

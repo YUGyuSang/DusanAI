@@ -1,0 +1,52 @@
+# Module 2 - viewpoint-based patrol planner parameters.
+# Floats keep their decimal point (ROS 2 parameters are statically typed).
+
+patrol_planner:
+  ros__parameters:
+    map_topic: /map
+    odom_topic: /odom
+    frame_id: map
+    use_map_topic: true          # also accept the latched /map (used when no map file is found)
+    replan_on_map_update: true   # replan when /map content changes (identical maps are ignored)
+    fallback_layout_map: true    # rasterise a map from world_layout.yaml if no map arrives
+    map_wait_s: 10.0
+    start_mode: dock             # dock | robot (replans start from the current pose)
+    gauge_ids: ""                # e.g. "G01,G02,G07"; empty = all layout gauges
+    marker_text_size: 0.35
+
+    # candidate viewpoints
+    ring_min: 0.9                # horizontal camera -> dial distance (m)
+    ring_max: 2.2
+    ring_step: 0.1
+    angle_max_deg: 40.0          # around the dial normal
+    angle_step_deg: 5.0
+    robot_radius: 0.3
+    body_height: 0.34
+    # readability score
+    image_margin_px: 12.0
+    px_min: 60.0                 # dial diameter (px) -> pixel term 0
+    px_good: 170.0               # dial diameter (px) -> pixel term 1
+    incidence_max_deg: 60.0
+    clearance_good: 0.8
+    los_ignore_m: 0.35
+    w_pixel: 0.35
+    w_incidence: 0.25
+    w_vertical: 0.25
+    w_clearance: 0.15
+    avoid_zone_ids: ["Z-HOT"]    # layout zones with a score penalty ([""] or zone_penalty 0.0 disables)
+    zone_penalty: 0.1
+    fallback_ring_max: 3.0
+    fallback_angle_max_deg: 60.0
+    # route
+    return_to_dock: true
+    max_exact_nodes: 13          # Held-Karp up to dock + 12 gauges
+    smooth_paths: true
+    # terrain cost of the route legs (dusan_common/terrain_cost.py): pipes / rubble are
+    # crossed only where the map leaves no free detour
+    terrain_cost_enabled: true
+    terrain_w_pipe: 25.0         # extra A* cost per cell inside a lying pipe (+0.12 m)
+    terrain_w_rubble: 25.0       # ... inside a rubble field
+    terrain_w_plate: 1.0         # ... on a steel plate (slippery, crossable)
+    terrain_w_platform: 2.0      # ... on the low step platform
+    terrain_margin: 0.25         # m margin around each item (capped at 0.25 m)
+    terrain_margin_fraction: 0.15  # margin cost = fraction x inside cost

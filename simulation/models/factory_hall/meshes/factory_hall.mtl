@@ -1,0 +1,99 @@
+# factory_hall: converted from factory_inner_1.unitypackage/Factory_03.fbx by tools/convert_environment.py
+
+newmtl factory_hall_wall_01
+Ka 0.8396 0.8396 0.8396
+Kd 0.8396 0.8396 0.8396
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd factory_hall_wall_01_basemap.jpg
+
+newmtl factory_hall_walltrimsheet_01
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd factory_hall_factory_wall_trimsheet_01_basemap.jpg
+
+newmtl factory_hall_factory_wall_trimsheet_01_albedotransparency
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd factory_hall_factory_wall_trimsheet_01_basemap.jpg
+
+newmtl factory_hall_floor_01
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd factory_hall_floor_01_basemap.jpg
+
+newmtl factory_hall_wall_01_2
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd factory_hall_wall_01_basemap.jpg
+
+newmtl factory_hall_walltrimsheet_01_2
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd factory_hall_factory_wall_trimsheet_01_basemap.jpg
+
+newmtl factory_hall_light_01
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+Ke 1.0000 1.0000 1.0000
+d 1.0000
+illum 2
+
+newmtl factory_hall_window_01
+Ka 0.5283 0.5283 0.5283
+Kd 0.5283 0.5283 0.5283
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 0.3000
+illum 2
+
+newmtl factory_hall_material_001
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd factory_hall_factory_wall_trimsheet_01_basemap.jpg
+
+newmtl factory_hall_material_006
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd factory_hall_material_006_basecolor_1001.jpg
+
+newmtl factory_hall_material_004
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd factory_hall_material_001_basecolor_1001.jpg

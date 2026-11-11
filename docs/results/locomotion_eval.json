@@ -1,0 +1,369 @@
+{
+  "description": "Offline evaluation of the 5 s convex MPC on a single-rigid-body plant with ideal stance contacts (tools/eval_locomotion.py)",
+  "horizon": {
+    "steps": 28,
+    "seconds": 5.0,
+    "dts": [
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.05,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ]
+  },
+  "tracking": {
+    "trot": {
+      "fallen": false,
+      "rms_vx_error": 0.011974369111067976,
+      "rms_vy_error": 0.008311377874022068,
+      "rms_wz_error": 0.0008383883659186492,
+      "rms_vx_error_cycle_avg": 0.005284112070085932,
+      "rms_vy_error_cycle_avg": 0.005531284271892513,
+      "rms_height_error": 0.0009075664250379078,
+      "max_abs_roll_deg": 1.3157182005616355,
+      "max_abs_pitch_deg": 0.6379783840158575,
+      "max_torque_ratio": 0.2988832191373779,
+      "stance_legs_reachable": 1.0,
+      "distance_m": 2.7533155870938364
+    },
+    "crawl": {
+      "fallen": false,
+      "note": "instantaneous velocity errors include the intended CoM sway; the cycle-averaged errors (moving average over one 1.2 s gait cycle) measure the tracking",
+      "rms_vx_error": 0.11468830102410714,
+      "rms_vy_error": 0.09768970906412083,
+      "rms_vx_error_cycle_avg": 0.005985215088391956,
+      "rms_vy_error_cycle_avg": 0.010291780981030079,
+      "mean_speed_3_6s": 0.19945793080341181,
+      "commanded_speed_3_6s": 0.2,
+      "lateral_offset_at_6s_m": 0.1188872799597071,
+      "sway_amplitude_y_m": 0.024763075689777883,
+      "rms_wz_error": 0.0039049206425688806,
+      "rms_height_error": 0.0016660506830222192,
+      "max_abs_roll_deg": 1.7602931844192573,
+      "max_abs_pitch_deg": 0.4872739583220257,
+      "max_torque_ratio": 0.30370934384902093,
+      "stance_legs_reachable": 1.0
+    }
+  },
+  "push": [
+    {
+      "direction": "lateral",
+      "impulse_Ns": 10.0,
+      "force_N": 100.0,
+      "duration_s": 0.1,
+      "fallen": false,
+      "peak_roll_deg": 3.218874576151526,
+      "peak_pitch_deg": 0.5565998164009118,
+      "peak_lateral_velocity": 0.8704109329695944,
+      "recovery_time_s": 0.5800000000000001,
+      "max_torque_ratio": 0.3155159630760851
+    },
+    {
+      "direction": "lateral",
+      "impulse_Ns": 20.0,
+      "force_N": 200.0,
+      "duration_s": 0.1,
+      "fallen": false,
+      "peak_roll_deg": 13.239918039036292,
+      "peak_pitch_deg": 0.7803535092434001,
+      "peak_lateral_velocity": 1.5912428600755297,
+      "recovery_time_s": 1.0699999999999998,
+      "max_torque_ratio": 0.7947252299917663
+    },
+    {
+      "direction": "lateral",
+      "impulse_Ns": 30.0,
+      "force_N": 300.0,
+      "duration_s": 0.1,
+      "fallen": true,
+      "peak_roll_deg": 177.8033267353824,
+      "peak_pitch_deg": 26.168358575833395,
+      "peak_lateral_velocity": 2.1814124014979277,
+      "recovery_time_s": null,
+      "max_torque_ratio": 2.5120773767783455
+    },
+    {
+      "direction": "lateral",
+      "impulse_Ns": 40.0,
+      "force_N": 400.0,
+      "duration_s": 0.1,
+      "fallen": true,
+      "peak_roll_deg": 173.73169321597857,
+      "peak_pitch_deg": 75.46786045105506,
+      "peak_lateral_velocity": 4.664600004206719,
+      "recovery_time_s": null,
+      "max_torque_ratio": 2.66378344554116
+    },
+    {
+      "direction": "lateral",
+      "impulse_Ns": 50.0,
+      "force_N": 500.0,
+      "duration_s": 0.1,
+      "fallen": true,
+      "peak_roll_deg": 166.45655252533925,
+      "peak_pitch_deg": 65.11851852377193,
+      "peak_lateral_velocity": 5.465366557141479,
+      "recovery_time_s": null,
+      "max_torque_ratio": 2.453706490328039
+    },
+    {
+      "direction": "lateral",
+      "impulse_Ns": 60.0,
+      "force_N": 600.0,
+      "duration_s": 0.1,
+      "fallen": true,
+      "peak_roll_deg": 174.41557905240188,
+      "peak_pitch_deg": 22.806625578443228,
+      "peak_lateral_velocity": 3.6769433204418087,
+      "recovery_time_s": null,
+      "max_torque_ratio": 1.1644092014898872
+    },
+    {
+      "direction": "forward",
+      "impulse_Ns": 10.0,
+      "force_N": 100.0,
+      "duration_s": 0.1,
+      "fallen": false,
+      "peak_roll_deg": 0.41167902871223494,
+      "peak_pitch_deg": 0.6354193118366036,
+      "peak_lateral_velocity": 0.13723139319605737,
+      "recovery_time_s": 0.3599999999999999,
+      "max_torque_ratio": 0.3102588181162978
+    },
+    {
+      "direction": "forward",
+      "impulse_Ns": 20.0,
+      "force_N": 200.0,
+      "duration_s": 0.1,
+      "fallen": false,
+      "peak_roll_deg": 0.4179184564067822,
+      "peak_pitch_deg": 1.5248012671647972,
+      "peak_lateral_velocity": 0.258407247302694,
+      "recovery_time_s": 0.4500000000000002,
+      "max_torque_ratio": 0.5200118465708223
+    },
+    {
+      "direction": "forward",
+      "impulse_Ns": 30.0,
+      "force_N": 300.0,
+      "duration_s": 0.1,
+      "fallen": false,
+      "peak_roll_deg": 1.1916142555388125,
+      "peak_pitch_deg": 2.88991487890354,
+      "peak_lateral_velocity": 0.4446808042122687,
+      "recovery_time_s": 0.6499999999999999,
+      "max_torque_ratio": 0.6419919237122311
+    },
+    {
+      "direction": "forward",
+      "impulse_Ns": 40.0,
+      "force_N": 400.0,
+      "duration_s": 0.1,
+      "fallen": true,
+      "peak_roll_deg": 170.4081091625859,
+      "peak_pitch_deg": 66.62623145017575,
+      "peak_lateral_velocity": 3.3174299266854543,
+      "recovery_time_s": null,
+      "max_torque_ratio": 3.133079499530978
+    },
+    {
+      "direction": "forward",
+      "impulse_Ns": 50.0,
+      "force_N": 500.0,
+      "duration_s": 0.1,
+      "fallen": true,
+      "peak_roll_deg": 173.91671837786924,
+      "peak_pitch_deg": 88.43982672110785,
+      "peak_lateral_velocity": 3.4638288266028363,
+      "recovery_time_s": null,
+      "max_torque_ratio": 2.5812503106326035
+    },
+    {
+      "direction": "forward",
+      "impulse_Ns": 60.0,
+      "force_N": 600.0,
+      "duration_s": 0.1,
+      "fallen": true,
+      "peak_roll_deg": 179.3929154758104,
+      "peak_pitch_deg": 84.37528884030041,
+      "peak_lateral_velocity": 3.315528310694513,
+      "recovery_time_s": null,
+      "max_torque_ratio": 1.4269036731821056
+    }
+  ],
+  "push_summary": {
+    "max_impulse_without_fall_Ns": {
+      "lateral": 20.0,
+      "forward": 30.0
+    },
+    "falls": 7,
+    "runs": 12
+  },
+  "payload": [
+    {
+      "case": "nominal",
+      "mass_kg": 15.0,
+      "com_offset_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "observer": false,
+      "fallen": false,
+      "steady_height_error_m": -0.0009778634378398124,
+      "steady_pitch_deg": -0.3354334160900581,
+      "rms_vx_error": 0.008499415907993305,
+      "max_torque_ratio": 0.27364618677952207,
+      "observer_bias": null
+    },
+    {
+      "case": "mass +20 %",
+      "mass_kg": 18.0,
+      "com_offset_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "observer": false,
+      "fallen": false,
+      "steady_height_error_m": -0.05311845207815463,
+      "steady_pitch_deg": -0.39464795617876586,
+      "rms_vx_error": 0.00889430026567109,
+      "max_torque_ratio": 0.35315542432374547,
+      "observer_bias": null
+    },
+    {
+      "case": "mass +20 % + observer",
+      "mass_kg": 18.0,
+      "com_offset_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "observer": true,
+      "fallen": false,
+      "steady_height_error_m": 0.0023682135039860084,
+      "steady_pitch_deg": -0.7359891119979268,
+      "rms_vx_error": 0.00899143812832081,
+      "max_torque_ratio": 0.32874763330553464,
+      "observer_bias": [
+        0.0035591766344768177,
+        0.0042413783081219165,
+        -2.0213532500339753
+      ]
+    },
+    {
+      "case": "CoM +4 cm fwd, +20 %",
+      "mass_kg": 18.0,
+      "com_offset_m": [
+        0.04,
+        0.0,
+        0.0
+      ],
+      "observer": false,
+      "fallen": false,
+      "steady_height_error_m": -0.05033681865417506,
+      "steady_pitch_deg": 9.989199038434895,
+      "rms_vx_error": 0.24205345794844102,
+      "max_torque_ratio": 0.42988301297396136,
+      "observer_bias": null
+    },
+    {
+      "case": "CoM +4 cm fwd, +20 % + observer",
+      "mass_kg": 18.0,
+      "com_offset_m": [
+        0.04,
+        0.0,
+        0.0
+      ],
+      "observer": true,
+      "fallen": false,
+      "steady_height_error_m": 0.002994426162290848,
+      "steady_pitch_deg": 0.5036320316716122,
+      "rms_vx_error": 0.04827178746698333,
+      "max_torque_ratio": 0.39092629609596086,
+      "observer_bias": [
+        0.0035185324245704743,
+        0.008469089473253734,
+        -2.0230765132777897
+      ]
+    }
+  ],
+  "crawl_static_margin": {
+    "duty_0.75": {
+      "fallen": false,
+      "fall_time_s": null,
+      "closed_loop_min_margin_m": -0.017152309810075164,
+      "closed_loop_mean_margin_m": 0.03383032633719543,
+      "closed_loop_fraction_above_2cm": 0.7842857142857143,
+      "reference_peak_sway_velocity_mps": 0.34847138739536265,
+      "reference_peak_sway_accel_mps2": 3.7296918178693486,
+      "reference_min_margin_m": 0.00038354009744611577,
+      "reference_mean_margin_m": 0.02409873689745885,
+      "reference_fraction_above_2cm": 0.75,
+      "no_sway_mean_margin_m": 0.0
+    },
+    "duty_0.80": {
+      "fallen": false,
+      "fall_time_s": null,
+      "closed_loop_min_margin_m": 0.001013458710415237,
+      "closed_loop_mean_margin_m": 0.047689497209677856,
+      "closed_loop_fraction_above_2cm": 0.8685714285714285,
+      "reference_peak_sway_velocity_mps": 0.336240473720548,
+      "reference_peak_sway_accel_mps2": 3.5128564489592073,
+      "reference_min_margin_m": 0.009135486588409252,
+      "reference_mean_margin_m": 0.044197346341865715,
+      "reference_fraction_above_2cm": 0.8416666666666667,
+      "no_sway_mean_margin_m": 0.0268
+    }
+  },
+  "solve_time": {
+    "n": 660,
+    "mean_ms": 11.81297212121232,
+    "median_ms": 10.845150005479809,
+    "p95_ms": 14.713639990077352,
+    "max_ms": 18.32529999956023,
+    "fraction_below_30ms": 1.0,
+    "cpu_mean_ms": 11.647727272727273,
+    "qp_iterations_mean": 14.59375,
+    "statuses_last_run": {
+      "solved": 160
+    },
+    "note": "wall clock, single-threaded OpenBLAS on the development PC (shared with other jobs); build + ADMM + polish + footholds + torques"
+  },
+  "example_prediction": {
+    "status": "solved",
+    "solve_ms": 10.000900001614355,
+    "torque_ratio": 0.2685780354270323,
+    "footholds_per_leg": [
+      12,
+      12,
+      12,
+      12
+    ]
+  },
+  "runtime_s": 49.122767999986536
+}

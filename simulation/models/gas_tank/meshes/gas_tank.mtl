@@ -1,0 +1,19 @@
+# gas_tank: converted from fac_gastank.unitypackage/Main_Machine_01.fbx by tools/convert_environment.py
+
+newmtl gas_tank_main_machine_02
+Ka 0.7264 0.7264 0.7264
+Kd 0.7264 0.7264 0.7264
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd gas_tank_main_machine_02_albedotransparency.jpg
+
+newmtl gas_tank_pressure_01
+Ka 1.0000 1.0000 1.0000
+Kd 1.0000 1.0000 1.0000
+Ks 0.1500 0.1500 0.1500
+Ns 24.0
+d 1.0000
+illum 2
+map_Kd gas_tank_pressure_01.jpg

@@ -1,0 +1,34 @@
+# monitor_dashboard (plant_simulation/dashboard_state.py DASHBOARD_DEFAULTS) and
+# metrics_logger (plant_simulation/metrics.py METRICS_DEFAULTS) parameters.
+monitor_dashboard:
+  ros__parameters:
+    port: 8080                    # http://<host>:8080 (bringup dashboard_port overrides)
+    host: "0.0.0.0"               # listen on all interfaces (use 127.0.0.1 for local only)
+    web_dir: ""                   # '' -> <share>/plant_simulation/web
+    layout_file: ""
+    sse_rate: 5.0                 # Hz JSON snapshots on /events
+    image_max_rate: 2.0           # Hz camera JPEG re-encode limit
+    image_max_width: 640          # px
+    jpeg_quality: 80
+    gas_png_max_rate: 1.0         # Hz gas heat-map re-render limit
+    markers_rate: 1.0             # Hz /twin/markers
+    history_s: 120.0              # s of gas / battery history
+    max_events: 300
+    path_max_points: 400
+    port_fallbacks: 5             # try port+1 .. port+5 when busy
+    gas_alarm_ppm: 25.0
+
+metrics_logger:
+  ros__parameters:
+    output_dir: "~/dusan_metrics" # session dir <output_dir>/<YYYYmmdd_HHMMSS>/
+    session_name: ""              # '' -> timestamp
+    layout_file: ""
+    pose_rate: 2.0                # Hz pose.csv
+    gas_rate: 2.0                 # Hz gas.csv
+    battery_rate: 1.0             # Hz battery.csv
+    summary_period: 10.0          # s summary.json rewrite (wall clock)
+    flush_period: 2.0             # s CSV flush
+    hotspot_match_radius: 1.0     # m unnamed thermal detection -> nearest layout hot spot
+    gauge_error_threshold_pct: 5.0
+    gas_alarm_ppm: 25.0
+    max_jump_m: 2.0               # odometry jumps above this are not counted as distance

@@ -1,0 +1,2338 @@
+{
+ "generated": "2026-10-12 15:24:28",
+ "nav_map": "simulation/maps/plant_map.yaml",
+ "gas_config": {
+  "resolution": 0.25,
+  "obstacle_fraction": 0.15,
+  "source_xy": [
+   -3.2,
+   2.0
+  ],
+  "emission_rate": 170.0,
+  "source_sigma": 0.25,
+  "decay_rate": 0.012,
+  "diffusivity": 0.03,
+  "wind_base": [
+   0.4,
+   -0.1
+  ],
+  "corridor_speed": 0.2,
+  "factory_x_max": 14.9,
+  "inflow_rects": [
+   [
+    -10.4,
+    -8.9,
+    -9.2,
+    -1.0
+   ],
+   [
+    -10.4,
+    8.45,
+    -9.2,
+    8.95
+   ],
+   [
+    -3.5,
+    8.7,
+    14.8,
+    9.3
+   ]
+  ],
+  "outflow_rects": [
+   [
+    63.3,
+    -1.95,
+    63.95,
+    1.95
+   ],
+   [
+    14.6,
+    -9.2,
+    15.2,
+    -3.4
+   ],
+   [
+    14.6,
+    3.4,
+    15.2,
+    9.0
+   ],
+   [
+    -10.0,
+    -9.4,
+    14.85,
+    -8.8
+   ]
+  ],
+  "cfl": 0.9,
+  "max_substeps": 40,
+  "projection_tol": 1e-06,
+  "projection_max_iter": 20000,
+  "sor_omega": 0.0,
+  "gusts_enabled": true,
+  "gust_speed_amp": 0.15,
+  "gust_speed_period": 47.0,
+  "gust_dir_amp_deg": 8.0,
+  "gust_dir_period": 83.0,
+  "gust_noise_speed": 0.08,
+  "gust_noise_dir_deg": 5.0,
+  "gust_tau": 8.0,
+  "eddy_rms": 0.06,
+  "eddy_scale": 2.5,
+  "eddy_tau": 15.0,
+  "eddy_modes": 6,
+  "eddy_wall_taper": 0.75,
+  "seed": 7
+ },
+ "plume": {
+  "grid": [
+   299,
+   77
+  ],
+  "resolution_m": 0.25,
+  "build_s": 0.6327835999982199,
+  "spinup_600s_wall_s": 1.5593198999995366,
+  "projection_iterations": 1500,
+  "max_divergence_W0": 6.968115782157724e-07,
+  "near_source_max_ppm": 1468.7839442212571,
+  "doorway_max_ppm": 34.269166746444206,
+  "doorway_mean_ppm": 17.328083763754297,
+  "corridor_max_ppm": {
+   "x16": 19.98124637722455,
+   "x20": 13.941895584893844,
+   "x30": 6.586147318583069,
+   "x45": 2.4593932497228526,
+   "x60": 1.055121349642367
+  },
+  "wind_speed_mean": 0.2471697581856385,
+  "wind_speed_max": 1.298179930173424,
+  "step_10hz_ms": 0.5606740000075661,
+  "substeps_mean": 1.2533333333333334,
+  "mass_budget_rel_error": 3.138648382588929e-15
+ },
+ "seeking": {
+  "trials": 40,
+  "success_radius_m": 1.0,
+  "timeout_s": 300.0,
+  "success_rate": 1.0,
+  "found_rate": 1.0,
+  "error_mean_m": 0.4783943867272443,
+  "error_median_m": 0.4760857093827764,
+  "error_p90_m": 0.5677551890768548,
+  "error_max_m": 0.6748558790016751,
+  "time_mean_s": 115.5224999999976,
+  "time_median_s": 111.19999999999796,
+  "path_mean_m": 22.89941316160328,
+  "contacts_total": 0,
+  "cast_used_in": 7,
+  "started_outside_plume": 8,
+  "detection_time_mean_s": 1.1024999999999998,
+  "time_p90_s": 174.75999999999436,
+  "detours_mean": 1.075,
+  "wall_time_s": 47.56959970000025,
+  "per_region": {
+   "main_hall": {
+    "trials": 20,
+    "success_rate": 1.0,
+    "time_mean_s": 87.67999999999907,
+    "error_mean_m": 0.47408305899240466
+   },
+   "east_bay": {
+    "trials": 14,
+    "success_rate": 1.0,
+    "time_mean_s": 143.42857142856755,
+    "error_mean_m": 0.47389994537488384
+   },
+   "doorway": {
+    "trials": 6,
+    "success_rate": 1.0,
+    "time_mean_s": 143.21666666666283,
+    "error_mean_m": 0.5032525089988843
+   }
+  },
+  "targets": {
+   "success_rate": 0.9,
+   "error_mean_m": 1.0
+  },
+  "config": {},
+  "targets_met": true
+ },
+ "seeking_ablation_no_detour": {
+  "success_rate": 0.95,
+  "found_rate": 0.95,
+  "error_mean_m": 0.48231762775351517,
+  "time_mean_s": 125.34736842105006,
+  "time_median_s": 107.19999999999818,
+  "time_p90_s": 192.83999999999344,
+  "path_mean_m": 23.37159966052268,
+  "contacts_total": 0,
+  "per_region": {
+   "main_hall": {
+    "trials": 20,
+    "success_rate": 1.0,
+    "time_mean_s": 86.87999999999911,
+    "error_mean_m": 0.46998032701656944
+   },
+   "east_bay": {
+    "trials": 14,
+    "success_rate": 0.9285714285714286,
+    "time_mean_s": 176.33076923076462,
+    "error_mean_m": 0.5201680833585043
+   },
+   "doorway": {
+    "trials": 6,
+    "success_rate": 0.8333333333333334,
+    "time_mean_s": 146.65999999999593,
+    "error_mean_m": 0.4332556461283266
+   }
+  },
+  "config": {
+   "detour_enabled": false
+  }
+ },
+ "seeking_trials": [
+  {
+   "start": [
+    10.179,
+    -0.556,
+    -0.814
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.3709680130899105,
+   "time_s": 142.3999999999962,
+   "path_length_m": 24.09829482569801,
+   "contacts": 0,
+   "max_ppm": 1469.551562193855,
+   "warmup_s": 37.10258170165359,
+   "estimate": [
+    -2.9270136570128593,
+    2.2511886209173957
+   ],
+   "detours": 1,
+   "region": "east_bay",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     142.4,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    17.727,
+    0.272,
+    1.588
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.4581649453002903,
+   "time_s": 118.29999999999755,
+   "path_length_m": 26.962118079120035,
+   "contacts": 0,
+   "max_ppm": 1644.2249830521428,
+   "warmup_s": 39.71744648759817,
+   "estimate": [
+    -3.0717140131492044,
+    2.4398384051896054
+   ],
+   "detours": 3,
+   "region": "doorway",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.4,
+     "GRADIENT"
+    ],
+    [
+     118.3,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    12.411,
+    -0.878,
+    -1.013
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.552235213115278,
+   "time_s": 97.69999999999872,
+   "path_length_m": 21.63934701872456,
+   "contacts": 0,
+   "max_ppm": 968.9816721432707,
+   "warmup_s": 45.494404697042256,
+   "estimate": [
+    -3.0811588532719947,
+    2.53929631228931
+   ],
+   "detours": 1,
+   "region": "east_bay",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     97.7,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    5.216,
+    0.439,
+    -0.434
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.4089939610583816,
+   "time_s": 84.79999999999946,
+   "path_length_m": 15.043484530299695,
+   "contacts": 0,
+   "max_ppm": 1464.5462467112434,
+   "warmup_s": 41.297913993934344,
+   "estimate": [
+    -3.004337634356699,
+    2.359154978878328
+   ],
+   "detours": 0,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     84.8,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    2.654,
+    -0.889,
+    -0.847
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.5362199435495255,
+   "time_s": 48.200000000000415,
+   "path_length_m": 8.904428777563247,
+   "contacts": 0,
+   "max_ppm": 1188.410416050235,
+   "warmup_s": 36.83970829377373,
+   "estimate": [
+    -2.9469457237687684,
+    2.4727529599498492
+   ],
+   "detours": 0,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.3,
+     "GRADIENT"
+    ],
+    [
+     48.2,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    5.013,
+    6.369,
+    1.869
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.4160107708932364,
+   "time_s": 155.99999999999542,
+   "path_length_m": 29.361321903784287,
+   "contacts": 0,
+   "max_ppm": 1034.1309532749729,
+   "warmup_s": 32.43172047101218,
+   "estimate": [
+    -2.829746856670365,
+    1.8103224542711778
+   ],
+   "detours": 1,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "CAST",
+    "SURGE",
+    "GRADIENT",
+    "CAST",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     6.5,
+     "SURGE"
+    ],
+    [
+     16.8,
+     "CAST"
+    ],
+    [
+     25.2,
+     "SURGE"
+    ],
+    [
+     27.0,
+     "GRADIENT"
+    ],
+    [
+     74.9,
+     "CAST"
+    ],
+    [
+     88.4,
+     "SURGE"
+    ],
+    [
+     88.7,
+     "GRADIENT"
+    ],
+    [
+     156.0,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    6.641,
+    7.596,
+    0.398
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.5953561480333441,
+   "time_s": 87.69999999999929,
+   "path_length_m": 17.982709274503755,
+   "contacts": 0,
+   "max_ppm": 1155.323095544321,
+   "warmup_s": 42.99998035207551,
+   "estimate": [
+    -3.1942249910085527,
+    2.5953281383172224
+   ],
+   "detours": 0,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "CAST",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     15.0,
+     "SURGE"
+    ],
+    [
+     24.2,
+     "CAST"
+    ],
+    [
+     33.4,
+     "SURGE"
+    ],
+    [
+     34.2,
+     "GRADIENT"
+    ],
+    [
+     87.7,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    13.305,
+    -3.071,
+    1.231
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.48086228053545166,
+   "time_s": 118.79999999999752,
+   "path_length_m": 20.763959000874074,
+   "contacts": 0,
+   "max_ppm": 1196.2094685048612,
+   "warmup_s": 59.03328054682917,
+   "estimate": [
+    -2.989357214134529,
+    2.43227092153485
+   ],
+   "detours": 2,
+   "region": "east_bay",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     8.2,
+     "GRADIENT"
+    ],
+    [
+     118.8,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    5.639,
+    3.414,
+    -1.71
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.4070990372733321,
+   "time_s": 87.5999999999993,
+   "path_length_m": 13.837735970372778,
+   "contacts": 0,
+   "max_ppm": 1628.0119449278566,
+   "warmup_s": 42.11947857544865,
+   "estimate": [
+    -3.1641273511668997,
+    2.405515448798897
+   ],
+   "detours": 0,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     87.6,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    7.542,
+    -0.088,
+    -0.189
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.29352949939774287,
+   "time_s": 89.89999999999917,
+   "path_length_m": 15.426403251269065,
+   "contacts": 0,
+   "max_ppm": 1371.1385357198717,
+   "warmup_s": 55.48048586873777,
+   "estimate": [
+    -3.1390147059259537,
+    2.2871242952510142
+   ],
+   "detours": 0,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     89.9,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    12.028,
+    0.33,
+    -1.09
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.5149315311789745,
+   "time_s": 99.09999999999864,
+   "path_length_m": 19.804891057801512,
+   "contacts": 0,
+   "max_ppm": 1401.323487896145,
+   "warmup_s": 20.610897407345963,
+   "estimate": [
+    -3.1749236826742537,
+    2.5143205810695326
+   ],
+   "detours": 1,
+   "region": "east_bay",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     99.1,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    14.8,
+    -0.284,
+    1.446
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.4713091382301012,
+   "time_s": 113.39999999999783,
+   "path_length_m": 25.72096377475954,
+   "contacts": 0,
+   "max_ppm": 1243.8002640194654,
+   "warmup_s": 28.123896112919866,
+   "estimate": [
+    -3.1384219163629203,
+    2.4672691337920636
+   ],
+   "detours": 2,
+   "region": "doorway",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     113.4,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    14.002,
+    6.603,
+    0.76
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.5436641459595932,
+   "time_s": 170.99999999999457,
+   "path_length_m": 37.55827097262709,
+   "contacts": 0,
+   "max_ppm": 1146.126772241464,
+   "warmup_s": 54.590719172921915,
+   "estimate": [
+    -3.2943262486031664,
+    2.5354187729492006
+   ],
+   "detours": 3,
+   "region": "east_bay",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "CAST",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     6.3,
+     "SURGE"
+    ],
+    [
+     15.9,
+     "CAST"
+    ],
+    [
+     46.5,
+     "SURGE"
+    ],
+    [
+     53.8,
+     "GRADIENT"
+    ],
+    [
+     171.0,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    13.865,
+    -8.098,
+    -1.271
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.456716326494385,
+   "time_s": 153.39999999999557,
+   "path_length_m": 28.675007311805388,
+   "contacts": 0,
+   "max_ppm": 1369.2992693696006,
+   "warmup_s": 42.77891587979077,
+   "estimate": [
+    -2.8099851851277657,
+    2.23765152443589
+   ],
+   "detours": 2,
+   "region": "east_bay",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     19.7,
+     "GRADIENT"
+    ],
+    [
+     153.4,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    10.562,
+    -0.215,
+    -2.558
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.5673419554627465,
+   "time_s": 156.69999999999538,
+   "path_length_m": 28.642382765882044,
+   "contacts": 0,
+   "max_ppm": 1121.6943397538412,
+   "warmup_s": 39.50232314548154,
+   "estimate": [
+    -3.1392235031875435,
+    2.5640772215428473
+   ],
+   "detours": 2,
+   "region": "east_bay",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     111.6,
+     "SURGE"
+    ],
+    [
+     111.7,
+     "GRADIENT"
+    ],
+    [
+     156.7,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    9.752,
+    -0.145,
+    0.637
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.5148677875180329,
+   "time_s": 113.79999999999781,
+   "path_length_m": 22.880551991171828,
+   "contacts": 0,
+   "max_ppm": 1271.9936878853584,
+   "warmup_s": 34.75217154725314,
+   "estimate": [
+    -2.706394936788479,
+    2.1464338765302093
+   ],
+   "detours": 1,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     113.8,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    13.805,
+    4.891,
+    0.874
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.45893850773586464,
+   "time_s": 192.59999999999334,
+   "path_length_m": 43.13735976217454,
+   "contacts": 0,
+   "max_ppm": 1339.3046301626125,
+   "warmup_s": 31.810628515580028,
+   "estimate": [
+    -2.7866291223089625,
+    2.199371691470388
+   ],
+   "detours": 3,
+   "region": "east_bay",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "CAST",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     9.4,
+     "CAST"
+    ],
+    [
+     36.4,
+     "SURGE"
+    ],
+    [
+     52.1,
+     "GRADIENT"
+    ],
+    [
+     192.6,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    3.313,
+    1.816,
+    2.244
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.5054809691010663,
+   "time_s": 42.500000000000334,
+   "path_length_m": 6.204064905204582,
+   "contacts": 0,
+   "max_ppm": 1296.3318592633282,
+   "warmup_s": 47.15319186214198,
+   "estimate": [
+    -2.7193931221491394,
+    2.156614300387292
+   ],
+   "detours": 0,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     42.5,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    6.356,
+    2.649,
+    -1.017
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.4491785541005678,
+   "time_s": 60.00000000000058,
+   "path_length_m": 11.642730111958647,
+   "contacts": 0,
+   "max_ppm": 1364.9686916015821,
+   "warmup_s": 34.62940222320001,
+   "estimate": [
+    -3.1776101180478893,
+    2.4486201808323464
+   ],
+   "detours": 0,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     60.0,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    4.04,
+    -3.74,
+    -2.936
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.5418192535317233,
+   "time_s": 72.50000000000016,
+   "path_length_m": 15.751847914812492,
+   "contacts": 0,
+   "max_ppm": 1329.9641280325034,
+   "warmup_s": 37.409388296264595,
+   "estimate": [
+    -3.186855383024001,
+    2.5416597848670586
+   ],
+   "detours": 1,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     2.1,
+     "SURGE"
+    ],
+    [
+     3.1,
+     "GRADIENT"
+    ],
+    [
+     72.5,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    9.157,
+    -4.561,
+    0.101
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.39654844388229327,
+   "time_s": 186.69999999999368,
+   "path_length_m": 35.55259893790206,
+   "contacts": 0,
+   "max_ppm": 1332.1793079766192,
+   "warmup_s": 51.07393151710346,
+   "estimate": [
+    -3.209018497964798,
+    2.396445879080521
+   ],
+   "detours": 1,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     186.7,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    12.336,
+    -0.459,
+    0.366
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.28466328200462265,
+   "time_s": 147.4999999999959,
+   "path_length_m": 34.01976116833608,
+   "contacts": 0,
+   "max_ppm": 1070.6176809870942,
+   "warmup_s": 57.8473189008318,
+   "estimate": [
+    -3.029935643567404,
+    2.228278993323543
+   ],
+   "detours": 2,
+   "region": "east_bay",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "CAST",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     110.2,
+     "CAST"
+    ],
+    [
+     122.9,
+     "SURGE"
+    ],
+    [
+     123.2,
+     "GRADIENT"
+    ],
+    [
+     147.5,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    16.976,
+    0.49,
+    2.447
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.6453445435875401,
+   "time_s": 152.09999999999565,
+   "path_length_m": 36.99495413575804,
+   "contacts": 0,
+   "max_ppm": 1081.6288116334063,
+   "warmup_s": 59.74627413658582,
+   "estimate": [
+    -3.325842717978617,
+    2.6329559149498207
+   ],
+   "detours": 2,
+   "region": "doorway",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "CAST",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.3,
+     "GRADIENT"
+    ],
+    [
+     103.0,
+     "CAST"
+    ],
+    [
+     116.8,
+     "SURGE"
+    ],
+    [
+     117.2,
+     "GRADIENT"
+    ],
+    [
+     152.1,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    6.625,
+    3.21,
+    0.656
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.5009562409883249,
+   "time_s": 79.79999999999974,
+   "path_length_m": 16.212185494228226,
+   "contacts": 0,
+   "max_ppm": 1048.0660250840588,
+   "warmup_s": 39.39660948028532,
+   "estimate": [
+    -3.0784367149999805,
+    2.4859830481870295
+   ],
+   "detours": 1,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "CAST",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     2.2,
+     "SURGE"
+    ],
+    [
+     15.1,
+     "CAST"
+    ],
+    [
+     22.3,
+     "SURGE"
+    ],
+    [
+     24.7,
+     "GRADIENT"
+    ],
+    [
+     79.8,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    3.72,
+    -2.498,
+    2.912
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.5640878055895701,
+   "time_s": 68.1000000000004,
+   "path_length_m": 12.905537183915401,
+   "contacts": 0,
+   "max_ppm": 1123.2798888384432,
+   "warmup_s": 25.526762200020276,
+   "estimate": [
+    -3.2525376016157725,
+    2.561635872101595
+   ],
+   "detours": 0,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     68.1,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    3.864,
+    -2.249,
+    -2.507
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.5562545846005501,
+   "time_s": 95.99999999999882,
+   "path_length_m": 13.480685124291822,
+   "contacts": 0,
+   "max_ppm": 1329.7138106762588,
+   "warmup_s": 20.99694409740421,
+   "estimate": [
+    -2.6696381985128976,
+    1.8322635328484416
+   ],
+   "detours": 0,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     96.0,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    13.473,
+    -3.081,
+    0.54
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.5714742916038305,
+   "time_s": 81.29999999999966,
+   "path_length_m": 19.07166662985693,
+   "contacts": 0,
+   "max_ppm": 1147.4578169616957,
+   "warmup_s": 39.78626822232353,
+   "estimate": [
+    -3.2078903947699513,
+    2.5714198173273957
+   ],
+   "detours": 1,
+   "region": "east_bay",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     11.3,
+     "GRADIENT"
+    ],
+    [
+     81.3,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    10.516,
+    -6.33,
+    1.821
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.48491519948050477,
+   "time_s": 182.49999999999392,
+   "path_length_m": 35.45572241715626,
+   "contacts": 0,
+   "max_ppm": 1255.7605714287174,
+   "warmup_s": 23.054199659413122,
+   "estimate": [
+    -2.7382170283537377,
+    2.1479839105604555
+   ],
+   "detours": 1,
+   "region": "east_bay",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     182.5,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    4.704,
+    4.39,
+    0.341
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.4034588660542591,
+   "time_s": 87.69999999999929,
+   "path_length_m": 11.992040377341846,
+   "contacts": 0,
+   "max_ppm": 1249.7872605364023,
+   "warmup_s": 24.70852319929378,
+   "estimate": [
+    -2.81269380650194,
+    2.1130175609179016
+   ],
+   "detours": 0,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     1.6,
+     "SURGE"
+    ],
+    [
+     2.3,
+     "GRADIENT"
+    ],
+    [
+     87.7,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    5.388,
+    4.783,
+    -0.846
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.4902192953613714,
+   "time_s": 42.30000000000033,
+   "path_length_m": 10.235738916132377,
+   "contacts": 0,
+   "max_ppm": 1502.8273939846974,
+   "warmup_s": 29.393563179593997,
+   "estimate": [
+    -3.0704383524977112,
+    2.4727882581463843
+   ],
+   "detours": 0,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     3.6,
+     "SURGE"
+    ],
+    [
+     20.5,
+     "GRADIENT"
+    ],
+    [
+     42.3,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    14.084,
+    -7.982,
+    -2.385
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.39826957854857953,
+   "time_s": 122.29999999999733,
+   "path_length_m": 25.933310908535205,
+   "contacts": 0,
+   "max_ppm": 1162.9547240099885,
+   "warmup_s": 59.67972391765991,
+   "estimate": [
+    -2.8157029311101196,
+    2.104567777254322
+   ],
+   "detours": 1,
+   "region": "east_bay",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     22.0,
+     "GRADIENT"
+    ],
+    [
+     122.3,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    4.994,
+    -2.803,
+    0.425
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.44396575842115926,
+   "time_s": 85.8999999999994,
+   "path_length_m": 17.66167138145977,
+   "contacts": 0,
+   "max_ppm": 1062.565228444454,
+   "warmup_s": 26.489142300822635,
+   "estimate": [
+    -2.9739290071192945,
+    2.382096193161365
+   ],
+   "detours": 0,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     85.9,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    17.783,
+    -0.852,
+    2.22
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.6748558790016751,
+   "time_s": 173.8999999999944,
+   "path_length_m": 31.408549251907797,
+   "contacts": 0,
+   "max_ppm": 997.7339226708924,
+   "warmup_s": 24.40528475989664,
+   "estimate": [
+    -3.2680055409649036,
+    2.6714206608536815
+   ],
+   "detours": 2,
+   "region": "doorway",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     1.9,
+     "GRADIENT"
+    ],
+    [
+     173.9,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    15.537,
+    0.257,
+    1.503
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.332316098503391,
+   "time_s": 172.69999999999447,
+   "path_length_m": 30.755739431659155,
+   "contacts": 0,
+   "max_ppm": 1125.840879212869,
+   "warmup_s": 56.636950979078065,
+   "estimate": [
+    -2.958802690867668,
+    1.7714002462997005
+   ],
+   "detours": 1,
+   "region": "doorway",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     172.7,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    10.456,
+    -3.034,
+    -2.127
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.3985673212304607,
+   "time_s": 108.99999999999808,
+   "path_length_m": 18.32795937856117,
+   "contacts": 0,
+   "max_ppm": 1357.4469633571327,
+   "warmup_s": 44.88278963811355,
+   "estimate": [
+    -2.985056136865149,
+    2.335641244863458
+   ],
+   "detours": 1,
+   "region": "east_bay",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     109.0,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    5.965,
+    -2.444,
+    1.724
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.5526738219568716,
+   "time_s": 72.70000000000014,
+   "path_length_m": 17.449950253072934,
+   "contacts": 0,
+   "max_ppm": 930.9501253864375,
+   "warmup_s": 49.596028094033564,
+   "estimate": [
+    -2.6473347893418104,
+    2.003085191169873
+   ],
+   "detours": 1,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     72.7,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    4.977,
+    4.156,
+    1.706
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.4377226000997883,
+   "time_s": 65.90000000000053,
+   "path_length_m": 13.338585296662671,
+   "contacts": 0,
+   "max_ppm": 1310.1908083158266,
+   "warmup_s": 34.189338218814584,
+   "estimate": [
+    -3.1784618205233928,
+    2.4371923849553565
+   ],
+   "detours": 0,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     3.6,
+     "SURGE"
+    ],
+    [
+     10.5,
+     "GRADIENT"
+    ],
+    [
+     65.9,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    17.59,
+    -0.589,
+    0.323
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.4375244493703087,
+   "time_s": 128.89999999999696,
+   "path_length_m": 29.279741611315647,
+   "contacts": 0,
+   "max_ppm": 1467.0261594395251,
+   "warmup_s": 57.353300359567776,
+   "estimate": [
+    -3.202164252314164,
+    2.4375190965074696
+   ],
+   "detours": 3,
+   "region": "doorway",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.8,
+     "GRADIENT"
+    ],
+    [
+     128.9,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    7.495,
+    -8.144,
+    -1.371
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.46721783843695364,
+   "time_s": 125.49999999999714,
+   "path_length_m": 25.903250967815456,
+   "contacts": 0,
+   "max_ppm": 1319.720452175793,
+   "warmup_s": 59.044025414282736,
+   "estimate": [
+    -3.1551844857872013,
+    2.4650635206501814
+   ],
+   "detours": 0,
+   "region": "main_hall",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     125.5,
+     "FOUND"
+    ]
+   ]
+  },
+  {
+   "start": [
+    13.53,
+    1.495,
+    -2.026
+   ],
+   "state": "FOUND",
+   "found": true,
+   "success": true,
+   "error_m": 0.5510515888081711,
+   "time_s": 233.699999999991,
+   "path_length_m": 45.959004397815235,
+   "contacts": 0,
+   "max_ppm": 926.0487443157078,
+   "warmup_s": 42.33822807111482,
+   "estimate": [
+    -2.7231322465447114,
+    1.723856922515672
+   ],
+   "detours": 3,
+   "region": "east_bay",
+   "states": [
+    "SEARCH",
+    "SURGE",
+    "GRADIENT",
+    "FOUND"
+   ],
+   "transitions": [
+    [
+     0.0,
+     "SEARCH"
+    ],
+    [
+     0.1,
+     "SURGE"
+    ],
+    [
+     0.2,
+     "GRADIENT"
+    ],
+    [
+     233.7,
+     "FOUND"
+    ]
+   ]
+  }
+ ],
+ "rth_scenarios": [
+  {
+   "name": "battery_drop",
+   "reason": "battery_low",
+   "trigger_t": 79.29999999999977,
+   "transitions": [
+    [
+     79.3,
+     "RTH_PLANNING",
+     "battery_low"
+    ],
+    [
+     79.3,
+     "RTH_NAVIGATING",
+     "battery_low"
+    ],
+    [
+     217.7,
+     "DOCKING",
+     "battery_low"
+    ],
+    [
+     224.5,
+     "DOCKED",
+     "battery_low"
+    ],
+    [
+     226.6,
+     "CHARGING",
+     "battery_low"
+    ],
+    [
+     405.1,
+     "MONITOR",
+     null
+    ]
+   ],
+   "locomotion_commands": [
+    [
+     224.5,
+     "sit"
+    ],
+    [
+     405.1,
+     "stand"
+    ]
+   ],
+   "battery_at_trigger_pct": 19.985943948563044,
+   "battery_min_pct": 17.40143387285954,
+   "final_state": "MONITOR",
+   "replans": 0,
+   "contacts": 0,
+   "min_rssi_dbm": -59.22142573473569,
+   "dock_error_m": 0.1130156915295554,
+   "completed": true,
+   "position_at_trigger": [
+    5.880121415585148,
+    -0.8729434472640714
+   ],
+   "energy_to_home_at_trigger_pct": 3.4315285927259493,
+   "distance_home_at_trigger_m": 56.33137084989873,
+   "rth_path_walked_m": 56.059648088517754
+  },
+  {
+   "name": "comm_shadow_ahead",
+   "reason": "comm_shadow_predicted",
+   "trigger_t": 26.70000000000011,
+   "transitions": [
+    [
+     26.7,
+     "RTH_PLANNING",
+     "comm_shadow_predicted"
+    ],
+    [
+     26.7,
+     "RTH_NAVIGATING",
+     "comm_shadow_predicted"
+    ],
+    [
+     191.0,
+     "DOCKING",
+     "comm_shadow_predicted"
+    ],
+    [
+     197.8,
+     "DOCKED",
+     "comm_shadow_predicted"
+    ],
+    [
+     199.9,
+     "CHARGING",
+     "comm_shadow_predicted"
+    ],
+    [
+     270.2,
+     "MONITOR",
+     null
+    ]
+   ],
+   "locomotion_commands": [
+    [
+     197.8,
+     "sit"
+    ],
+    [
+     270.2,
+     "stand"
+    ]
+   ],
+   "battery_at_trigger_pct": 74.54347222222147,
+   "battery_min_pct": 71.50527734118785,
+   "final_state": "MONITOR",
+   "replans": 0,
+   "contacts": 0,
+   "min_rssi_dbm": -59.24865081844639,
+   "dock_error_m": 0.11616514711639846,
+   "completed": true,
+   "position_at_trigger": [
+    -3.1592793787534657,
+    -2.168884410502759
+   ],
+   "energy_to_home_at_trigger_pct": 3.950349259592636,
+   "distance_home_at_trigger_m": 65.82842712474655,
+   "rth_path_walked_m": 65.2832761566354,
+   "path_first_shadow_m": 14.27108067988531,
+   "entered_shadow_zone": false,
+   "distance_to_zone_at_trigger_m": 5.013562571840749,
+   "rssi_at_trigger_dbm": -56.077852596828464,
+   "path_distance_to_shadow_at_trigger_m": 5.032209823883617
+  },
+  {
+   "name": "energy_reserve",
+   "reason": "energy_reserve",
+   "trigger_t": 236.59999999999084,
+   "transitions": [
+    [
+     236.6,
+     "RTH_PLANNING",
+     "energy_reserve"
+    ],
+    [
+     236.6,
+     "RTH_NAVIGATING",
+     "energy_reserve"
+    ],
+    [
+     395.3,
+     "DOCKING",
+     "energy_reserve"
+    ],
+    [
+     402.0,
+     "DOCKED",
+     "energy_reserve"
+    ],
+    [
+     404.0,
+     "CHARGING",
+     "energy_reserve"
+    ],
+    [
+     595.3,
+     "MONITOR",
+     null
+    ]
+   ],
+   "locomotion_commands": [
+    [
+     402.0,
+     "sit"
+    ],
+    [
+     595.3,
+     "stand"
+    ]
+   ],
+   "battery_at_trigger_pct": 22.827222222226553,
+   "battery_min_pct": 11.085378321736012,
+   "final_state": "MONITOR",
+   "replans": 0,
+   "contacts": 0,
+   "min_rssi_dbm": -59.23567613912023,
+   "dock_error_m": 0.11210453596189086,
+   "completed": true,
+   "position_at_trigger": [
+    -1.049999999999999,
+    -1.7499999999999991
+   ],
+   "energy_to_home_at_trigger_pct": 15.328154667733484,
+   "distance_home_at_trigger_m": 63.662741699797294,
+   "rth_path_walked_m": 63.017639816130774,
+   "arrival_battery_pct": 11.085378321736012
+  }
+ ],
+ "comm": {
+  "rssi_map_min_dbm": -134.66493005790647,
+  "shadow_fraction_of_map": 0.032280701754385965
+ }
+}

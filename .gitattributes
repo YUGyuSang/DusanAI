@@ -1,0 +1,11 @@
+# Ubuntu에서 실행되는 파일은 항상 LF 줄바꿈으로 저장 (CRLF면 ROS 2 실행 파일이 깨짐)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.mp4 binary
+*.pgm binary
+*.pdf binary
+*.pptx binary
+*.stl binary

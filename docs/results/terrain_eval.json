@@ -1,0 +1,574 @@
+{
+  "generated": "2026-10-12T15:19:32",
+  "tool": "tools/eval_terrain.py",
+  "seed": 0,
+  "camera": {
+    "width": 212,
+    "height": 120,
+    "hfov": 1.5,
+    "far": 4.0,
+    "pose": [
+      0.34,
+      0.0,
+      0.0,
+      0.0,
+      0.6,
+      0.0
+    ]
+  },
+  "noise_model": {
+    "depth_sigma": "0.002 + 0.002 * range^2 [m]",
+    "spurious_near_returns": 0.002,
+    "dropouts": 0.01,
+    "odometry_noise": "pos 3 mm, attitude 0.2 deg (1 sigma)"
+  },
+  "map": {
+    "size_m": [
+      6.0,
+      6.0
+    ],
+    "resolution_m": 0.04
+  },
+  "foothold_unsafe_definition": "height range > 0.03 m within 0.05 m of the foot centre",
+  "classification": {
+    "correct": 7,
+    "total": 7,
+    "gait_correct": 7
+  },
+  "scenes": {
+    "flat": {
+      "title": "Flat floor",
+      "frames": 18,
+      "expected_class": "flat",
+      "expected_gait": "trot",
+      "decision_x": 0.1,
+      "class_at_decision": "flat",
+      "gait_at_decision": "trot",
+      "correct": true,
+      "terrain_info_at_decision": {
+        "roughness": 0.0011,
+        "max_step": 0.0067,
+        "slope_deg": -0.45,
+        "ahead_clear": true,
+        "known_fraction": 1.0,
+        "edges": []
+      },
+      "class_counts_along_approach": {
+        "flat": 18
+      },
+      "accuracy_final_map": {
+        "coverage": 1.0,
+        "cells": 2000,
+        "rmse_m": 0.001978692973968939,
+        "mae_m": 0.0013800612287567411,
+        "p95_abs_m": 0.004609379547509782,
+        "bias_m": -0.0006374133132162141,
+        "max_abs_m": 0.007290054256005603,
+        "rmse_non_edge_m": 0.001978692973968939,
+        "spurious_cells": 0
+      },
+      "accuracy_at_decision": {
+        "coverage": 1.0,
+        "cells": 2000,
+        "rmse_m": 0.0033953497891172583,
+        "mae_m": 0.0028033860627763776,
+        "p95_abs_m": 0.005597971918049129,
+        "bias_m": -0.0018501610276486788,
+        "max_abs_m": 0.05275042798705487,
+        "rmse_non_edge_m": 0.0033953497891172583,
+        "spurious_cells": 1
+      }
+    },
+    "pipes": {
+      "title": "Scattered pipes (d 0.08-0.12 m)",
+      "frames": 23,
+      "expected_class": "rough",
+      "expected_gait": "crawl",
+      "decision_x": 0.25,
+      "class_at_decision": "rough",
+      "gait_at_decision": "crawl",
+      "correct": true,
+      "terrain_info_at_decision": {
+        "roughness": 0.0264,
+        "max_step": 0.123,
+        "slope_deg": -0.93,
+        "ahead_clear": true,
+        "known_fraction": 0.889,
+        "edges": [
+          [
+            0.78,
+            0.094,
+            true
+          ],
+          [
+            0.96,
+            -0.1,
+            true
+          ],
+          [
+            1.35,
+            0.117,
+            false
+          ]
+        ]
+      },
+      "class_counts_along_approach": {
+        "flat": 9,
+        "rough": 12,
+        "stairs": 2
+      },
+      "accuracy_final_map": {
+        "coverage": 0.976530612244898,
+        "cells": 1914,
+        "rmse_m": 0.023089314779426898,
+        "mae_m": 0.009714799637694853,
+        "p95_abs_m": 0.06827164799167085,
+        "bias_m": 0.007462081341320743,
+        "max_abs_m": 0.1256272656050692,
+        "rmse_non_edge_m": 0.005186425505390581,
+        "spurious_cells": 3
+      },
+      "accuracy_at_decision": {
+        "coverage": 0.674,
+        "cells": 1348,
+        "rmse_m": 0.02590806849161056,
+        "mae_m": 0.01082505075040656,
+        "p95_abs_m": 0.08040875454729449,
+        "bias_m": 0.007400851034141981,
+        "max_abs_m": 0.12974534546901012,
+        "rmse_non_edge_m": 0.015359706703163493,
+        "spurious_cells": 27
+      }
+    },
+    "rubble": {
+      "title": "Rubble (blocks 2-7 cm)",
+      "frames": 28,
+      "expected_class": "rough",
+      "expected_gait": "crawl",
+      "decision_x": -0.15,
+      "class_at_decision": "rough",
+      "gait_at_decision": "crawl",
+      "correct": true,
+      "terrain_info_at_decision": {
+        "roughness": 0.018,
+        "max_step": 0.0627,
+        "slope_deg": -0.65,
+        "ahead_clear": true,
+        "known_fraction": 1.0,
+        "edges": [
+          [
+            0.78,
+            0.046,
+            true
+          ],
+          [
+            1.02,
+            -0.045,
+            true
+          ],
+          [
+            1.2,
+            0.041,
+            true
+          ]
+        ]
+      },
+      "class_counts_along_approach": {
+        "flat": 6,
+        "rough": 22
+      },
+      "accuracy_final_map": {
+        "coverage": 1.0,
+        "cells": 2040,
+        "rmse_m": 0.014738667870033252,
+        "mae_m": 0.00660434458654074,
+        "p95_abs_m": 0.04302018260292798,
+        "bias_m": 0.004693457509444781,
+        "max_abs_m": 0.07049812132968836,
+        "rmse_non_edge_m": 0.003369835865404873,
+        "spurious_cells": 0
+      },
+      "accuracy_at_decision": {
+        "coverage": 0.9846938775510204,
+        "cells": 1930,
+        "rmse_m": 0.016198390831500934,
+        "mae_m": 0.007310096893352795,
+        "p95_abs_m": 0.0468185050034213,
+        "bias_m": 0.0063408400203139965,
+        "max_abs_m": 0.07061356989759185,
+        "rmse_non_edge_m": 0.006547046407253327,
+        "spurious_cells": 8
+      }
+    },
+    "stairs": {
+      "title": "Stairs (5 x 0.17 m rise, 0.30 m tread)",
+      "frames": 32,
+      "expected_class": "stairs",
+      "expected_gait": "crawl",
+      "decision_x": 0.1,
+      "class_at_decision": "stairs",
+      "gait_at_decision": "crawl",
+      "correct": true,
+      "terrain_info_at_decision": {
+        "roughness": 0.0424,
+        "max_step": 0.1711,
+        "slope_deg": 15.32,
+        "ahead_clear": true,
+        "known_fraction": 0.8,
+        "edges": [
+          [
+            0.9,
+            0.166,
+            true
+          ],
+          [
+            1.17,
+            0.046,
+            false
+          ]
+        ]
+      },
+      "class_counts_along_approach": {
+        "flat": 9,
+        "rough": 1,
+        "stairs": 21,
+        "unknown": 1
+      },
+      "accuracy_final_map": {
+        "coverage": 0.862,
+        "cells": 1724,
+        "rmse_m": 0.03546875496142796,
+        "mae_m": 0.013432778428895604,
+        "p95_abs_m": 0.10403632242994867,
+        "bias_m": 0.003611263668671791,
+        "max_abs_m": 0.1610720379180901,
+        "rmse_non_edge_m": 0.009475121730879488,
+        "spurious_cells": 10
+      },
+      "accuracy_at_decision": {
+        "coverage": 0.48,
+        "cells": 960,
+        "rmse_m": 0.02865810183211109,
+        "mae_m": 0.011799749737595148,
+        "p95_abs_m": 0.07068502323298696,
+        "bias_m": -0.00011641381621247606,
+        "max_abs_m": 0.14803200803204414,
+        "rmse_non_edge_m": 0.004355767717142366,
+        "spurious_cells": 0
+      }
+    },
+    "stairs_down": {
+      "title": "Stairs down (5 x 0.17 m)",
+      "frames": 32,
+      "expected_class": "stairs",
+      "expected_gait": "crawl",
+      "decision_x": 0.25,
+      "class_at_decision": "stairs",
+      "gait_at_decision": "crawl",
+      "correct": true,
+      "terrain_info_at_decision": {
+        "roughness": 0.0509,
+        "max_step": 0.1729,
+        "slope_deg": -22.82,
+        "ahead_clear": true,
+        "known_fraction": 0.778,
+        "edges": [
+          [
+            0.78,
+            -0.171,
+            true
+          ],
+          [
+            1.11,
+            -0.172,
+            true
+          ]
+        ]
+      },
+      "class_counts_along_approach": {
+        "flat": 15,
+        "stairs": 17
+      },
+      "accuracy_final_map": {
+        "coverage": 0.9975,
+        "cells": 1995,
+        "rmse_m": 0.04600894721049468,
+        "mae_m": 0.015488856724909914,
+        "p95_abs_m": 0.16835225999117776,
+        "bias_m": 0.013497279134871355,
+        "max_abs_m": 0.1770602204979605,
+        "rmse_non_edge_m": 0.017297482737761116,
+        "spurious_cells": 19
+      },
+      "accuracy_at_decision": {
+        "coverage": 0.6325,
+        "cells": 1265,
+        "rmse_m": 0.06820484463914918,
+        "mae_m": 0.029451588560001657,
+        "p95_abs_m": 0.16964261531714178,
+        "bias_m": 0.026892764762692603,
+        "max_abs_m": 0.1815543292363977,
+        "rmse_non_edge_m": 0.05661662376445637,
+        "spurious_cells": 108
+      }
+    },
+    "ramp": {
+      "title": "Ramp 16 deg",
+      "frames": 33,
+      "expected_class": "slope",
+      "expected_gait": "crawl",
+      "decision_x": 0.15,
+      "class_at_decision": "slope",
+      "gait_at_decision": "crawl",
+      "correct": true,
+      "terrain_info_at_decision": {
+        "roughness": 0.0032,
+        "max_step": 0.0482,
+        "slope_deg": 16.05,
+        "ahead_clear": true,
+        "known_fraction": 1.0,
+        "edges": []
+      },
+      "class_counts_along_approach": {
+        "flat": 10,
+        "slope": 23
+      },
+      "accuracy_final_map": {
+        "coverage": 0.9818627450980392,
+        "cells": 2003,
+        "rmse_m": 0.005324774618635034,
+        "mae_m": 0.0032626366533249312,
+        "p95_abs_m": 0.007799885948498798,
+        "bias_m": 0.0014382461667520777,
+        "max_abs_m": 0.12733559869427966,
+        "rmse_non_edge_m": 0.004311334494918414,
+        "spurious_cells": 0
+      },
+      "accuracy_at_decision": {
+        "coverage": 0.66,
+        "cells": 1320,
+        "rmse_m": 0.0028131422528674963,
+        "mae_m": 0.001961113003964955,
+        "p95_abs_m": 0.005984609831703499,
+        "bias_m": 2.0704299733503344e-05,
+        "max_abs_m": 0.01470718762847606,
+        "rmse_non_edge_m": 0.0038831675078397454,
+        "spurious_cells": 0
+      }
+    },
+    "obstacle": {
+      "title": "Obstacle 0.6 m (drum / machine)",
+      "frames": 17,
+      "expected_class": "obstacle",
+      "expected_gait": "crawl",
+      "decision_x": 0.35,
+      "class_at_decision": "obstacle",
+      "gait_at_decision": "crawl",
+      "correct": true,
+      "terrain_info_at_decision": {
+        "roughness": 0.082,
+        "max_step": 0.272,
+        "slope_deg": -1.18,
+        "ahead_clear": false,
+        "known_fraction": 0.44,
+        "edges": [
+          [
+            0.78,
+            0.271,
+            false
+          ]
+        ]
+      },
+      "class_counts_along_approach": {
+        "flat": 9,
+        "rough": 3,
+        "obstacle": 5
+      },
+      "accuracy_final_map": {
+        "coverage": 0.7741666666666667,
+        "cells": 929,
+        "rmse_m": 0.07699454647286672,
+        "mae_m": 0.016213665893647217,
+        "p95_abs_m": 0.0064558533828107615,
+        "bias_m": -0.013389917625948813,
+        "max_abs_m": 0.6001419341165931,
+        "rmse_non_edge_m": 0.048224225858090816,
+        "spurious_cells": 7
+      },
+      "accuracy_at_decision": {
+        "coverage": 0.7741666666666667,
+        "cells": 929,
+        "rmse_m": 0.07699454647286672,
+        "mae_m": 0.016213665893647217,
+        "p95_abs_m": 0.0064558533828107615,
+        "bias_m": -0.013389917625948813,
+        "max_abs_m": 0.6001419341165931,
+        "rmse_non_edge_m": 0.048224225858090816,
+        "spurious_cells": 7
+      }
+    }
+  },
+  "footholds": {
+    "stairs": {
+      "n": 280,
+      "valid_fraction": 1.0,
+      "unsafe_nominal_fraction": 0.25,
+      "unsafe_planned_fraction": 0.0,
+      "relocated_when_unsafe_fraction": 1.0,
+      "mean_displacement_m": 0.035768330259639734,
+      "mean_displacement_safe_nominal_m": 0.021597288797919362,
+      "max_displacement_m": 0.1406982586956917,
+      "mean_abs_z_error_m": 0.002765040728269565,
+      "select_ms": 0.2913292857556371,
+      "min_edge_distance_planned_m": 0.05999999999999983,
+      "near_edge_nominals": 70
+    },
+    "stairs_down": {
+      "n": 380,
+      "valid_fraction": 1.0,
+      "unsafe_nominal_fraction": 0.2631578947368421,
+      "unsafe_planned_fraction": 0.007894736842105263,
+      "relocated_when_unsafe_fraction": 0.97,
+      "mean_displacement_m": 0.028774814715323855,
+      "mean_displacement_safe_nominal_m": 0.014282776250406751,
+      "max_displacement_m": 0.14069825869569125,
+      "mean_abs_z_error_m": 0.0026623230773099066,
+      "select_ms": 0.2980700000127974,
+      "min_edge_distance_planned_m": 0.04999999999999871,
+      "near_edge_nominals": 100
+    },
+    "pipes": {
+      "n": 1480,
+      "valid_fraction": 0.9979729729729729,
+      "unsafe_nominal_fraction": 0.28986486486486485,
+      "unsafe_planned_fraction": 0.03114421123899797,
+      "relocated_when_unsafe_fraction": 0.986013986013986,
+      "mean_displacement_m": 0.04341256221153465,
+      "mean_displacement_safe_nominal_m": 0.017845670566913927,
+      "max_displacement_m": 0.16000000000000147,
+      "mean_abs_z_error_m": 0.005194750504166578,
+      "select_ms": 0.31199331081281984
+    },
+    "rubble": {
+      "n": 1445,
+      "valid_fraction": 0.9986159169550173,
+      "unsafe_nominal_fraction": 0.4069204152249135,
+      "unsafe_planned_fraction": 0.088011088011088,
+      "relocated_when_unsafe_fraction": 0.9693877551020408,
+      "mean_displacement_m": 0.0515558079808153,
+      "mean_displacement_safe_nominal_m": 0.03199260496012775,
+      "max_displacement_m": 0.16000000000000036,
+      "mean_abs_z_error_m": 0.00278299711607063,
+      "select_ms": 0.31415667820111187
+    }
+  },
+  "convention_detection": {
+    "link_correct": 183,
+    "optical_correct": 183,
+    "frames": 183,
+    "optical_pipeline_detected": "optical",
+    "optical_pipeline_rmse_non_edge_m": 0.009475121730879488
+  },
+  "ablations": {
+    "flat_higher_outlier_count_1": {
+      "rmse_non_edge_m": 0.001977331644349008,
+      "spurious_cells_gt5cm": 0,
+      "max_abs_m": 0.007290054256005603
+    },
+    "flat_higher_outlier_count_2": {
+      "rmse_non_edge_m": 0.001978692973968939,
+      "spurious_cells_gt5cm": 0,
+      "max_abs_m": 0.007290054256005603
+    },
+    "rubble_higher_outlier_count_1": {
+      "rmse_non_edge_m": 0.004246012171653455,
+      "spurious_cells_gt5cm": 2,
+      "max_abs_m": 0.12823464185196395
+    },
+    "rubble_higher_outlier_count_2": {
+      "rmse_non_edge_m": 0.003369835865404873,
+      "spurious_cells_gt5cm": 0,
+      "max_abs_m": 0.07049812132968836
+    },
+    "stairs_max_height_bias_True": {
+      "rmse_m": 0.03546875496142796,
+      "rmse_non_edge_m": 0.009475121730879488,
+      "bias_m": 0.003611263668671791,
+      "unsafe_planned_fraction": 0.0
+    },
+    "stairs_max_height_bias_False": {
+      "rmse_m": 0.03650282168101555,
+      "rmse_non_edge_m": 0.015319467410794345,
+      "bias_m": -0.006340903378237454,
+      "unsafe_planned_fraction": 0.0
+    },
+    "stairs_down_shadow_fill_off": {
+      "rmse_non_edge_m": 0.03609361311461616,
+      "spurious_cells_gt5cm": 100,
+      "unsafe_planned_fraction": 0.07105263157894737,
+      "min_edge_distance_planned_m": 0.029999999999999583
+    },
+    "stairs_down_shadow_fill_on": {
+      "rmse_non_edge_m": 0.017297482737761116,
+      "spurious_cells_gt5cm": 19,
+      "unsafe_planned_fraction": 0.007894736842105263,
+      "min_edge_distance_planned_m": 0.04999999999999871
+    },
+    "stairs_shadow_fill_off": {
+      "rmse_non_edge_m": 0.008691098677769071,
+      "spurious_cells_gt5cm": 9,
+      "unsafe_planned_fraction": 0.0,
+      "min_edge_distance_planned_m": 0.05999999999999983
+    },
+    "stairs_shadow_fill_on": {
+      "rmse_non_edge_m": 0.009475121730879488,
+      "spurious_cells_gt5cm": 10,
+      "unsafe_planned_fraction": 0.0,
+      "min_edge_distance_planned_m": 0.05999999999999983
+    },
+    "pipes_shadow_fill_off": {
+      "rmse_non_edge_m": 0.011391357372221859,
+      "spurious_cells_gt5cm": 22,
+      "unsafe_planned_fraction": 0.044157608695652176,
+      "min_edge_distance_planned_m": null
+    },
+    "pipes_shadow_fill_on": {
+      "rmse_non_edge_m": 0.005186425505390581,
+      "spurious_cells_gt5cm": 3,
+      "unsafe_planned_fraction": 0.03114421123899797,
+      "min_edge_distance_planned_m": null
+    }
+  },
+  "timing_ms": {
+    "note": "single-threaded numpy on the Windows development PC, which was shared with other jobs: p10 ~ idle-core cost, median ~ typical cost under load",
+    "integrate_25k_point_cloud": {
+      "p10": 3.1868599966401234,
+      "median": 3.8635000091744587,
+      "mean": 3.905020764334855,
+      "p95": 4.973609988519456,
+      "max": 7.111300001270138
+    },
+    "layers": {
+      "p10": 4.826959999627434,
+      "median": 5.720699991798028,
+      "mean": 5.777195082418239,
+      "p95": 7.08848000067519,
+      "max": 9.147399992798455
+    },
+    "classify": {
+      "p10": 0.7214399927761406,
+      "median": 0.7883000071160495,
+      "mean": 0.8304978141470817,
+      "p95": 1.0950200085062534,
+      "max": 1.562799996463582
+    },
+    "rebuild_from_cloud_plus_layers": {
+      "p10": 8.398809992650058,
+      "median": 11.34825000190176,
+      "mean": 11.106826663793376,
+      "p95": 14.206005001324227,
+      "max": 19.06089999829419
+    },
+    "foothold_select": 0.30388731869559155
+  }
+}

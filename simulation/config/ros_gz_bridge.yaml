@@ -1,0 +1,182 @@
+# =============================================================================
+#  ros_gz_bridge parameter_bridge configuration  (DESIGN_SPEC section 3)
+#
+#  Usage (sim.launch.py):
+#    Node(package="ros_gz_bridge", executable="parameter_bridge",
+#         parameters=[{"config_file": <share>/config/ros_gz_bridge.yaml,
+#                      "use_sim_time": True}])
+#  or:  ros2 run ros_gz_bridge parameter_bridge --ros-args \
+#         -p config_file:=$(ros2 pkg prefix plant_simulation)/share/plant_simulation/config/ros_gz_bridge.yaml
+#
+#  World "plant", model "spot".  Only the long-standing keys of the YAML
+#  format are used (ros_topic_name, gz_topic_name, ros_type_name,
+#  gz_type_name, direction), supported by ros_gz_bridge Humble ... Lyrical.
+#  Topics without an active gz publisher (e.g. the thermal camera when it is
+#  disabled, or the KeyPublisher GUI plugin) simply stay silent.
+# =============================================================================
+
+# ---------------------------------------------------------------- clock
+# gz publishes /clock on every 1 ms physics step (1 kHz).  sim.launch.py
+# (clock_relay:=true, default) remaps the bridge's ROS /clock to /clock_gz and
+# plant_simulation clock_relay republishes it on /clock at 200 Hz of sim time,
+# so the ~17 use_sim_time rclpy processes do not each handle 1000 msg/s.
+- ros_topic_name: "/clock"
+  gz_topic_name: "/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "gz.msgs.Clock"
+  direction: GZ_TO_ROS
+
+# ---------------------------------------------------------------- proprioception
+- ros_topic_name: "/imu"
+  gz_topic_name: "/imu"
+  ros_type_name: "sensor_msgs/msg/Imu"
+  gz_type_name: "gz.msgs.IMU"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/spot/odometry"
+  gz_topic_name: "/model/spot/odometry"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/joint_states"
+  gz_topic_name: "/world/plant/model/spot/joint_state"
+  ros_type_name: "sensor_msgs/msg/JointState"
+  gz_type_name: "gz.msgs.Model"
+  direction: GZ_TO_ROS
+
+# ---------------------------------------------------------------- depth camera
+- ros_topic_name: "/depth_camera/image"
+  gz_topic_name: "/depth_camera/image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/depth_camera/points"
+  gz_topic_name: "/depth_camera/image/points"
+  ros_type_name: "sensor_msgs/msg/PointCloud2"
+  gz_type_name: "gz.msgs.PointCloudPacked"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/depth_camera/camera_info"
+  gz_topic_name: "/depth_camera/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+# ---------------------------------------------------------------- inspection camera
+- ros_topic_name: "/inspection_camera/image"
+  gz_topic_name: "/inspection_camera/image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/inspection_camera/camera_info"
+  gz_topic_name: "/inspection_camera/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+# ---------------------------------------------------------------- thermal camera (L16, K = value * 0.01)
+- ros_topic_name: "/thermal_camera/image"
+  gz_topic_name: "/thermal_camera/image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+# extra (not in the spec table, harmless): intrinsics of the thermal camera
+- ros_topic_name: "/thermal_camera/camera_info"
+  gz_topic_name: "/thermal_camera/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+# ---------------------------------------------------------------- Gazebo KeyPublisher GUI plugin (Qt key codes)
+- ros_topic_name: "/keyboard/keypress"
+  gz_topic_name: "/keyboard/keypress"
+  ros_type_name: "std_msgs/msg/Int32"
+  gz_type_name: "gz.msgs.Int32"
+  direction: GZ_TO_ROS
+
+# ---------------------------------------------------------------- demo HUD -> Gazebo GUI panel "Robot HUD"
+# plant_simulation demo_hud publishes the HUD as bgr8 on /demo/hud (ROS tools)
+# and an rgb8 copy on /demo/hud_rgb: gz-gui's ImageDisplay cannot decode BGR.
+# The GUI panel (config/gui.config) shows the Gazebo topic /demo/hud.
+- ros_topic_name: "/demo/hud_rgb"
+  gz_topic_name: "/demo/hud"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: ROS_TO_GZ
+
+# ---------------------------------------------------------------- joint position commands (rad)
+- ros_topic_name: "/spot/joint/fl_hip_x/cmd_pos"
+  gz_topic_name: "/spot/joint/fl_hip_x/cmd_pos"
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/spot/joint/fl_hip_y/cmd_pos"
+  gz_topic_name: "/spot/joint/fl_hip_y/cmd_pos"
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/spot/joint/fl_knee/cmd_pos"
+  gz_topic_name: "/spot/joint/fl_knee/cmd_pos"
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/spot/joint/fr_hip_x/cmd_pos"
+  gz_topic_name: "/spot/joint/fr_hip_x/cmd_pos"
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/spot/joint/fr_hip_y/cmd_pos"
+  gz_topic_name: "/spot/joint/fr_hip_y/cmd_pos"
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/spot/joint/fr_knee/cmd_pos"
+  gz_topic_name: "/spot/joint/fr_knee/cmd_pos"
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/spot/joint/rl_hip_x/cmd_pos"
+  gz_topic_name: "/spot/joint/rl_hip_x/cmd_pos"
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/spot/joint/rl_hip_y/cmd_pos"
+  gz_topic_name: "/spot/joint/rl_hip_y/cmd_pos"
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/spot/joint/rl_knee/cmd_pos"
+  gz_topic_name: "/spot/joint/rl_knee/cmd_pos"
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/spot/joint/rr_hip_x/cmd_pos"
+  gz_topic_name: "/spot/joint/rr_hip_x/cmd_pos"
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/spot/joint/rr_hip_y/cmd_pos"
+  gz_topic_name: "/spot/joint/rr_hip_y/cmd_pos"
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/spot/joint/rr_knee/cmd_pos"
+  gz_topic_name: "/spot/joint/rr_knee/cmd_pos"
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  direction: ROS_TO_GZ

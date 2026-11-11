@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="charging_station">
+    <static>true</static>
+    <link name="link">
+      <visual name="marking">
+        <geometry>
+          <mesh>
+            <uri>model://charging_station/meshes/dock_marking.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="backboard_collision">
+        <pose>-0.59 0 0.36 0 0 0</pose>
+        <geometry><box><size>0.08 1 0.72</size></box></geometry>
+      </collision>
+      <visual name="backboard_visual">
+        <pose>-0.59 0 0.36 0 0 0</pose>
+        <geometry><box><size>0.08 1 0.72</size></box></geometry>
+        <material>
+          <ambient>0.18 0.19 0.22 1</ambient>
+          <diffuse>0.18 0.19 0.22 1</diffuse>
+          <specular>0.3 0.3 0.3 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.2</metalness>
+              <roughness>0.6</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="backboard_foot_collision">
+        <pose>-0.65 0 0.02 0 0 0</pose>
+        <geometry><box><size>0.2 1 0.04</size></box></geometry>
+      </collision>
+      <visual name="backboard_foot_visual">
+        <pose>-0.65 0 0.02 0 0 0</pose>
+        <geometry><box><size>0.2 1 0.04</size></box></geometry>
+        <material>
+          <ambient>0.18 0.19 0.22 1</ambient>
+          <diffuse>0.18 0.19 0.22 1</diffuse>
+          <specular>0.3 0.3 0.3 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.2</metalness>
+              <roughness>0.6</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <visual name="contact_left_visual">
+        <pose>-0.545 0.12 0.3 0 0 0</pose>
+        <geometry><box><size>0.01 0.06 0.04</size></box></geometry>
+        <material>
+          <ambient>0.8 0.5 0.25 1</ambient>
+          <diffuse>0.8 0.5 0.25 1</diffuse>
+          <specular>0.8 0.8 0.8 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.9</metalness>
+              <roughness>0.25</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <visual name="contact_right_visual">
+        <pose>-0.545 -0.12 0.3 0 0 0</pose>
+        <geometry><box><size>0.01 0.06 0.04</size></box></geometry>
+        <material>
+          <ambient>0.8 0.5 0.25 1</ambient>
+          <diffuse>0.8 0.5 0.25 1</diffuse>
+          <specular>0.8 0.8 0.8 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.9</metalness>
+              <roughness>0.25</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <visual name="status_led_visual">
+        <pose>-0.545 0 0.62 0 0 0</pose>
+        <geometry><box><size>0.01 0.2 0.03</size></box></geometry>
+        <material>
+          <ambient>0.1 0.9 0.2 1</ambient>
+          <diffuse>0.1 0.9 0.2 1</diffuse>
+          <specular>0.2 0.2 0.2 1</specular>
+          <emissive>0.1 1 0.2 1</emissive>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

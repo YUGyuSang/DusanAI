@@ -1,0 +1,93 @@
+# Module 2 - thermal fusion + synthetic thermal camera parameters.
+# NOTE: ROS 2 parameters are statically typed: keep the decimal point on
+# every float (2.0, not 2) and integers without one.
+# Thresholds <= 0.0 are taken from world_layout.yaml (thermal: ambient_k,
+# warning_k, alarm_k) - the layout is the single source of truth.
+
+thermal_fusion:
+  ros__parameters:
+    thermal_topic: /thermal_camera/image
+    rgb_topic: /inspection_camera/image
+    odom_topic: /odom
+    alerts_topic: /inspection/thermal_alerts
+    fusion_topic: /inspection/thermal_fusion
+    publish_fusion: true
+    fusion_scale: 1.0            # < 1.0 downsizes the published fusion image
+    process_every_n: 1           # process every n-th thermal frame (5 Hz sensor)
+    rgb_sync_tolerance_s: 0.15   # RGB frame nearest to the thermal stamp; none within -> thermal-only view
+    odom_sync_tolerance_s: 0.25  # pose interpolated at the thermal stamp; none within -> no localisation
+    sync_fallback_age_s: 0.5     # inconsistent stamps -> use the latest message received within this age
+    thermal_resolution: 0.01     # Kelvin per L16 count (Gazebo ThermalSensor resolution)
+    l8_min_k: 253.15             # L8 images: linear range
+    l8_max_k: 655.0
+    no_image_warn_s: 8.0
+
+    # radiometric thresholds (<= 0.0 -> layout)
+    ambient_k: -1.0
+    warning_k: -1.0
+    alarm_k: -1.0
+    segmentation_k: -1.0         # <= 0.0 -> warning_k
+    # segmentation
+    min_area_px: 6
+    open_px: 0
+    # registration thermal -> RGB (plane-induced homography + ECC)
+    plane_mode: vertical         # vertical | fronto
+    depth_mode: layout           # layout (matched hot spot / layout objects in view) | fixed
+    plane_distance: 2.0          # fixed / fallback plane depth (m)
+    depth_min: 0.4
+    depth_max: 30.0
+    ecc_enabled: true
+    ecc_every_n: 2
+    ecc_scales: [0.25, 0.5]      # coarse-to-fine pyramid of the RGB edge image
+    ecc_motion: translation      # translation | euclidean | affine
+    ecc_max_iter: 60
+    ecc_eps: 0.0001
+    ecc_max_shift_px: 30.0       # sanity: |correction| (RGB px)
+    ecc_max_vertical_px: 8.0     # sanity: component across the (horizontal) baseline
+    ecc_min_cc: 0.2
+    ecc_smoothing: 0.5           # EMA of accepted corrections
+    ecc_epipolar: true           # keep only the component along the epipolar direction
+    ecc_skip_hotspot_plane: true # no ECC when the plane passes through a matched hot spot (already exact)
+    ecc_reset_depth_change: 0.25 # reset the correction when the plane depth changes > 25 %
+    # localisation (ray from the thermal camera -> layout hot spots)
+    match_tolerance_m: 0.3
+    match_tolerance_rel: 0.04
+    max_match_range_m: 30.0           # tolerance grows 4 cm per metre: 1.5 m at 30 m (hot spots >= 3 m apart)
+    report_normal_in_view: true  # report visible layout hot spots below threshold as 'normal'
+    roi_min_excess_k: 3.0
+    roi_max_range_m: 8.0         # ROI (normal) reports only up to this range
+    # temporal confirmation
+    confirm_frames: 3
+    max_misses: 1
+    max_gap_s: 2.0
+    track_radius_m: 0.6
+    track_radius_px: 30.0
+    # visualisation
+    blend_delta_k: 4.0           # blend only where T > ambient + delta
+    blend_ramp_k: 6.0
+    alpha_max: 0.7
+    display_min_k: -1.0          # <= 0.0 -> ambient - 5 K
+    display_max_k: -1.0          # <= 0.0 -> alarm + 40 K
+    draw_isotherms: true
+    draw_legend: true
+
+synthetic_thermal_camera:
+  ros__parameters:
+    rate: 5.0
+    topic: /thermal_camera/image
+    odom_topic: /odom
+    frame_id: thermal_camera_link
+    encoding: mono16
+    resolution: 0.01
+    width: 320
+    height: 240
+    hfov: 0.8
+    netd_k: 0.05                 # temporal noise (K)
+    column_fpn_k: 0.03           # column fixed-pattern noise (K)
+    row_noise_k: 0.02
+    blur_sigma_px: 0.6           # optics PSF
+    machine_k: 303.15
+    seed: 0
+    use_odom_z: true
+    body_height: 0.34
+    publish_without_odom: false

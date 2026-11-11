@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="gauge_g01">
+    <static>true</static>
+    <link name="link">
+      <visual name="dial">
+        <geometry>
+          <mesh>
+            <uri>model://gauge_g01/meshes/dial.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="housing">
+        <pose>-0.0215 0 0 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.162</radius><length>0.04</length></cylinder></geometry>
+        <material>
+          <ambient>0.22 0.22 0.24 1</ambient>
+          <diffuse>0.22 0.22 0.24 1</diffuse>
+          <specular>0.6 0.6 0.6 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.6</metalness>
+              <roughness>0.3</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <visual name="plate_visual">
+        <pose>-0.0475 0 0 0 0 0</pose>
+        <geometry><box><size>0.012 0.4 0.4</size></box></geometry>
+        <material>
+          <ambient>0.78 0.78 0.74 1</ambient>
+          <diffuse>0.78 0.78 0.74 1</diffuse>
+          <specular>0.2 0.2 0.2 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.1</metalness>
+              <roughness>0.7</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="plate_collision">
+        <pose>-0.0267 0 0 0 0 0</pose>
+        <geometry><box><size>0.0535 0.4 0.4</size></box></geometry>
+      </collision>
+      <visual name="post_visual">
+        <pose>-0.0835 0 -0.3949 0 0 0</pose>
+        <geometry><cylinder><radius>0.03</radius><length>1.2097</length></cylinder></geometry>
+        <material>
+          <ambient>0.3 0.31 0.33 1</ambient>
+          <diffuse>0.3 0.31 0.33 1</diffuse>
+          <specular>0.3 0.3 0.3 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.4</metalness>
+              <roughness>0.5</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="post_collision">
+        <pose>-0.0835 0 -0.3949 0 0 0</pose>
+        <geometry><cylinder><radius>0.03</radius><length>1.2097</length></cylinder></geometry>
+      </collision>
+      <visual name="foot_visual">
+        <pose>-0.0835 0 -0.9897 0 0 0</pose>
+        <geometry><cylinder><radius>0.105</radius><length>0.02</length></cylinder></geometry>
+        <material>
+          <ambient>0.3 0.31 0.33 1</ambient>
+          <diffuse>0.3 0.31 0.33 1</diffuse>
+          <specular>0.3 0.3 0.3 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.4</metalness>
+              <roughness>0.5</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

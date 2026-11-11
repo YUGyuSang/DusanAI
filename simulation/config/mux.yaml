@@ -1,0 +1,51 @@
+# Low-level integration nodes: cmd_vel_mux (mux_logic.MUX_DEFAULTS),
+# odom_tf (odom_logic.ODOM_DEFAULTS), map_server_lite (map_server_node.MAP_SERVER_DEFAULTS)
+# and clock_relay (clock_relay.CLOCK_RELAY_DEFAULTS).
+cmd_vel_mux:
+  ros__parameters:
+    rate: 20.0                    # Hz /cmd_vel output
+    timeout: 0.5                  # s freshness (all sources)
+    teleop_timeout: 0.5
+    rth_timeout: 0.5
+    seek_timeout: 0.5
+    patrol_timeout: 0.5
+    flag_timeout: 1.5             # s validity of /teleop/active and /safety/rth_active without a new message
+                                  # (heartbeats: teleop 0.5 s, RTH 0.2 s; 0 = latched forever)
+    hold_on_stale_flag: true      # flag set but its command stale -> zero velocity
+    max_linear: 1.0               # m/s clamp
+    max_angular: 1.5              # rad/s clamp
+    active_publish_period: 0.5    # s /cmd_vel_mux/active republish
+
+odom_tf:
+  ros__parameters:
+    input_topic: "/model/spot/odometry"
+    output_topic: "/odom"
+    odom_frame: "odom"
+    base_frame: "base_link"
+    map_frame: "map"
+    publish_tf: true
+    publish_map_to_odom: true     # static identity map -> odom
+    spawn_mode: "auto"            # auto | world | spawn_relative
+    near_origin_m: 1.0            # first pose this close to the origin ...
+    spawn_far_m: 2.0              # ... while the layout spawn is farther -> spawn-relative odometry
+    twist_mode: "passthrough"     # passthrough | differentiate
+    twist_filter_alpha: 0.3
+    layout_file: ""
+    stale_warn_s: 3.0
+
+map_server_lite:
+  ros__parameters:
+    map_yaml: ""                  # '' -> <share>/maps/plant_map.yaml (layout nav_map.yaml)
+    layout_file: ""
+    frame_id: "map"
+    topic: "/map"
+    republish_period: 5.0         # s
+    fallback_to_layout: true      # rasterise world_layout.yaml when the map file is missing
+
+# /clock_gz (Gazebo clock, 1 kHz with the 1 ms physics step) -> /clock for the
+# use_sim_time nodes; started by sim.launch.py (clock_relay:=true, the default)
+clock_relay:
+  ros__parameters:
+    rate: 200.0                   # Hz of sim time on /clock (5 ms grid; <= 0: forward every sample)
+    keepalive: 0.5                # s (wall) re-send of the last sample while the simulation is paused
+    log_period: 30.0              # s (wall) statistics in the log (<= 0: off)

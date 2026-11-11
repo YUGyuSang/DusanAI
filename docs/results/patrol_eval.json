@@ -1,0 +1,834 @@
+{
+  "description": "Viewpoint-based patrol planning (readability-scored viewpoints + exact Held-Karp on A* lengths)",
+  "map_source": "simulation/maps/plant_map.yaml",
+  "map_size_cells": [
+    748,
+    192
+  ],
+  "resolution_m": 0.1,
+  "start_dock_pose": [
+    61.9,
+    0.0,
+    3.14159265
+  ],
+  "params": {
+    "ring_min": 0.9,
+    "ring_max": 2.2,
+    "ring_step": 0.1,
+    "angle_max_deg": 40.0,
+    "angle_step_deg": 5.0,
+    "robot_radius": 0.3,
+    "body_height": 0.34,
+    "camera": "inspection_camera",
+    "image_margin_px": 12.0,
+    "px_min": 60.0,
+    "px_good": 170.0,
+    "incidence_max_deg": 60.0,
+    "clearance_good": 0.8,
+    "los_ignore_m": 0.35,
+    "w_pixel": 0.35,
+    "w_incidence": 0.25,
+    "w_vertical": 0.25,
+    "w_clearance": 0.15,
+    "avoid_zone_ids": [
+      "Z-HOT"
+    ],
+    "zone_penalty": 0.1,
+    "fallback_ring_max": 3.0,
+    "fallback_angle_max_deg": 60.0,
+    "return_to_dock": true,
+    "max_exact_nodes": 13,
+    "smooth_paths": true,
+    "terrain_cost_enabled": true,
+    "terrain_w_pipe": 25.0,
+    "terrain_w_rubble": 25.0,
+    "terrain_w_plate": 1.0,
+    "terrain_w_platform": 2.0,
+    "terrain_margin": 0.25,
+    "terrain_margin_fraction": 0.15
+  },
+  "gauges": {
+    "G01": {
+      "tag": "TURBINE-PI-01",
+      "position": [
+        -3.5,
+        -2.55,
+        1.0
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "floor_z": 0.0,
+      "n_candidates": 238,
+      "n_valid": 187,
+      "valid_score_stats": {
+        "min": 0.6465,
+        "mean": 0.8438,
+        "max": 0.958
+      },
+      "rejection_reasons": {
+        "ok": 187,
+        "not_free": 51,
+        "no_line_of_sight": 7
+      },
+      "best": {
+        "gauge_id": "G01",
+        "x": -3.06,
+        "y": -0.908,
+        "yaw": -1.8326,
+        "score": 0.958,
+        "distance": 1.474,
+        "incidence_deg": 23.41,
+        "pixel_diameter": 168.4,
+        "pixel_minor": 155.2,
+        "elevation_deg": 1.0,
+        "clearance": 0.939,
+        "components": {
+          "pixel": 0.999,
+          "incidence": 0.835,
+          "vertical": 0.998,
+          "clearance": 1.0,
+          "zone_penalty": 0.0
+        },
+        "ring_m": 1.4,
+        "angle_from_normal_deg": -15.0
+      }
+    },
+    "G02": {
+      "tag": "TURBINE-PI-02",
+      "position": [
+        -0.5,
+        -2.55,
+        1.0
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "floor_z": 0.0,
+      "n_candidates": 238,
+      "n_valid": 238,
+      "valid_score_stats": {
+        "min": 0.666,
+        "mean": 0.8619,
+        "max": 0.9743
+      },
+      "rejection_reasons": {
+        "ok": 238
+      },
+      "best": {
+        "gauge_id": "G02",
+        "x": -0.5,
+        "y": -0.85,
+        "yaw": -1.5708,
+        "score": 0.9743,
+        "distance": 1.474,
+        "incidence_deg": 18.19,
+        "pixel_diameter": 168.6,
+        "pixel_minor": 160.3,
+        "elevation_deg": 1.0,
+        "clearance": 1.7,
+        "components": {
+          "pixel": 1.0,
+          "incidence": 0.9,
+          "vertical": 0.998,
+          "clearance": 1.0,
+          "zone_penalty": 0.0
+        },
+        "ring_m": 1.4,
+        "angle_from_normal_deg": 0.0
+      }
+    },
+    "G03": {
+      "tag": "TURBINE-PI-03",
+      "position": [
+        3.0,
+        -5.3,
+        0.9
+      ],
+      "normal": [
+        1,
+        0,
+        0
+      ],
+      "floor_z": 0.0,
+      "n_candidates": 238,
+      "n_valid": 228,
+      "valid_score_stats": {
+        "min": 0.5356,
+        "mean": 0.8386,
+        "max": 0.9802
+      },
+      "rejection_reasons": {
+        "ok": 228,
+        "not_free": 10
+      },
+      "best": {
+        "gauge_id": "G03",
+        "x": 4.6,
+        "y": -5.3,
+        "yaw": 3.1416,
+        "score": 0.9802,
+        "distance": 1.349,
+        "incidence_deg": 15.48,
+        "pixel_diameter": 184.2,
+        "pixel_minor": 177.8,
+        "elevation_deg": -1.71,
+        "clearance": 1.06,
+        "components": {
+          "pixel": 1.0,
+          "incidence": 0.927,
+          "vertical": 0.993,
+          "clearance": 1.0,
+          "zone_penalty": 0.0
+        },
+        "ring_m": 1.3,
+        "angle_from_normal_deg": 0.0
+      }
+    },
+    "G04": {
+      "tag": "TANK-PI-01",
+      "position": [
+        -3.4,
+        5.5,
+        1.2
+      ],
+      "normal": [
+        1,
+        0,
+        0
+      ],
+      "floor_z": 0.0,
+      "n_candidates": 238,
+      "n_valid": 178,
+      "valid_score_stats": {
+        "min": 0.5295,
+        "mean": 0.7998,
+        "max": 0.909
+      },
+      "rejection_reasons": {
+        "out_of_image": 51,
+        "ok": 178,
+        "not_free": 9
+      },
+      "best": {
+        "gauge_id": "G04",
+        "x": -1.7,
+        "y": 5.5,
+        "yaw": 3.1416,
+        "score": 0.909,
+        "distance": 1.548,
+        "incidence_deg": 25.24,
+        "pixel_diameter": 162.1,
+        "pixel_minor": 148.2,
+        "elevation_deg": 8.05,
+        "clearance": 1.279,
+        "components": {
+          "pixel": 0.985,
+          "incidence": 0.809,
+          "vertical": 0.848,
+          "clearance": 1.0,
+          "zone_penalty": 0.0
+        },
+        "ring_m": 1.4,
+        "angle_from_normal_deg": 0.0
+      }
+    },
+    "G05": {
+      "tag": "TANK-PI-02",
+      "position": [
+        -3.4,
+        7.6,
+        1.0
+      ],
+      "normal": [
+        1,
+        0,
+        0
+      ],
+      "floor_z": 0.0,
+      "n_candidates": 238,
+      "n_valid": 221,
+      "valid_score_stats": {
+        "min": 0.5843,
+        "mean": 0.8505,
+        "max": 0.9743
+      },
+      "rejection_reasons": {
+        "ok": 221,
+        "not_free": 17,
+        "no_line_of_sight": 2
+      },
+      "best": {
+        "gauge_id": "G05",
+        "x": -1.7,
+        "y": 7.6,
+        "yaw": 3.1416,
+        "score": 0.9743,
+        "distance": 1.474,
+        "incidence_deg": 18.19,
+        "pixel_diameter": 168.6,
+        "pixel_minor": 160.3,
+        "elevation_deg": 1.0,
+        "clearance": 1.4,
+        "components": {
+          "pixel": 1.0,
+          "incidence": 0.9,
+          "vertical": 0.998,
+          "clearance": 1.0,
+          "zone_penalty": 0.0
+        },
+        "ring_m": 1.4,
+        "angle_from_normal_deg": 0.0
+      }
+    },
+    "G06": {
+      "tag": "PIPE-PI-01",
+      "position": [
+        3.5,
+        6.1,
+        1.3
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "floor_z": 0.0,
+      "n_candidates": 238,
+      "n_valid": 170,
+      "valid_score_stats": {
+        "min": 0.6462,
+        "mean": 0.7798,
+        "max": 0.8597
+      },
+      "rejection_reasons": {
+        "out_of_image": 68,
+        "ok": 170
+      },
+      "best": {
+        "gauge_id": "G06",
+        "x": 3.5,
+        "y": 4.3,
+        "yaw": 1.5708,
+        "score": 0.8597,
+        "distance": 1.682,
+        "incidence_deg": 26.87,
+        "pixel_diameter": 149.9,
+        "pixel_minor": 135.7,
+        "elevation_deg": 9.68,
+        "clearance": 1.9,
+        "components": {
+          "pixel": 0.912,
+          "incidence": 0.784,
+          "vertical": 0.778,
+          "clearance": 1.0,
+          "zone_penalty": 0.0
+        },
+        "ring_m": 1.5,
+        "angle_from_normal_deg": 0.0
+      }
+    },
+    "G07": {
+      "tag": "CORR-PI-01",
+      "position": [
+        26.0,
+        1.25,
+        1.1
+      ],
+      "normal": [
+        0,
+        -1,
+        0
+      ],
+      "floor_z": 0.0,
+      "n_candidates": 238,
+      "n_valid": 221,
+      "valid_score_stats": {
+        "min": 0.6646,
+        "mean": 0.8345,
+        "max": 0.95
+      },
+      "rejection_reasons": {
+        "out_of_image": 17,
+        "ok": 221
+      },
+      "best": {
+        "gauge_id": "G07",
+        "x": 26.0,
+        "y": -0.45,
+        "yaw": 1.5708,
+        "score": 0.95,
+        "distance": 1.508,
+        "incidence_deg": 21.8,
+        "pixel_diameter": 165.3,
+        "pixel_minor": 154.1,
+        "elevation_deg": 4.61,
+        "clearance": 1.3,
+        "components": {
+          "pixel": 0.995,
+          "incidence": 0.857,
+          "vertical": 0.95,
+          "clearance": 1.0,
+          "zone_penalty": 0.0
+        },
+        "ring_m": 1.4,
+        "angle_from_normal_deg": 0.0
+      }
+    },
+    "G08": {
+      "tag": "CORR-PI-02",
+      "position": [
+        57.0,
+        -1.25,
+        0.22
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "floor_z": -0.88,
+      "n_candidates": 238,
+      "n_valid": 197,
+      "valid_score_stats": {
+        "min": 0.6295,
+        "mean": 0.8267,
+        "max": 0.95
+      },
+      "rejection_reasons": {
+        "out_of_image": 17,
+        "ok": 197,
+        "not_free": 24,
+        "no_line_of_sight": 4
+      },
+      "best": {
+        "gauge_id": "G08",
+        "x": 57.0,
+        "y": 0.45,
+        "yaw": -1.5708,
+        "score": 0.95,
+        "distance": 1.508,
+        "incidence_deg": 21.8,
+        "pixel_diameter": 165.3,
+        "pixel_minor": 154.1,
+        "elevation_deg": 4.61,
+        "clearance": 1.2,
+        "components": {
+          "pixel": 0.995,
+          "incidence": 0.857,
+          "vertical": 0.95,
+          "clearance": 1.0,
+          "zone_penalty": 0.0
+        },
+        "ring_m": 1.4,
+        "angle_from_normal_deg": 0.0
+      }
+    }
+  },
+  "unreachable": [],
+  "closed_tour": {
+    "route": "dock -> gauges -> dock",
+    "order": [
+      "dock",
+      "G08",
+      "G06",
+      "G05",
+      "G04",
+      "G01",
+      "G02",
+      "G03",
+      "G07",
+      "dock"
+    ],
+    "optimal_length_m": 150.5,
+    "naive_layout_order": [
+      "dock",
+      "G01",
+      "G02",
+      "G03",
+      "G04",
+      "G05",
+      "G06",
+      "G07",
+      "G08",
+      "dock"
+    ],
+    "naive_length_m": 164.49,
+    "greedy_nearest_neighbour_m": 151.51,
+    "greedy_nearest_neighbour_order": [
+      "dock",
+      "G08",
+      "G07",
+      "G06",
+      "G04",
+      "G05",
+      "G01",
+      "G02",
+      "G03"
+    ],
+    "random_order_mean_m": 277.85,
+    "random_order_best_of_2000_m": 150.5,
+    "saving_vs_naive_pct": 8.5,
+    "saving_vs_random_mean_pct": 45.83,
+    "leg_lengths_m": [
+      5.74,
+      56.07,
+      6.64,
+      2.14,
+      6.76,
+      2.6,
+      8.44,
+      25.14,
+      36.97
+    ],
+    "solver": "held_karp"
+  },
+  "open_route": {
+    "route": "dock -> gauges",
+    "order": [
+      "dock",
+      "G08",
+      "G07",
+      "G06",
+      "G05",
+      "G04",
+      "G01",
+      "G02",
+      "G03"
+    ],
+    "optimal_length_m": 88.92,
+    "naive_layout_order": [
+      "dock",
+      "G01",
+      "G02",
+      "G03",
+      "G04",
+      "G05",
+      "G06",
+      "G07",
+      "G08"
+    ],
+    "naive_length_m": 158.75,
+    "greedy_nearest_neighbour_m": 89.75,
+    "greedy_nearest_neighbour_order": [
+      "dock",
+      "G08",
+      "G07",
+      "G06",
+      "G04",
+      "G05",
+      "G01",
+      "G02",
+      "G03"
+    ],
+    "random_order_mean_m": 225.46,
+    "random_order_best_of_2000_m": 94.99,
+    "saving_vs_naive_pct": 43.99,
+    "saving_vs_random_mean_pct": 60.56,
+    "leg_lengths_m": [
+      5.74,
+      31.56,
+      25.04,
+      6.64,
+      2.14,
+      6.76,
+      2.6,
+      8.44
+    ],
+    "solver": "held_karp"
+  },
+  "distance_matrix_m": {
+    "nodes": [
+      "dock",
+      "G01",
+      "G02",
+      "G03",
+      "G04",
+      "G05",
+      "G06",
+      "G07",
+      "G08"
+    ],
+    "values": [
+      [
+        0.0,
+        68.39,
+        65.89,
+        61.76,
+        67.18,
+        68.42,
+        61.6,
+        36.97,
+        5.74
+      ],
+      [
+        68.39,
+        0.0,
+        2.6,
+        10.8,
+        6.76,
+        8.73,
+        8.64,
+        31.49,
+        62.49
+      ],
+      [
+        65.89,
+        2.6,
+        0.0,
+        8.44,
+        6.88,
+        8.84,
+        6.68,
+        29.41,
+        60.15
+      ],
+      [
+        61.76,
+        10.8,
+        8.44,
+        0.0,
+        13.94,
+        14.79,
+        10.33,
+        25.14,
+        56.17
+      ],
+      [
+        67.18,
+        6.76,
+        6.88,
+        13.94,
+        0.0,
+        2.14,
+        5.51,
+        30.21,
+        61.21
+      ],
+      [
+        68.42,
+        8.73,
+        8.84,
+        14.79,
+        2.14,
+        0.0,
+        6.64,
+        31.52,
+        62.52
+      ],
+      [
+        61.6,
+        8.64,
+        6.68,
+        10.33,
+        5.51,
+        6.64,
+        0.0,
+        25.04,
+        56.07
+      ],
+      [
+        36.97,
+        31.49,
+        29.41,
+        25.14,
+        30.21,
+        31.52,
+        25.04,
+        0.0,
+        31.56
+      ],
+      [
+        5.74,
+        62.49,
+        60.15,
+        56.17,
+        61.21,
+        62.52,
+        56.07,
+        31.56,
+        0.0
+      ]
+    ]
+  },
+  "terrain_cost": {
+    "description": "dusan_common.terrain_cost: crossable debris as extra A* cell cost (inside w_<type>, margin 0.25 m at margin_fraction x w); legs cross debris only without a free detour (C-OBS4 plate and C-OBS5 pipe span the corridor)",
+    "params": {
+      "enabled": true,
+      "w_pipe": 25.0,
+      "w_rubble": 25.0,
+      "w_plate": 1.0,
+      "w_platform": 2.0,
+      "margin_m": 0.25,
+      "margin_fraction": 0.15,
+      "inside_pad_m": 0.12
+    },
+    "closed_tour_m": 150.5,
+    "closed_tour_without_cost_m": 145.88,
+    "length_increase_m": 4.62,
+    "length_increase_pct": 3.17,
+    "order": [
+      "dock",
+      "G08",
+      "G06",
+      "G05",
+      "G04",
+      "G01",
+      "G02",
+      "G03",
+      "G07",
+      "dock"
+    ],
+    "order_without_cost": [
+      "dock",
+      "G08",
+      "G07",
+      "G03",
+      "G02",
+      "G01",
+      "G04",
+      "G05",
+      "G06",
+      "dock"
+    ],
+    "debris_crossed": [
+      "C-OBS4",
+      "C-OBS5"
+    ],
+    "debris_crossed_without_cost": [
+      "C-OBS1",
+      "C-OBS3",
+      "C-OBS4",
+      "C-OBS5",
+      "F-OBS3",
+      "F-OBS9"
+    ],
+    "legs": [
+      {
+        "leg": "dock->G08",
+        "length_m": 5.74,
+        "crosses": []
+      },
+      {
+        "leg": "G08->G06",
+        "length_m": 56.07,
+        "crosses": [
+          "C-OBS4",
+          "C-OBS5"
+        ]
+      },
+      {
+        "leg": "G06->G05",
+        "length_m": 6.64,
+        "crosses": []
+      },
+      {
+        "leg": "G05->G04",
+        "length_m": 2.14,
+        "crosses": []
+      },
+      {
+        "leg": "G04->G01",
+        "length_m": 6.76,
+        "crosses": []
+      },
+      {
+        "leg": "G01->G02",
+        "length_m": 2.6,
+        "crosses": []
+      },
+      {
+        "leg": "G02->G03",
+        "length_m": 8.44,
+        "crosses": []
+      },
+      {
+        "leg": "G03->G07",
+        "length_m": 25.14,
+        "crosses": [
+          "C-OBS5"
+        ]
+      },
+      {
+        "leg": "G07->dock",
+        "length_m": 36.97,
+        "crosses": [
+          "C-OBS4"
+        ]
+      }
+    ],
+    "legs_without_cost": [
+      {
+        "leg": "dock->G08",
+        "length_m": 5.15,
+        "crosses": [
+          "C-OBS1"
+        ]
+      },
+      {
+        "leg": "G08->G07",
+        "length_m": 31.49,
+        "crosses": [
+          "C-OBS3",
+          "C-OBS4"
+        ]
+      },
+      {
+        "leg": "G07->G03",
+        "length_m": 23.49,
+        "crosses": [
+          "C-OBS5",
+          "F-OBS3"
+        ]
+      },
+      {
+        "leg": "G03->G02",
+        "length_m": 7.48,
+        "crosses": [
+          "F-OBS9"
+        ]
+      },
+      {
+        "leg": "G02->G01",
+        "length_m": 2.6,
+        "crosses": []
+      },
+      {
+        "leg": "G01->G04",
+        "length_m": 6.76,
+        "crosses": []
+      },
+      {
+        "leg": "G04->G05",
+        "length_m": 2.14,
+        "crosses": []
+      },
+      {
+        "leg": "G05->G06",
+        "length_m": 6.64,
+        "crosses": []
+      },
+      {
+        "leg": "G06->dock",
+        "length_m": 60.13,
+        "crosses": [
+          "C-OBS1",
+          "C-OBS3",
+          "C-OBS4",
+          "C-OBS5",
+          "F-OBS3"
+        ]
+      }
+    ]
+  },
+  "compute_time_s": {
+    "closed_plan_incl_astar": 4.541,
+    "open_plan_cached_astar": 0.32,
+    "closed_plan_without_terrain_cost": 1.071,
+    "n_astar_pairs": 36
+  }
+}

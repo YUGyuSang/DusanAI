@@ -1,0 +1,631 @@
+{
+  "generator": "tools/convert_spot.py",
+  "source": {
+    "package": "Doosanenerbility/Doosanenerbility/Modeling/object/robot_spot.unitypackage",
+    "fbx": "SpotHPRIG_Rigging_02.fbx",
+    "texture": "Material.001_Base_Color.png",
+    "original_triangles": {
+      "Spot_Body_01": 915542,
+      "base_cam": 51428,
+      "base_eap": 9755
+    }
+  },
+  "frame": {
+    "origin_G": [
+      -0.000175,
+      0.014238,
+      0.364984
+    ],
+    "transform": "x_r = y_G - origin_G.y ; y_r = -(x_G - origin_G.x) ; z_r = z_G - origin_G.z",
+    "G": "FBX file axes in metres: x = robot right, y = robot forward, z = up"
+  },
+  "rest_angles_rad": {
+    "fl": [
+      0.001564,
+      0.601095,
+      -1.55232
+    ],
+    "fr": [
+      -0.001564,
+      0.601095,
+      -1.55232
+    ],
+    "rl": [
+      -0.000689,
+      1.049326,
+      -1.646296
+    ],
+    "rr": [
+      0.00069,
+      1.049326,
+      -1.646296
+    ]
+  },
+  "rest_angles_deg": {
+    "fl": [
+      0.09,
+      34.44,
+      -88.941
+    ],
+    "fr": [
+      -0.09,
+      34.44,
+      -88.941
+    ],
+    "rl": [
+      -0.04,
+      60.122,
+      -94.326
+    ],
+    "rr": [
+      0.04,
+      60.122,
+      -94.326
+    ]
+  },
+  "palette": [
+    {
+      "name": "spot_dark_gray",
+      "rgb": [
+        0.2341,
+        0.2339,
+        0.2341
+      ]
+    },
+    {
+      "name": "spot_yellow",
+      "rgb": [
+        0.9679,
+        0.6859,
+        0.0004
+      ]
+    },
+    {
+      "name": "spot_gray",
+      "rgb": [
+        0.5511,
+        0.565,
+        0.5795
+      ]
+    },
+    {
+      "name": "spot_light_gray",
+      "rgb": [
+        0.7689,
+        0.7803,
+        0.7793
+      ]
+    },
+    {
+      "name": "spot_black",
+      "rgb": [
+        0.0431,
+        0.0415,
+        0.0404
+      ]
+    }
+  ],
+  "triangle_targets": {
+    "base_link": 19000,
+    "base_cam": 4500,
+    "base_eap": 1500,
+    "hip": 3000,
+    "upper_leg": 5000,
+    "lower_leg": 4000
+  },
+  "meshes": {
+    "base_link": {
+      "file": "meshes/base_link.obj",
+      "link": "base_link",
+      "faces": 18995,
+      "vertices": 10533,
+      "normals": 11930,
+      "bytes": 1259362,
+      "bbox_min": [
+        -0.34062,
+        -0.09189,
+        -0.06493
+      ],
+      "bbox_max": [
+        0.33186,
+        0.0916,
+        0.06989
+      ],
+      "materials": [
+        "spot_black",
+        "spot_dark_gray",
+        "spot_gray",
+        "spot_light_gray",
+        "spot_yellow"
+      ]
+    },
+    "fl_hip": {
+      "file": "meshes/fl_hip.obj",
+      "link": "fl_hip",
+      "faces": 2999,
+      "vertices": 1665,
+      "normals": 3821,
+      "bytes": 239413,
+      "bbox_min": [
+        -0.0599,
+        -0.02707,
+        -0.04141
+      ],
+      "bbox_max": [
+        0.0398,
+        0.04851,
+        0.04088
+      ],
+      "materials": [
+        "spot_gray",
+        "spot_light_gray",
+        "spot_yellow"
+      ]
+    },
+    "fl_upper_leg": {
+      "file": "meshes/fl_upper_leg.obj",
+      "link": "fl_upper_leg",
+      "faces": 4999,
+      "vertices": 2825,
+      "normals": 4772,
+      "bytes": 365752,
+      "bbox_min": [
+        -0.03863,
+        -0.04619,
+        -0.26349
+      ],
+      "bbox_max": [
+        0.0359,
+        0.03418,
+        0.06414
+      ],
+      "materials": [
+        "spot_dark_gray",
+        "spot_gray",
+        "spot_light_gray",
+        "spot_yellow"
+      ]
+    },
+    "fl_lower_leg": {
+      "file": "meshes/fl_lower_leg.obj",
+      "link": "fl_lower_leg",
+      "faces": 3999,
+      "vertices": 2101,
+      "normals": 3455,
+      "bytes": 276361,
+      "bbox_min": [
+        -0.02001,
+        -0.01412,
+        -0.30636
+      ],
+      "bbox_max": [
+        0.03661,
+        0.01391,
+        0.05132
+      ],
+      "materials": [
+        "spot_black",
+        "spot_dark_gray",
+        "spot_gray"
+      ]
+    },
+    "fr_hip": {
+      "file": "meshes/fr_hip.obj",
+      "link": "fr_hip",
+      "faces": 3000,
+      "vertices": 1667,
+      "normals": 3698,
+      "bytes": 237475,
+      "bbox_min": [
+        -0.0599,
+        -0.04887,
+        -0.04139
+      ],
+      "bbox_max": [
+        0.0398,
+        0.02672,
+        0.04086
+      ],
+      "materials": [
+        "spot_gray",
+        "spot_light_gray",
+        "spot_yellow"
+      ]
+    },
+    "fr_upper_leg": {
+      "file": "meshes/fr_upper_leg.obj",
+      "link": "fr_upper_leg",
+      "faces": 4998,
+      "vertices": 2816,
+      "normals": 4810,
+      "bytes": 365914,
+      "bbox_min": [
+        -0.03863,
+        -0.03453,
+        -0.26349
+      ],
+      "bbox_max": [
+        0.0359,
+        0.04583,
+        0.06414
+      ],
+      "materials": [
+        "spot_dark_gray",
+        "spot_gray",
+        "spot_light_gray",
+        "spot_yellow"
+      ]
+    },
+    "fr_lower_leg": {
+      "file": "meshes/fr_lower_leg.obj",
+      "link": "fr_lower_leg",
+      "faces": 3999,
+      "vertices": 2105,
+      "normals": 3414,
+      "bytes": 275427,
+      "bbox_min": [
+        -0.02001,
+        -0.01426,
+        -0.30635
+      ],
+      "bbox_max": [
+        0.03661,
+        0.01377,
+        0.05132
+      ],
+      "materials": [
+        "spot_black",
+        "spot_dark_gray",
+        "spot_gray"
+      ]
+    },
+    "rl_hip": {
+      "file": "meshes/rl_hip.obj",
+      "link": "rl_hip",
+      "faces": 2995,
+      "vertices": 1660,
+      "normals": 3757,
+      "bytes": 237422,
+      "bbox_min": [
+        -0.03977,
+        -0.02699,
+        -0.04115
+      ],
+      "bbox_max": [
+        0.05993,
+        0.04858,
+        0.04093
+      ],
+      "materials": [
+        "spot_gray",
+        "spot_light_gray",
+        "spot_yellow"
+      ]
+    },
+    "rl_upper_leg": {
+      "file": "meshes/rl_upper_leg.obj",
+      "link": "rl_upper_leg",
+      "faces": 4999,
+      "vertices": 2819,
+      "normals": 4919,
+      "bytes": 369130,
+      "bbox_min": [
+        -0.0369,
+        -0.04696,
+        -0.26132
+      ],
+      "bbox_max": [
+        0.03754,
+        0.03508,
+        0.06575
+      ],
+      "materials": [
+        "spot_dark_gray",
+        "spot_gray",
+        "spot_light_gray",
+        "spot_yellow"
+      ]
+    },
+    "rl_lower_leg": {
+      "file": "meshes/rl_lower_leg.obj",
+      "link": "rl_lower_leg",
+      "faces": 3999,
+      "vertices": 2088,
+      "normals": 3364,
+      "bytes": 273567,
+      "bbox_min": [
+        -0.01844,
+        -0.01671,
+        -0.30807
+      ],
+      "bbox_max": [
+        0.03843,
+        0.01329,
+        0.04965
+      ],
+      "materials": [
+        "spot_black",
+        "spot_dark_gray",
+        "spot_gray"
+      ]
+    },
+    "rr_hip": {
+      "file": "meshes/rr_hip.obj",
+      "link": "rr_hip",
+      "faces": 2999,
+      "vertices": 1673,
+      "normals": 3690,
+      "bytes": 237385,
+      "bbox_min": [
+        -0.03977,
+        -0.04884,
+        -0.04115
+      ],
+      "bbox_max": [
+        0.05993,
+        0.02672,
+        0.04085
+      ],
+      "materials": [
+        "spot_gray",
+        "spot_light_gray",
+        "spot_yellow"
+      ]
+    },
+    "rr_upper_leg": {
+      "file": "meshes/rr_upper_leg.obj",
+      "link": "rr_upper_leg",
+      "faces": 4999,
+      "vertices": 2827,
+      "normals": 4893,
+      "bytes": 368633,
+      "bbox_min": [
+        -0.03691,
+        -0.03516,
+        -0.26196
+      ],
+      "bbox_max": [
+        0.0375,
+        0.04648,
+        0.0658
+      ],
+      "materials": [
+        "spot_dark_gray",
+        "spot_gray",
+        "spot_light_gray",
+        "spot_yellow"
+      ]
+    },
+    "rr_lower_leg": {
+      "file": "meshes/rr_lower_leg.obj",
+      "link": "rr_lower_leg",
+      "faces": 4000,
+      "vertices": 2091,
+      "normals": 3468,
+      "bytes": 276041,
+      "bbox_min": [
+        -0.01843,
+        -0.01364,
+        -0.30807
+      ],
+      "bbox_max": [
+        0.03843,
+        0.01636,
+        0.04965
+      ],
+      "materials": [
+        "spot_black",
+        "spot_dark_gray",
+        "spot_gray"
+      ]
+    },
+    "base_cam": {
+      "file": "meshes/base_cam.obj",
+      "link": "base_link",
+      "faces": 5270,
+      "vertices": 2689,
+      "normals": 7108,
+      "bytes": 428344,
+      "bbox_min": [
+        0.12205,
+        -0.06918,
+        0.0599
+      ],
+      "bbox_max": [
+        0.31237,
+        0.06883,
+        0.27643
+      ],
+      "materials": [
+        "Material__2035",
+        "Metallic_Gray_01",
+        "Metallic_Yellow_01",
+        "Plastic_Black_01",
+        "Plastic_Pink_01",
+        "Plastic_Yellow_01"
+      ]
+    },
+    "base_eap": {
+      "file": "meshes/base_eap.obj",
+      "link": "base_link",
+      "faces": 1500,
+      "vertices": 886,
+      "normals": 1999,
+      "bytes": 120689,
+      "bbox_min": [
+        -0.28263,
+        -0.0539,
+        0.06065
+      ],
+      "bbox_max": [
+        -0.1419,
+        0.05336,
+        0.18111
+      ],
+      "materials": [
+        "Metallic_Blue_01",
+        "Metallic_Gray_01",
+        "Metallic_Green_01",
+        "Plastic_Black_01",
+        "Plastic_Gray_01"
+      ]
+    }
+  },
+  "total_triangles": 73750,
+  "verification": {
+    "per_mesh": {
+      "base_link": {
+        "orig_to_dec_mean_mm": 0.267,
+        "orig_to_dec_p95_mm": 1.03,
+        "orig_to_dec_max_mm": 31.978,
+        "dec_to_orig_mean_mm": 0.076,
+        "dec_to_orig_max_mm": 8.135
+      },
+      "fl_hip": {
+        "orig_to_dec_mean_mm": 0.241,
+        "orig_to_dec_p95_mm": 0.435,
+        "orig_to_dec_max_mm": 27.822,
+        "dec_to_orig_mean_mm": 0.099,
+        "dec_to_orig_max_mm": 0.669
+      },
+      "fl_upper_leg": {
+        "orig_to_dec_mean_mm": 0.172,
+        "orig_to_dec_p95_mm": 0.509,
+        "orig_to_dec_max_mm": 20.316,
+        "dec_to_orig_mean_mm": 0.062,
+        "dec_to_orig_max_mm": 6.311
+      },
+      "fl_lower_leg": {
+        "orig_to_dec_mean_mm": 0.044,
+        "orig_to_dec_p95_mm": 0.023,
+        "orig_to_dec_max_mm": 6.185,
+        "dec_to_orig_mean_mm": 0.012,
+        "dec_to_orig_max_mm": 0.362
+      },
+      "fr_hip": {
+        "orig_to_dec_mean_mm": 0.233,
+        "orig_to_dec_p95_mm": 0.428,
+        "orig_to_dec_max_mm": 27.736,
+        "dec_to_orig_mean_mm": 0.102,
+        "dec_to_orig_max_mm": 1.243
+      },
+      "fr_upper_leg": {
+        "orig_to_dec_mean_mm": 0.154,
+        "orig_to_dec_p95_mm": 0.462,
+        "orig_to_dec_max_mm": 12.609,
+        "dec_to_orig_mean_mm": 0.065,
+        "dec_to_orig_max_mm": 6.243
+      },
+      "fr_lower_leg": {
+        "orig_to_dec_mean_mm": 0.043,
+        "orig_to_dec_p95_mm": 0.023,
+        "orig_to_dec_max_mm": 6.186,
+        "dec_to_orig_mean_mm": 0.013,
+        "dec_to_orig_max_mm": 1.419
+      },
+      "rl_hip": {
+        "orig_to_dec_mean_mm": 0.233,
+        "orig_to_dec_p95_mm": 0.449,
+        "orig_to_dec_max_mm": 28.349,
+        "dec_to_orig_mean_mm": 0.096,
+        "dec_to_orig_max_mm": 0.747
+      },
+      "rl_upper_leg": {
+        "orig_to_dec_mean_mm": 0.174,
+        "orig_to_dec_p95_mm": 0.525,
+        "orig_to_dec_max_mm": 12.51,
+        "dec_to_orig_mean_mm": 0.065,
+        "dec_to_orig_max_mm": 4.031
+      },
+      "rl_lower_leg": {
+        "orig_to_dec_mean_mm": 0.053,
+        "orig_to_dec_p95_mm": 0.029,
+        "orig_to_dec_max_mm": 7.474,
+        "dec_to_orig_mean_mm": 0.012,
+        "dec_to_orig_max_mm": 0.582
+      },
+      "rr_hip": {
+        "orig_to_dec_mean_mm": 0.233,
+        "orig_to_dec_p95_mm": 0.423,
+        "orig_to_dec_max_mm": 24.752,
+        "dec_to_orig_mean_mm": 0.097,
+        "dec_to_orig_max_mm": 1.261
+      },
+      "rr_upper_leg": {
+        "orig_to_dec_mean_mm": 0.16,
+        "orig_to_dec_p95_mm": 0.515,
+        "orig_to_dec_max_mm": 12.258,
+        "dec_to_orig_mean_mm": 0.071,
+        "dec_to_orig_max_mm": 6.245
+      },
+      "rr_lower_leg": {
+        "orig_to_dec_mean_mm": 0.051,
+        "orig_to_dec_p95_mm": 0.026,
+        "orig_to_dec_max_mm": 6.186,
+        "dec_to_orig_mean_mm": 0.014,
+        "dec_to_orig_max_mm": 0.956
+      },
+      "base_cam": {
+        "orig_to_dec_mean_mm": 0.637,
+        "orig_to_dec_p95_mm": 2.616,
+        "orig_to_dec_max_mm": 13.709,
+        "dec_to_orig_mean_mm": 0.228,
+        "dec_to_orig_max_mm": 14.081
+      },
+      "base_eap": {
+        "orig_to_dec_mean_mm": 0.25,
+        "orig_to_dec_p95_mm": 0.889,
+        "orig_to_dec_max_mm": 9.889,
+        "dec_to_orig_mean_mm": 0.153,
+        "dec_to_orig_max_mm": 1.748
+      }
+    },
+    "orig_to_dec_mean_mm": 0.198,
+    "orig_to_dec_p95_mm": 0.684,
+    "orig_to_dec_p99_mm": 3.68,
+    "orig_to_dec_max_mm": 31.978,
+    "dec_to_orig_mean_mm": 0.075,
+    "dec_to_orig_max_mm": 14.081,
+    "hausdorff_mm": 31.978,
+    "link_frame_roundtrip_max_mm": 0.0,
+    "joint_fit": {
+      "fl": {
+        "hip_x_mm": 0.432,
+        "hip_y_mm": 1.463,
+        "knee_mm": 1.507,
+        "foot_mm": 1.447
+      },
+      "fr": {
+        "hip_x_mm": 0.432,
+        "hip_y_mm": 1.463,
+        "knee_mm": 1.507,
+        "foot_mm": 1.447
+      },
+      "rl": {
+        "hip_x_mm": 0.427,
+        "hip_y_mm": 1.702,
+        "knee_mm": 3.668,
+        "foot_mm": 1.211
+      },
+      "rr": {
+        "hip_x_mm": 0.427,
+        "hip_y_mm": 1.702,
+        "knee_mm": 3.668,
+        "foot_mm": 1.211
+      }
+    },
+    "joint_fit_max_mm": 3.668
+  },
+  "foot_visual": {
+    "type": "sphere",
+    "radius": 0.025,
+    "rgb": [
+      0.06,
+      0.06,
+      0.06
+    ],
+    "lowest_mesh_point_lower_leg_frame_z": -0.30807,
+    "foot_centre_lower_leg_frame_z": -0.2997
+  },
+  "model_dir_bytes": 5352665
+}

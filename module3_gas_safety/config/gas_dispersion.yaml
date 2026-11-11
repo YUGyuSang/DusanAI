@@ -1,0 +1,88 @@
+# =============================================================================
+#  gas_dispersion_sim  -  2-D gas leak + airflow simulation (Module 3)
+#  Model: module3_gas_safety/gas_model.py   Docs: module3_gas_safety/README.md
+#  All floats are written with a decimal point (rclpy rejects an int for a
+#  double parameter).  Positions/wind default to world_layout.yaml gas_leak.
+# =============================================================================
+gas_dispersion_sim:
+  ros__parameters:
+    layout_file: ""                 # "" -> plant_simulation/config/world_layout.yaml
+    map_yaml: ""                    # "" -> layout nav_map (rasterised layout if missing)
+    frame_id: map
+    odom_topic: /odom
+
+    # ---------------------------------------------------------------- grid
+    resolution: 0.25                # gas grid cell [m]
+    obstacle_fraction: 0.15         # occupied fraction of 5x5 sub-samples -> solid gas cell
+                                    # (low on purpose: 0.1 m thick walls of the nav map stay closed)
+
+    # ---------------------------------------------------------------- leak
+    source_override: false          # false: layout gas_leak.source
+    source_x: -3.2
+    source_y: 2.0
+    emission_rate: 170.0            # Q [ppm m^2/s]  (calibrated: ~1200 ppm at the leak,
+                                    #  30-40 ppm in the east doorway at steady state)
+    source_sigma: 0.25              # Gaussian emission footprint [m]
+    decay_rate: 0.012               # k [1/s] vertical entrainment / roof exhaust of the floor layer
+    diffusivity: 0.03               # K [m^2/s] turbulent diffusivity (upwind adds ~|u|h/2)
+
+    # ---------------------------------------------------------------- wind
+    wind_override: false            # false: layout gas_leak.wind_base
+    wind_x: 0.40                    # first guess inside the hall [m/s]
+    wind_y: -0.10
+    corridor_speed: 0.20            # first-guess channel flow in the corridor [m/s]
+    factory_x_max: 14.9             # x <= : hall first guess, x > : corridor first guess
+    # openings: wall faces whose centre lies in [x0, y0, x1, y1] (flat list, 4 per rect)
+    inflow_rects: [-10.4, -8.9, -9.2, -1.0,        # west wall vents south of the gas tank
+                   -10.4, 8.45, -9.2, 8.95,        # west wall vent north of the tank
+                   -3.5, 8.7, 14.8, 9.3]           # north wall vents
+    outflow_rects: [63.3, -1.95, 63.95, 1.95,      # corridor end
+                    14.6, -9.2, 15.2, -3.4,        # east wall louvres south of the doorway
+                    14.6, 3.4, 15.2, 9.0,          # east wall louvres north of the doorway
+                    -10.0, -9.4, 14.85, -8.8]      # south wall louvres
+    cfl: 0.9                        # safety factor of the positivity / CFL bound
+    max_substeps: 40
+    projection_tol: 1.0e-06         # max |div u| after the pressure projection [1/s]
+    projection_max_iter: 20000      # red-black SOR iterations (cap)
+
+    # ---------------------------------------------------------------- gusts
+    gusts_enabled: true
+    gust_speed_amp: 0.15            # s(t) = 1 + A sin(2 pi t / T + phi) + OU noise
+    gust_speed_period: 47.0         # [s]
+    gust_dir_amp_deg: 8.0           # theta(t) = A sin(2 pi t / T + phi) + OU noise
+    gust_dir_period: 83.0           # [s]
+    gust_noise_speed: 0.08          # OU std of the speed factor
+    gust_noise_dir_deg: 5.0         # OU std of the direction [deg]
+    gust_tau: 8.0                   # OU time constant [s]
+    eddy_rms: 0.06                  # RMS speed of the streamfunction eddies [m/s]
+    eddy_scale: 2.5                 # eddy size [m]
+    eddy_tau: 15.0                  # OU time constant of the eddy amplitudes [s]
+    eddy_modes: 6
+    eddy_wall_taper: 0.75           # eddies fade out over this distance from walls [m]
+    seed: 7
+
+    # ---------------------------------------------------------------- start-up
+    spinup_seconds: 400.0           # frozen base wind -> steady plume before publishing
+    spinup_dt: 0.5
+    spinup_gust_seconds: 30.0       # then a short gusty warm-up
+
+    # ---------------------------------------------------------------- rates
+    update_rate: 10.0               # model step + sensors [Hz] (sim time)
+    grid_rate: 2.0                  # /gas/concentration_grid + /gas/field_info [Hz]
+    max_dt: 0.5                     # clamp of a single update (sim pauses / hiccups) [s]
+
+    # ---------------------------------------------------------------- sensors
+    sensor_tau: 1.0                 # first-order lag of the gas sensors [s]
+    sensor_noise_ppm: 0.3           # additive Gaussian noise std [ppm]
+    sensor_noise_rel: 0.03          # multiplicative noise std (fraction)
+    sensor_quantum: 0.1             # reading resolution [ppm]
+    nose_offset: [0.42, 0.0]        # nose sensor (base_link x, y) [m]
+    array_offsets: [0.30, 0.15, 0.30, -0.15, -0.30, 0.15, -0.30, -0.15]   # FL FR RL RR
+    wind_sensor_noise: 0.03         # anemometer noise std [m/s]
+    wind_sensor_tau: 0.5            # anemometer lag [s]
+    sensor_seed: 3
+
+    # ---------------------------------------------------------------- visualisation
+    vis_max_ppm: 1000.0             # OccupancyGrid 100
+    vis_min_ppm: 0.5                # below -> 0
+    vis_log_scale: true             # v = 100 log10(1+c)/log10(1+vis_max_ppm); false: linear

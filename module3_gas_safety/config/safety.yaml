@@ -1,0 +1,168 @@
+# =============================================================================
+#  Module 3 safety nodes: battery_simulator, comm_simulator, return_to_home
+#  Models: battery_model.py, comm_model.py, rth_logic.py   Docs: README.md
+#  Floats are written with a decimal point (rclpy type check).
+# =============================================================================
+battery_simulator:
+  ros__parameters:
+    layout_file: ""
+    odom_topic: /odom
+    update_rate: 10.0               # model integration [Hz]
+    publish_rate: 2.0               # /battery/state [Hz]
+    charge_on_dock: true
+    dock_tolerance: 0.0             # <= 0 -> layout charging_station.dock_tolerance (0.35 m)
+    dock_speed_max: 0.05            # [m/s]
+    dock_settle_s: 1.0              # still on the pad for this long -> charging
+    speed_filter_tau: 0.5           # low-pass of the odometry speed for the dock test [s]
+                                    # (a standing legged robot sways: raw twist is noisy)
+    location: base
+    serial_number: DUSAN-SIM-BAT-01
+    capacity_wh: 200.0              # pack energy [Wh]
+    initial_pct: 80.0               # start-up state of charge [%]
+    cells_series: 14                # Li-ion cells in series (OCV curve x 14)
+    r_internal_ohm: 0.08
+    p_compute_w: 25.0               # onboard computer [W]
+    p_sensors_w: 15.0               # cameras, depth, gas sensors [W]
+    p_stand_w: 45.0                 # standing posture (servo holding) [W]
+    p_sit_w: 8.0                    # sitting / e-stop posture [W]
+    p_per_mps_w: 110.0              # locomotion power per m/s [W/(m/s)]
+    p_per_radps_w: 20.0             # turning power per rad/s [W/(rad/s)]
+    charge_rate_pct_per_s: 0.5      # constant-current charge rate [%/s]
+    cv_threshold_pct: 80.0          # constant-voltage taper above [%]
+    taper_min_frac: 0.1             # CV taper floor (fraction of the CC rate)
+    full_pct: 99.5                  # FULL above [%]
+    time_scale: 1.0                 # > 1 accelerates the drain (demos)
+
+comm_simulator:
+  ros__parameters:
+    layout_file: ""
+    map_yaml: ""
+    frame_id: map
+    odom_topic: /odom
+    map_resolution: 0.5             # RSSI map cell [m]
+    publish_rate: 5.0               # /comm/rssi [Hz]
+    map_republish_period: 10.0      # /comm/rssi_map is latched; periodic refresh [s]
+    antenna_height: 0.6             # robot antenna height [m]
+    path_loss_exponent: 0.0         # <= 0 -> layout comm.path_loss_exponent (2.2)
+    wall_attenuation_db: -1.0       # < 0 -> layout comm.wall_attenuation_db (12 dB)
+    rf_min_obstacle_area_m2: 2.5    # occupied blobs smaller than this (pallets, drums, posts,
+                                    # gauge stands) do not attenuate the link; 0 = every blob
+    fading_sigma_db: 2.0            # slow log-normal fading on /comm/rssi [dB]
+    fading_tau_s: 2.0
+    seed: 11
+    vis_min_dbm: -100.0             # OccupancyGrid 0
+    vis_max_dbm: -30.0              # OccupancyGrid 100
+
+return_to_home:
+  ros__parameters:
+    layout_file: ""
+    map_yaml: ""
+    frame_id: map
+    odom_topic: /odom
+    rate: 10.0                      # supervisor loop [Hz]
+    status_rate: 2.0                # /safety/status [Hz]
+    active_rate: 5.0                # /safety/rth_active [Hz]
+    use_map_topic: true
+    local_comm_model: true          # RSSI map from the layout until /comm/rssi_map arrives
+    comm_map_resolution: 0.5
+    rf_min_obstacle_area_m2: 2.5    # same as comm_simulator
+    # battery model for the energy-to-home prediction (same values as battery_simulator)
+    capacity_wh: 200.0
+    p_compute_w: 25.0
+    p_sensors_w: 15.0
+    p_stand_w: 45.0
+    p_sit_w: 8.0
+    p_per_mps_w: 110.0
+    p_per_radps_w: 20.0
+    # ---------------------------------------------------- triggers
+    rth_battery_pct: 20.0           # battery_low below [%]
+    resume_battery_pct: 95.0        # CHARGING -> MONITOR at [%]
+    battery_debounce_s: 1.0
+    energy_enabled: true
+    energy_safety_factor: 1.3       # E_home x 1.3 + margin > remaining -> energy_reserve
+    energy_margin_pct: 3.0
+    energy_debounce_s: 2.0
+    nominal_speed: 0.3              # speed assumed for the energy home [m/s]
+    docking_overhead_s: 30.0        # standing time budget for docking [s]
+    comm_shadow_enabled: true
+    rssi_min_dbm: 0.0               # >= 0 -> layout comm.rssi_min_dbm (-80 dBm)
+    shadow_lookahead_m: 5.0         # along /nav/plan ahead of the robot [m]
+    shadow_horizon_s: 4.0           # velocity extrapolation [s]
+    shadow_sample_m: 0.25
+    plan_max_offset_m: 3.0          # ignore /nav/plan if the robot is farther from it [m]
+    comm_lost_enabled: true         # measured RSSI below the threshold ...
+    comm_lost_time_s: 2.0           # ... for longer than this -> comm_lost
+    # ---------------------------------------------------- navigation home
+    robot_radius: 0.3               # A* inflation [m]
+    smooth_margin: 0.1              # smoothed path keeps robot_radius + margin from corners [m]
+    safety_dist: 0.5                # velocity safety filter below this clearance [m]
+    safety_repulse: 0.1             # repulsion speed near obstacles [m/s]
+    max_speed: 0.4                  # pure pursuit [m/s]
+    max_wz: 0.8
+    lookahead: 0.6
+    goal_tolerance: 0.25
+    docking_radius: 1.0             # switch to DOCKING within [m]
+    dock_speed: 0.15                # [m/s]
+    dock_k_pos: 0.8
+    dock_k_yaw: 1.2
+    dock_pos_tolerance: 0.12        # [m]
+    dock_yaw_tolerance: 0.12        # [rad]
+    dock_settle_s: 1.0
+    sit_delay_s: 2.0                # DOCKED ('sit') -> CHARGING after [s]
+    stuck_time_s: 10.0              # no progress for ... -> re-plan
+    stuck_progress_m: 0.3
+    backoff_s: 2.0                  # back off from the closest obstacle before re-planning [s]
+    backoff_speed: 0.15             # [m/s]
+    replan_retry_s: 2.0
+    max_plan_failures: 5            # then a straight line to the dock
+    geodesic_downsample: 2          # home-distance field grid = nav res x 2
+    # terrain cost of the path home (dusan_common/terrain_cost.py): pipes / rubble are
+    # crossed only where the map leaves no free detour
+    terrain_cost_enabled: true
+    terrain_w_pipe: 25.0            # extra A* cost per cell inside a lying pipe (+0.12 m)
+    terrain_w_rubble: 25.0          # ... inside a rubble field
+    terrain_w_plate: 1.0            # ... on a steel plate (slippery, crossable)
+    terrain_w_platform: 2.0         # ... on the low step platform
+    terrain_margin: 0.25            # margin around each item [m] (capped at 0.25 m)
+    terrain_margin_fraction: 0.15   # margin cost = fraction x inside cost
+    # ---------------------------------------------------- novel (unmapped) obstacles
+    # dusan_common/obstacle_layer.py: elevation map step >= step_height, confirmed over frames ->
+    # slow down / stop -> left/right detour rejoining the path home -> re-plan on static + dynamic
+    # -> plan on the map alone (stuck back-off / re-plan as before).  false = legacy behaviour.
+    obstacle_enabled: true
+    obstacle_detour_enabled: true
+    obstacle_replan_enabled: true
+    obstacle_slowdown_enabled: true
+    obstacle_static_fallback: true
+    obstacle_source: elevation      # elevation (cloud step test) | traversability (cost grid)
+    obstacle_elevation_topic: /elevation_map/points
+    obstacle_traversability_topic: /elevation_map/traversability
+    obstacle_frames: odom,map,world # frame ids equal to the /odom pose frame
+    obstacle_step_height: 0.22      # [m] = terrain.yaml map.step_crit
+    obstacle_step_window: 5         # [cells] = terrain.yaml map.step_window
+    obstacle_cost_threshold: 100
+    obstacle_max_range: 3.5         # [m]
+    obstacle_resolution: 0.1        # [m] memory lattice
+    obstacle_memory_size: 20.0      # [m]
+    obstacle_confirm_hits: 2
+    obstacle_max_hits: 5
+    obstacle_min_known_fraction: 0.5
+    obstacle_ignore_radius: 0.55    # [m] own body / legs
+    obstacle_forget_time: 60.0      # [s] (0 = never)
+    obstacle_min_cluster: 2
+    obstacle_static_tolerance: 0.3  # [m] (clamped below 2 x robot_radius - resolution)
+    obstacle_shadow_depth: 1.0      # [m] assumed unseen back of an obstacle (line of sight, planning)
+    obstacle_idle_period: 1.0       # [s] frame period while not returning (0 = every frame)
+    obstacle_margin: 0.1            # [m] detour clearance beyond robot_radius
+    obstacle_lookahead: 2.5         # [m]
+    obstacle_detour_window: 2.5     # [m]
+    obstacle_rejoin_gap: 0.8        # [m]
+    obstacle_detour_max_ratio: 3.0
+    obstacle_switch_ratio: 1.5
+    obstacle_commit_time: 15.0      # [s]
+    obstacle_min_interval: 0.5      # [s]
+    obstacle_max_detours: 8
+    obstacle_max_replans: 3
+    obstacle_slow_dist: 1.0         # [m] free travel
+    obstacle_stop_dist: 0.35        # [m]
+    obstacle_unconfirmed_scale: 0.5

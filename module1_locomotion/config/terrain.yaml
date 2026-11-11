@@ -1,0 +1,125 @@
+# =============================================================================
+#  terrain_mapper  (module1_locomotion/terrain_mapping_node.py)
+#  Robot-centric elevation map + terrain classification.
+#  Every value below is also the built-in default of the node.
+#  NOTE: keep floats written with a decimal point (ROS 2 parameters are
+#  statically typed; a wrong type falls back to the default with a warning).
+# =============================================================================
+terrain_mapper:
+  ros__parameters:
+    # ------------------------------------------------------------- topics/io
+    cloud_topic: /depth_camera/points            # sensor_msgs/PointCloud2 (primary)
+    image_topic: /depth_camera/image             # 32FC1 [m] / 16UC1 [mm] fallback
+    camera_info_topic: /depth_camera/camera_info # optional intrinsics override
+    odom_topic: /odom                            # world-frame ground-truth pose
+    map_cloud_topic: /elevation_map/points
+    traversability_topic: /elevation_map/traversability
+    info_topic: /terrain/info
+    frame_id: odom
+    sensor_name: depth_camera                    # key of dusan_common.robot_model.SENSORS
+    publish_rate: 5.0                            # [Hz] map cloud / grid / info
+    image_fallback_timeout: 1.0                  # [s] use the depth image when no cloud for this long
+    use_image_fallback: true
+    use_camera_info: true
+    image_stride: 1                              # pixel decimation of the depth image fallback
+    publish_traversability: true
+    cloud_convention: auto                       # auto | link (x fwd) | optical (z fwd)
+    convention_lock_frames: 5                    # consistent detections before the guess is locked
+    world_frame_ids: [odom, map, world]          # clouds already expressed in one of these frames
+    pose_buffer_length: 2.0                      # [s] odometry history for stamp interpolation
+    max_pose_extrapolation: 0.3                  # [s]
+    log_period: 10.0                             # [s] diagnostics line
+
+    # ----------------------------------------------- friction prior (slippery plates)
+    # low-friction zones of world_layout.yaml (obstacles of type plate: rect + mu, optional
+    # friction_zones list) -> /terrain/info class 'slippery', slippery, friction_mu (classifier.*)
+    layout_file: ""                              # '' = installed plant_simulation config/world_layout.yaml
+    friction_prior: true                         # false: no layout zones (online slip detection only)
+    friction_zone_max_mu: 0.6                    # zones with a higher mu are ordinary floor
+
+    # ------------------------------------------------------ point filtering
+    filter:
+      min_range: 0.15                            # [m] from the camera
+      max_range: 3.5                             # [m] (camera far clip is 4.0)
+      body_box_min: [-0.50, -0.28, -0.29]        # [m] base_link box = robot itself
+      body_box_max: [0.50, 0.28, 0.25]
+      max_height_above_base: 0.55                # [m] drop overhangs the robot walks under
+      point_stride: 1                            # use every n-th point
+
+    # --------------------------------------------------------- elevation map
+    map:
+      length_x: 6.0                              # [m]
+      length_y: 6.0                              # [m]
+      resolution: 0.04                           # [m]
+      sensor_noise_base: 0.003                   # [m]  sigma(r) = base + coeff * r^2
+      sensor_noise_range_coeff: 0.0025           # [1/m]
+      max_points_per_cell: 4                     # independent samples per cell and frame
+      spread_variance_weight: 0.5
+      min_variance: 1.0e-6                       # [m^2]
+      mahalanobis_gate: 3.0                      # [sigma]
+      outlier_reset_count: 3                     # lower outliers before re-initialising a cell
+      higher_outlier_count: 2                    # higher outliers (new obstacle) before re-initialising
+      outlier_consistency: 0.03                  # [m] consecutive outliers must agree to form a run
+      max_height_bias: true                      # upper quantile in vertically spread cells
+      bias_spread: 0.03                          # [m]
+      bias_quantile: 0.9
+      raise_on_vertical: true                    # vertical-structure cells: higher view raises at once
+      confirm_observations: true                 # cells need a 2nd consistent look (or >= 3 points)
+      min_points_confirm: 3
+      variance_growth_rate: 1.0e-4               # [m^2/s] forgetting
+      max_variance: 0.02                         # [m^2] -> cell becomes unknown
+      speckle_filter: true                       # drop isolated cells / unsupported spikes
+      spike_threshold: 0.08                      # [m]
+      hole_fill_radius: 2                        # [cells] 0 = no in-painting
+      fill_variance: 4.0e-4                      # [m^2]
+      shadow_fill_step: 0.05                     # [m] hole whose sensor-side neighbours are higher than the
+                                                 #     far side by more = occlusion shadow behind an edge
+                                                 #     -> filled from the far (lower) side; 0 = plain median
+      slope_window: 3                            # [cells] Sobel-weighted plane fit
+      roughness_window: 5                        # [cells]
+      step_window: 5                             # [cells] foot-sized window
+      min_fit_cells: 5
+      slope_crit: 0.70                           # [rad]
+      step_crit: 0.22                            # [m]
+      roughness_crit: 0.05                       # [m]
+      planar_roughness: 0.02                     # [m]
+      w_slope: 1.0
+      w_step: 1.0
+      w_roughness: 1.0
+      default_variance: 1.0e-4                   # [m^2]
+
+    # ------------------------------------------------------- classification
+    classifier:
+      corridor_near: 0.30                        # [m] ahead of base_link
+      corridor_far: 1.50                         # [m]
+      corridor_half_width: 0.30                  # [m]
+      profile_half_width: 0.15                   # [m]
+      min_known_fraction: 0.30
+      roughness_quantile: 90.0
+      step_quantile: 95.0
+      rough_roughness: 0.012                     # [m]
+      slope_min_deg: 6.0
+      slope_crawl_deg: 12.0
+      planar_roughness: 0.015                    # [m]
+      profile_bin: 0.06                          # [m]
+      profile_min_cells: 2
+      edge_min_diff: 0.02                        # [m]
+      edge_max_bins: 4
+      stair_min_rise: 0.08                       # [m]
+      stair_max_rise: 0.22                       # [m]
+      bump_max_width: 0.30                       # [m]
+      stair_min_tread: 0.15                      # [m] flat plateau that confirms a step edge
+      plateau_tol: 0.03                          # [m]
+      obstacle_step: 0.22                        # [m]
+      obstacle_min_cells: 3
+      hysteresis_ratio: 0.75
+      crawl_confirm_count: 2
+      trot_hold_time: 1.5                        # [s]
+      initial_gait: trot
+      use_friction_prior: true                   # check the layout friction zones (see friction_prior)
+      friction_far: 1.0                          # [m] look-ahead of the friction check
+      friction_rear: 0.35                        # [m] footprint behind base_link (rear feet)
+      friction_half_width: 0.30                  # [m]
+      slippery_mu: 0.35                          # zones with mu below -> slippery
+      slippery_gait: trot                        # recommendation on slippery ground (MuJoCo: crawl fell on mu 0.15)
+      slippery_hold_time: 1.0                    # [s] flag held after the last overlap (hysteresis)

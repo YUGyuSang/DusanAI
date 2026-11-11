@@ -1,0 +1,93 @@
+# =============================================================================
+#  gauge_reader (module2_inspection) - analog gauge reading parameters
+#  Node: module2_inspection/gauge_reader_node.py   executable: gauge_reader
+#  NOTE: keep a decimal point on every float (ROS 2 rejects an int for a double param).
+# =============================================================================
+gauge_reader:
+  ros__parameters:
+    # ---------------------------------------------------------------- I/O
+    layout_file: ""                                   # "" -> plant_simulation/config/world_layout.yaml
+    image_topic: "/inspection_camera/image"
+    camera_info_topic: "/inspection_camera/camera_info"
+    odom_topic: "/odom"
+    imu_topic: "/imu"
+    target_topic: "/inspection/target"
+    readings_topic: "/inspection/gauge_readings"
+    overlay_topic: "/inspection/gauge_overlay"
+    process_rate_hz: 5.0                              # newest frame only, never faster than this
+    idle_process_rate_hz: 2.0                         # ... and while /inspection/target is "" (<= 0: off)
+    opencv_threads: 2                                 # OpenCV worker threads, CPU shared with Gazebo (<= 0: all cores)
+    # ---------------------------------------------------------------- camera / pose
+    camera_hfov: 0.9                                  # fallback intrinsics when no CameraInfo
+    use_camera_info: true
+    max_angular_velocity: 0.6                         # rad/s, frames skipped while |omega| larger (shake)
+    imu_window_s: 0.15                                # |omega| max taken over this window before the stamp
+    odom_max_age_s: 0.5                               # pose older than this -> "no pose" mode
+    pose_sigma_px: 30.0                               # expected projection error (pose/timing) -> ROI size
+    # ---------------------------------------------------------------- association
+    max_incidence_deg: 70.0
+    min_radius_px: 12.0                               # smaller predicted dials are not searched
+    max_distance: 6.0
+    use_map_occlusion: false                          # line of sight on the 2-D nav map
+    detect_unhinted: true                             # also search the whole frame for dials ...
+    full_search_period_s: 2.0                         # ... this often (every frame: no pose / target not found)
+    full_search_min_period_s: 0.5                     # ... but never more often than this (CPU next to Gazebo)
+    publish_unknown: true                             # publish unidentified dials with "id": null
+    publish_empty: false                              # publish {readings: []} when nothing is read
+    # ---------------------------------------------------------------- temporal fusion
+    fusion_window_n: 15                               # last N samples per gauge ...
+    fusion_window_s: 10.0                             # ... not older than T seconds
+    fusion_mad_k: 3.0                                 # inlier gate in robust sigmas (1.4826 MAD)
+    # ---------------------------------------------------------------- OCR scheduling
+    ocr_period_s: 2.0                                 # re-read the scale labels every T s per gauge ...
+    ocr_confirmed_period_s: 30.0                      # ... and less often once confirmed twice
+    # ---------------------------------------------------------------- overlay
+    overlay_enabled: true
+    overlay_enhanced: true                            # draw on the low-light enhanced frame
+    overlay_scale: 1.0
+    overlay_idle_period_s: 0.5                        # overlay period of frames with nothing searched / motion-skipped
+    stats_period_s: 30.0                              # processing statistics in the log (0 = off)
+    # ---------------------------------------------------------------- reader (GaugeReaderConfig)
+    reader:
+      # enhancement
+      white_percentile: 99.5      # white point for the exposure stretch
+      max_gain: 12.0              # max exposure gain for dark frames
+      gamma_target: 0.42          # target mean (0..1) of the adaptive gamma
+      gamma_min: 0.4              # strongest brightening gamma
+      clahe_clip: 2.0
+      clahe_tiles: 8
+      denoise_sigma_thresh: 2.5   # noise std [DN] above which smoothing is applied
+      # detection
+      min_radius_px: 14.0         # face radius limits
+      max_radius_px: 320.0
+      hough_canny: 90.0
+      hough_acc: 16.0
+      max_candidates: 24
+      max_refine: 10              # candidates per search that get the centre/shape correction
+      min_detection_score: 0.25
+      max_dials: 4                # dials read per frame without hints
+      roi_scale: 2.6              # hinted ROI half size = roi_scale * r_pred + roi_margin_px
+      roi_margin_px: 70.0
+      # ellipse fit / blur gating
+      n_rays: 180
+      max_blur_ratio: 0.35        # reject if blur extent / face radius exceeds this
+      mid_level_blur_px: 3.0      # above this blur the face edge is re-fitted on 50 % crossings
+      min_frame_sharpness: 0.0    # optional global gate (normalised Laplacian variance), 0 = off
+      # scale calibration
+      allow_mirror: true
+      inner_band_weight: 0.5
+      red_weight: 0.6
+      min_calibration_ncc: 0.5    # tick-ring/danger-band template NCC (real dials >= 0.64, distractors <= 0.4)
+      # needle
+      needle_model: "auto"        # analysis-by-synthesis refinement: auto | always | off
+      needle_model_blur_px: 2.5   # 'auto' uses the model above this blur extent
+      # OCR of the scale labels
+      ocr_enabled: true
+      ocr_min_label_px: 7.0       # char OCR if the label is at least this tall in the image
+      ocr_min_label_px_hyp: 4.0   # standard-range verification down to this label size
+      ocr_min_confidence: 0.35
+      ocr_div_ncc_margin: 0.08    # unknown range: also try division counts within this tick-template NCC
+      # acceptance
+      min_face_contrast: 0.25     # (face - ink) / face of a real dial is ~0.9 when sharp
+      min_confidence: 0.3
+      clamp_margin_fs: 0.04       # values are clamped to [min - m*FS, max + m*FS]

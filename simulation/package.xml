@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>plant_simulation</name>
+  <version>1.0.0</version>
+  <description>Integrated Gazebo (gz-sim) virtual plant: worlds, Spot URDF, assets, bridge, mission manager, digital-twin dashboard</description>
+  <maintainer email="YUGyuSang@users.noreply.github.com">DusanAI</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <!-- the Python module `tf2_ros` (TransformBroadcaster, used by odom_tf) ships in tf2_ros_py -->
+  <exec_depend>tf2_ros_py</exec_depend>
+  <exec_depend>rosgraph_msgs</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>ros_gz_sim</exec_depend>
+  <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>dusan_common</exec_depend>
+  <exec_depend>module1_locomotion</exec_depend>
+  <exec_depend>module2_inspection</exec_depend>
+  <exec_depend>module3_gas_safety</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <!-- Pillow: Korean text on the demo HUD (demo_hud; falls back to English without it).
+       The Korean font itself is the system package fonts-noto-cjk (scripts/install_deps.sh). -->
+  <exec_depend>python3-pil</exec_depend>
+
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

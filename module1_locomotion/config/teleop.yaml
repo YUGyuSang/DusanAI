@@ -1,0 +1,32 @@
+# =============================================================================
+#  keyboard_teleop  (module1_locomotion/keyboard_teleop.py)
+#  Keys: see module1_locomotion/TERRAIN_AND_TELEOP.md or press '?'.
+# =============================================================================
+keyboard_teleop:
+  ros__parameters:
+    mode: hold                    # hold (velocity while the key repeats) | latch (incremental targets)
+    max_vx: 0.5                   # [m/s]   at speed scale 1.0 (the controller clamps per gait)
+    max_vy: 0.3                   # [m/s]
+    max_wz: 0.8                   # [rad/s]
+    speed_scale: 0.5              # initial scale, changed with + / -
+    scale_step: 0.1
+    min_scale: 0.1
+    max_scale: 1.0
+    hold_timeout: 0.6             # [s] bridges the OS auto-repeat delay
+    latch_steps: 5                # presses from zero to the scaled maximum (latch mode)
+    battery_test_level: 19.0      # [%] key b
+    battery_full_level: 100.0     # [%] key n
+    publish_rate: 20.0            # [Hz] /cmd_vel/teleop while active
+    status_rate: 5.0              # [Hz] terminal status line
+    active_republish_period: 0.5  # [s] /teleop/active heartbeat
+    use_terminal: true            # false -> Gazebo keys only
+    gz_keys: true                 # subscribe /keyboard/keypress (Gazebo KeyPublisher)
+    cmd_vel_topic: /cmd_vel/teleop
+    active_topic: /teleop/active
+    locomotion_command_topic: /locomotion/command
+    mission_command_topic: /mission/command
+    battery_set_topic: /battery/set_level
+    locomotion_state_topic: /locomotion/state
+    battery_state_topic: /battery/state
+    mission_state_topic: /mission/state
+    keypress_topic: /keyboard/keypress

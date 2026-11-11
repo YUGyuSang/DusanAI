@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="pallet">
+    <static>true</static>
+    <link name="link">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://pallet/meshes/pallet.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="collision">
+        <pose>0 0 0.09 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1.22 1.4 0.18</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

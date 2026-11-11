@@ -1,0 +1,608 @@
+{
+  "description": "Thermal pipeline benchmark on synthetic radiometric frames (synthetic_thermal) + RGB proxy",
+  "map_source": "simulation/maps/plant_map.yaml",
+  "n_poses": 150,
+  "n_hotspot_poses": 120,
+  "n_negative_poses": 30,
+  "frames_per_pose": 3,
+  "range_m": [
+    1.2,
+    7.0
+  ],
+  "seed": 0,
+  "thresholds_k": {
+    "warning": 333.15,
+    "alarm": 353.15
+  },
+  "conditions": {
+    "nominal": {
+      "sensor": {
+        "netd_k": 0.05,
+        "column_fpn_k": 0.03,
+        "row_noise_k": 0.02,
+        "blur_sigma_px": 0.6
+      },
+      "detection_single_frame": {
+        "tp": 127,
+        "fp": 0,
+        "fn": 2,
+        "precision": 1.0,
+        "recall": 0.9845,
+        "f1": 0.9922,
+        "id_accuracy": 1.0
+      },
+      "detection_confirmed_3_frames": {
+        "tp": 127,
+        "fp": 0,
+        "fn": 2,
+        "precision": 1.0,
+        "recall": 0.9845,
+        "f1": 0.9922,
+        "id_accuracy": 1.0
+      },
+      "max_temperature_error_k": {
+        "n": 127,
+        "mean": 0.927,
+        "median": 0.14,
+        "p95": 4.071,
+        "max": 7.677
+      },
+      "status_accuracy": 1.0,
+      "false_alarm_rate_negative_frames": 0.0,
+      "recall_by_range": [
+        {
+          "range_m": [
+            1.0,
+            2.0
+          ],
+          "n": 19,
+          "recall": 1.0
+        },
+        {
+          "range_m": [
+            2.0,
+            3.0
+          ],
+          "n": 27,
+          "recall": 1.0
+        },
+        {
+          "range_m": [
+            3.0,
+            4.0
+          ],
+          "n": 17,
+          "recall": 1.0
+        },
+        {
+          "range_m": [
+            4.0,
+            5.0
+          ],
+          "n": 8,
+          "recall": 1.0
+        },
+        {
+          "range_m": [
+            5.0,
+            7.0
+          ],
+          "n": 21,
+          "recall": 1.0
+        }
+      ],
+      "per_hotspot": {
+        "H01": {
+          "temp_k": 318.15,
+          "visible": 0,
+          "detected": 0,
+          "recall": null,
+          "id_ok": 0,
+          "temp_err_k": {
+            "n": 0,
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "max": null
+          }
+        },
+        "H02": {
+          "temp_k": 372.15,
+          "visible": 37,
+          "detected": 37,
+          "recall": 1.0,
+          "id_ok": 37,
+          "temp_err_k": {
+            "n": 37,
+            "mean": 1.817,
+            "median": 0.168,
+            "p95": 4.984,
+            "max": 7.677
+          }
+        },
+        "H03": {
+          "temp_k": 341.15,
+          "visible": 37,
+          "detected": 35,
+          "recall": 0.9459,
+          "id_ok": 35,
+          "temp_err_k": {
+            "n": 35,
+            "mean": 1.051,
+            "median": 0.391,
+            "p95": 2.878,
+            "max": 4.313
+          }
+        },
+        "H04": {
+          "temp_k": 388.15,
+          "visible": 30,
+          "detected": 30,
+          "recall": 1.0,
+          "id_ok": 30,
+          "temp_err_k": {
+            "n": 30,
+            "mean": 0.258,
+            "median": 0.117,
+            "p95": 0.825,
+            "max": 3.191
+          }
+        },
+        "H05": {
+          "temp_k": 358.15,
+          "visible": 25,
+          "detected": 25,
+          "recall": 1.0,
+          "id_ok": 25,
+          "temp_err_k": {
+            "n": 25,
+            "mean": 0.236,
+            "median": 0.079,
+            "p95": 0.465,
+            "max": 3.224
+          }
+        }
+      }
+    },
+    "noisy": {
+      "sensor": {
+        "netd_k": 0.4,
+        "column_fpn_k": 0.3,
+        "row_noise_k": 0.15,
+        "blur_sigma_px": 0.6
+      },
+      "detection_single_frame": {
+        "tp": 127,
+        "fp": 0,
+        "fn": 2,
+        "precision": 1.0,
+        "recall": 0.9845,
+        "f1": 0.9922,
+        "id_accuracy": 1.0
+      },
+      "detection_confirmed_3_frames": {
+        "tp": 127,
+        "fp": 0,
+        "fn": 2,
+        "precision": 1.0,
+        "recall": 0.9845,
+        "f1": 0.9922,
+        "id_accuracy": 1.0
+      },
+      "max_temperature_error_k": {
+        "n": 127,
+        "mean": 1.319,
+        "median": 1.072,
+        "p95": 3.485,
+        "max": 7.247
+      },
+      "status_accuracy": 1.0,
+      "false_alarm_rate_negative_frames": 0.0,
+      "recall_by_range": [
+        {
+          "range_m": [
+            1.0,
+            2.0
+          ],
+          "n": 19,
+          "recall": 1.0
+        },
+        {
+          "range_m": [
+            2.0,
+            3.0
+          ],
+          "n": 27,
+          "recall": 1.0
+        },
+        {
+          "range_m": [
+            3.0,
+            4.0
+          ],
+          "n": 17,
+          "recall": 1.0
+        },
+        {
+          "range_m": [
+            4.0,
+            5.0
+          ],
+          "n": 8,
+          "recall": 1.0
+        },
+        {
+          "range_m": [
+            5.0,
+            7.0
+          ],
+          "n": 21,
+          "recall": 1.0
+        }
+      ],
+      "per_hotspot": {
+        "H01": {
+          "temp_k": 318.15,
+          "visible": 0,
+          "detected": 0,
+          "recall": null,
+          "id_ok": 0,
+          "temp_err_k": {
+            "n": 0,
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "max": null
+          }
+        },
+        "H02": {
+          "temp_k": 372.15,
+          "visible": 37,
+          "detected": 37,
+          "recall": 1.0,
+          "id_ok": 37,
+          "temp_err_k": {
+            "n": 37,
+            "mean": 1.947,
+            "median": 1.354,
+            "p95": 4.274,
+            "max": 7.247
+          }
+        },
+        "H03": {
+          "temp_k": 341.15,
+          "visible": 37,
+          "detected": 35,
+          "recall": 0.9459,
+          "id_ok": 35,
+          "temp_err_k": {
+            "n": 35,
+            "mean": 1.213,
+            "median": 1.212,
+            "p95": 2.269,
+            "max": 3.906
+          }
+        },
+        "H04": {
+          "temp_k": 388.15,
+          "visible": 30,
+          "detected": 30,
+          "recall": 1.0,
+          "id_ok": 30,
+          "temp_err_k": {
+            "n": 30,
+            "mean": 0.981,
+            "median": 0.902,
+            "p95": 1.782,
+            "max": 2.667
+          }
+        },
+        "H05": {
+          "temp_k": 358.15,
+          "visible": 25,
+          "detected": 25,
+          "recall": 1.0,
+          "id_ok": 25,
+          "temp_err_k": {
+            "n": 25,
+            "mean": 0.941,
+            "median": 0.975,
+            "p95": 1.474,
+            "max": 2.555
+          }
+        }
+      }
+    },
+    "defocused": {
+      "sensor": {
+        "netd_k": 0.05,
+        "column_fpn_k": 0.03,
+        "row_noise_k": 0.02,
+        "blur_sigma_px": 1.6
+      },
+      "detection_single_frame": {
+        "tp": 124,
+        "fp": 0,
+        "fn": 5,
+        "precision": 1.0,
+        "recall": 0.9612,
+        "f1": 0.9802,
+        "id_accuracy": 1.0
+      },
+      "detection_confirmed_3_frames": {
+        "tp": 123,
+        "fp": 0,
+        "fn": 6,
+        "precision": 1.0,
+        "recall": 0.9535,
+        "f1": 0.9762,
+        "id_accuracy": 1.0
+      },
+      "max_temperature_error_k": {
+        "n": 124,
+        "mean": 2.31,
+        "median": 0.749,
+        "p95": 11.128,
+        "max": 17.522
+      },
+      "status_accuracy": 1.0,
+      "false_alarm_rate_negative_frames": 0.0,
+      "recall_by_range": [
+        {
+          "range_m": [
+            1.0,
+            2.0
+          ],
+          "n": 19,
+          "recall": 1.0
+        },
+        {
+          "range_m": [
+            2.0,
+            3.0
+          ],
+          "n": 27,
+          "recall": 1.0
+        },
+        {
+          "range_m": [
+            3.0,
+            4.0
+          ],
+          "n": 17,
+          "recall": 1.0
+        },
+        {
+          "range_m": [
+            4.0,
+            5.0
+          ],
+          "n": 8,
+          "recall": 1.0
+        },
+        {
+          "range_m": [
+            5.0,
+            7.0
+          ],
+          "n": 21,
+          "recall": 1.0
+        }
+      ],
+      "per_hotspot": {
+        "H01": {
+          "temp_k": 318.15,
+          "visible": 0,
+          "detected": 0,
+          "recall": null,
+          "id_ok": 0,
+          "temp_err_k": {
+            "n": 0,
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "max": null
+          }
+        },
+        "H02": {
+          "temp_k": 372.15,
+          "visible": 37,
+          "detected": 37,
+          "recall": 1.0,
+          "id_ok": 37,
+          "temp_err_k": {
+            "n": 37,
+            "mean": 4.45,
+            "median": 2.203,
+            "p95": 14.054,
+            "max": 17.522
+          }
+        },
+        "H03": {
+          "temp_k": 341.15,
+          "visible": 37,
+          "detected": 32,
+          "recall": 0.8649,
+          "id_ok": 32,
+          "temp_err_k": {
+            "n": 32,
+            "mean": 1.897,
+            "median": 1.05,
+            "p95": 6.382,
+            "max": 7.522
+          }
+        },
+        "H04": {
+          "temp_k": 388.15,
+          "visible": 30,
+          "detected": 30,
+          "recall": 1.0,
+          "id_ok": 30,
+          "temp_err_k": {
+            "n": 30,
+            "mean": 1.23,
+            "median": 0.336,
+            "p95": 5.818,
+            "max": 14.599
+          }
+        },
+        "H05": {
+          "temp_k": 358.15,
+          "visible": 25,
+          "detected": 25,
+          "recall": 1.0,
+          "id_ok": 25,
+          "temp_err_k": {
+            "n": 25,
+            "mean": 0.967,
+            "median": 0.328,
+            "p95": 3.586,
+            "max": 3.679
+          }
+        }
+      }
+    }
+  },
+  "normal_hotspot_roi_reports": {
+    "visible": 33,
+    "reported_normal": 27,
+    "rate": 0.8182
+  },
+  "registration_error_px": {
+    "hotspot_surface_points": {
+      "fixed_2m": {
+        "n": 45146,
+        "mean": 8.496,
+        "median": 8.199,
+        "p95": 17.19,
+        "max": 29.245
+      },
+      "layout_median": {
+        "n": 45146,
+        "mean": 3.666,
+        "median": 1.038,
+        "p95": 15.323,
+        "max": 41.723
+      },
+      "layout_median+ecc": {
+        "n": 45146,
+        "mean": 3.15,
+        "median": 2.402,
+        "p95": 8.503,
+        "max": 47.955
+      },
+      "hotspot_plane": {
+        "n": 45146,
+        "mean": 2.786,
+        "median": 0.591,
+        "p95": 20.225,
+        "max": 46.472
+      },
+      "pipeline": {
+        "n": 45146,
+        "mean": 2.868,
+        "median": 0.682,
+        "p95": 20.217,
+        "max": 46.472
+      },
+      "per_detection_plane": {
+        "n": 45146,
+        "mean": 1.577,
+        "median": 0.645,
+        "p95": 5.451,
+        "max": 25.578
+      }
+    },
+    "all_surface_points": {
+      "fixed_2m": {
+        "n": 59600,
+        "mean": 13.582,
+        "median": 14.178,
+        "p95": 21.514,
+        "max": 99.003
+      },
+      "layout_median": {
+        "n": 59600,
+        "mean": 9.52,
+        "median": 6.045,
+        "p95": 25.152,
+        "max": 117.004
+      },
+      "layout_median+ecc": {
+        "n": 59600,
+        "mean": 8.742,
+        "median": 5.179,
+        "p95": 26.057,
+        "max": 117.004
+      },
+      "hotspot_plane": {
+        "n": 59600,
+        "mean": 8.579,
+        "median": 5.076,
+        "p95": 25.597,
+        "max": 117.004
+      },
+      "pipeline": {
+        "n": 59600,
+        "mean": 8.379,
+        "median": 4.893,
+        "p95": 25.69,
+        "max": 117.001
+      },
+      "per_detection_plane": {
+        "n": 59600,
+        "mean": 8.379,
+        "median": 4.893,
+        "p95": 25.69,
+        "max": 117.001
+      }
+    },
+    "theory": {
+      "baseline_m": 0.05,
+      "f_rgb_px": 828.06,
+      "formula": "e = f_rgb * b * |1/Z - 1/d|",
+      "fixed_2m_examples": {
+        "Z=1.0m": 20.7,
+        "Z=1.5m": 6.9,
+        "Z=3.0m": 6.9,
+        "Z=5.0m": 12.42,
+        "Z=10.0m": 16.56
+      }
+    }
+  },
+  "ecc_on_layout_median_plane": {
+    "runs": 150,
+    "accepted": 128,
+    "accept_rate": 0.8533,
+    "abs_shift_px": {
+      "n": 128,
+      "mean": 4.991,
+      "median": 3.308,
+      "p95": 16.259,
+      "max": 23.623
+    }
+  },
+  "timing_ms": {
+    "thermal_render": {
+      "n": 450,
+      "mean": 46.119,
+      "median": 40.124,
+      "p95": 97.503,
+      "max": 143.067
+    },
+    "rgb_proxy_render": {
+      "n": 150,
+      "mean": 398.778,
+      "median": 391.201,
+      "p95": 538.848,
+      "max": 626.921
+    },
+    "fusion_process": {
+      "n": 450,
+      "mean": 11.266,
+      "median": 1.999,
+      "p95": 36.84,
+      "max": 48.012
+    }
+  }
+}

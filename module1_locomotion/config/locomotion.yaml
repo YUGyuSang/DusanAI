@@ -1,0 +1,266 @@
+# =============================================================================
+#  locomotion_controller parameters (module1_locomotion)
+#  Every value is also the in-code default (controller.DEFAULT_PARAMS /
+#  locomotion_controller_node.NODE_PARAMS).  Floats are written with a decimal
+#  point on purpose (rclpy rejects an int for a double parameter).
+# =============================================================================
+locomotion_controller:
+  ros__parameters:
+    # ---------------------------------------------------------------- locomotion mode
+    # stable: CHAMP-style kinematic gait (stable_gait.py) - default, the more robust mode in the
+    #         Gazebo check (tools/gazebo_check.py, module1_locomotion/README.md section 4.6)
+    # mpc:    5 s convex MPC (mpc.py) + world-frame footholds / body target
+    # runtime: /locomotion/command "mode:stable" | "mode:mpc" | "mode:toggle" (keyboard teleop 'v'),
+    #          applied while standing (a walking robot first stops at a safe gait boundary)
+    locomotion_mode: "stable"
+    # ---------------------------------------------------------------- loop
+    control_rate: 100.0            # [Hz] joint position loop
+    mpc_rate: 20.0                 # [Hz] MPC re-planning (worker thread)
+    use_mpc_thread: true           # false = solve inline in the control loop
+    mpc_max_age: 0.30              # [s] older predictions are not used for the body target
+    state_rate: 20.0               # [Hz] /locomotion/state
+    viz_rate: 5.0                  # [Hz] /mpc/* visualisation topics
+    world_frame: "odom"            # frame of Path / markers (map = odom, identity)
+    cmd_timeout: 0.5               # [s] /cmd_vel older than this -> zero command
+    sensor_timeout: 0.5            # [s] IMU / odom staleness
+    startup_delay: 0.5             # [s] wait after the first joint_states + odom
+    use_imu_orientation: true      # roll/pitch from /imu (200 Hz) instead of /odom (50 Hz): fresher attitude for the PD
+    use_imu_gyro: true             # angular rate for the attitude PD from /imu
+    odom_velocity_source: "differentiate"  # differentiate: velocity from consecutive /odom poses | twist: the gz twist (0.2 s rolling mean, ~0.1 s lag)
+    odom_velocity_tau: 0.08        # [s] first-order filter of the differentiated velocity
+    odom_extrapolate: true         # extrapolate the 50 Hz odometry pose to the control time
+    odom_max_extrapolation: 0.05   # [s]
+    blas_threads: 1                # BLAS thread pool of the node (0 = leave as is); 1 avoids oversubscription with Gazebo
+
+    # ---------------------------------------------------------------- topics
+    odom_topic: "/odom"
+    imu_topic: "/imu"
+    joint_states_topic: "/joint_states"
+    cmd_vel_topic: "/cmd_vel"
+    command_topic: "/locomotion/command"
+    terrain_info_topic: "/terrain/info"
+    elevation_topic: "/elevation_map/points"
+
+    # ---------------------------------------------------------------- posture
+    body_height: 0.34              # [m] base above ground while standing / walking
+    sit_height: 0.16               # [m]
+    stand_up_duration: 2.5         # [s] joint interpolation to the stand posture
+    sit_duration: 2.0              # [s]
+    stance_width_offset: 0.0       # [m] widen the nominal stance laterally
+    body_x_offset: 0.0             # [m] body shift forward relative to the feet centre (stand and walking footholds)
+
+    # ---------------------------------------------------------------- gait
+    gait_mode: "trot"              # trot (default, Gazebo plant routes 3/3) | auto (from /terrain/info, key 5) | crawl
+    default_gait: "trot"
+    trot_period: 0.40              # [s]
+    trot_duty: 0.50
+    crawl_period: 1.20             # [s]  4-beat FL -> RR -> FR -> RL (stride 0.24 m at 0.2 m/s)
+    crawl_duty: 0.80               # >= 0.75; 0.80 gives 4-leg support phases between the beats (physics check: 0.75 tipped over)
+    auto_walk: true                # non-zero /cmd_vel in STAND starts walking
+    idle_to_stand_time: 1.0        # [s] zero command -> stop stepping
+    crawl_to_trot_delay: 1.0       # [s] hysteresis before returning to trot
+    terrain_info_timeout: 2.0      # [s]
+    blocked_speed_scale: 0.7       # forward speed factor when terrain ahead_clear = false
+
+    # ---------------------------------------------------------------- command limits
+    trot_max_vx: 0.6               # [m/s]
+    trot_max_vy: 0.3
+    trot_max_wz: 0.9               # [rad/s]
+    crawl_max_vx: 0.25
+    crawl_max_vy: 0.12
+    crawl_max_wz: 0.5
+    max_accel_x: 0.8               # [m/s^2]
+    max_accel_y: 0.5
+    max_accel_wz: 1.5              # [rad/s^2]
+    cmd_deadband: 0.02
+
+    # ---------------------------------------------------------------- swing legs
+    step_height: 0.08              # [m] trot swing apex above the higher end point
+    crawl_step_height: 0.10
+    swing_clearance: 0.04          # [m] clearance over obstacles along the swing
+    swing_max_lift: 0.25           # [m] cap of the apex above the end points
+    swing_lift_fraction: 0.2       # lift-then-move fraction when an obstacle raises the apex
+    swing_retarget_until: 0.8      # follow new MPC footholds until this swing progress (trot)
+    crawl_retarget_until: 0.0      # crawl: keep the lift-off foothold (late re-targets made the crawl tip over)
+    max_retarget_step: 0.06        # [m] max foothold change per MPC update
+    retarget_check_radius: 0.05    # [m] a rate-limited re-target point next to higher terrain (pipe) is not used: ...
+    retarget_jump_until: 0.3       # ... the new foothold is taken whole up to this swing progress, later the target is kept
+    touchdown_measured_xy: true    # latch the measured foot xy at touch-down
+
+    # ---------------------------------------------------------------- stance / body
+    body_lead_time: 0.02           # [s] look-ahead into the MPC prediction (servo lag)
+    body_target_mode: "integrated" # integrated: xy / yaw integrated from the MPC-predicted velocity (servo-lag tolerant)
+                                   # prediction: pose of the MPC prediction itself (needs a stiff, lag-free servo)
+    # leash of the integrated body target.  The lead is a horizontal force demand on the stance feet
+    # (~4.5 kN/m per stance leg x lead, friction limit ~130 N): Gazebo check (tools/gazebo_check.py)
+    # with 0.10 m / 0.03 m / 0.20 rad: stance feet slid in turns, teleop fell in 2/3 runs; now 3/3 (heading / sideways
+    # leads matter most; 0.06 m forward keeps the propulsion of the compliant servo)
+    max_body_lead: 0.06            # [m] max lead of the integrated body target over the measured base position (trot)
+    max_body_lead_lateral: 0.015   # [m] sideways part of that lead (heading frame): a target left beside the body is slammed in at the next touch-down
+    max_yaw_lead: 0.05             # [rad] same for the heading
+    mpc_lateral_ref_blend: 0.5     # sideways velocity of the integrated target: MPC prediction -> reference (0..1);
+                                   # 0: the target followed the outward drift in turns (0.05-0.11 m/s, Gazebo wall gap)
+    crawl_max_body_lead: 0.10      # [m] crawl: its planned CoM sway needs the lead (MuJoCo: 0/3 crawl runs with the trot limits)
+    crawl_max_body_lead_lateral: 0.03
+    crawl_max_yaw_lead: 0.20       # [rad]
+    kp_attitude: 0.0               # IMU roll/pitch P correction on the IK body orientation (Gazebo: 0.5 tipped the
+                                   # MPC mode over at pipes / after pushes with ~30 ms MPC delay)
+    kd_attitude: 0.0               # gyro D term: limit-cycles with the stiff gz joint servo (physics check), keep 0
+    max_attitude_correction: 0.15  # [rad]
+    # MPC mode stance feet / heading (controller._mpc_stance_feet, _mpc_heading_hold)
+    mpc_stance_max_error: 0.02     # [m] stance anchor - measured foot (horizontal) = force limit (~90 N with the
+                                   #     4.5 kN/m servo); a slid foot was dragged back -> slide -> spin -> fall
+    mpc_stance_rel_error: 0.02     # [m] stance leg deflection beyond its static sag (horizontal) = force limit
+                                   #     incl. the body target lead (~90 N sideways), 0 = off; a wall-jammed knee
+                                   #     shoved the rear, the other stance foot was asked for ~220 N and slid
+    mpc_heading_hold_gain: 1.0     # [1/s] heading hold while no turn is commanded (0 = off)
+    mpc_heading_hold_max: 0.2      # [rad/s]
+    mpc_land_tau: 0.05             # [s] stance foot height lowered to the map height under the foot (never raised: wall
+                                   #     edges in the depth map), 0 = off
+    mpc_contact_lift: 0.02         # [m] stance foot this far above its target (on a pipe) ... -> target = measured (0 = off)
+    mpc_contact_map_tol: 0.04      # [m] ... and sits within this of the top of mapped terrain next to it (0 = off)
+    swing_guard_clearance: 0.02    # [m] a descending swing foot stays this far above higher terrain under / next to the
+                                   #     MEASURED foot (servo lag: feet were driven into the pipe flank), 0 = off
+    swing_guard_radius: 0.06       # [m] map window around the measured foot for that check
+    mpc_turn_pivot_x: -0.15        # [m] body x of the in-place turning centre (0 = base origin): the backward
+                                   #     rear knees (x ~ -0.43) sweep ~0.33 m instead of ~0.47 m; the rear knee
+                                   #     ran into the wall at the C-OBS1 gap exit when turning about the origin
+    mpc_turn_pivot_fade: 0.10      # [m/s] faded out with the commanded translation speed
+    ki_height: 0.5                 # body height integrator [1/s]
+    max_height_integral: 0.03      # [m]
+    max_body_pitch: 0.30           # [rad] terrain-following pitch limit
+    terrain_pitch_gain: 1.0
+    ground_filter_tau: 0.2         # [s] ground height estimate filter
+    stand_filter_tau: 0.3          # [s] body pose filter in STAND
+    max_joint_speed: 12.0          # [rad/s] target rate limit
+    # joint servo (simulation/urdf: gz JointPositionController, PID force mode)
+    torque_feedforward: 0.0        # fraction of the MPC stance torques fed forward as tau / servo_kp (0 = off;
+                                   # 1.0: better trot / payload tracking but push recovery 0/6 in the physics check)
+    servo_kp: 450.0                # [N m/rad] = servo_p_gain of spot.urdf.xacro
+
+    # ---------------------------------------------------------------- terrain
+    use_foothold_planner: true
+    foothold_search_radius: 0.10   # [m]
+
+    # ---------------------------------------------------------------- torque saturation
+    torque_scale_threshold: 0.85   # predicted |tau| / effort above -> slow down
+    torque_recover_threshold: 0.70
+    speed_scale_min: 0.3
+    speed_scale_down: 0.9          # factor per MPC solve while saturated
+    speed_scale_up: 0.02           # increment per MPC solve while below recover threshold
+
+    # ---------------------------------------------------------------- fall recovery
+    auto_recover: true
+    fall_angle_deg: 55.0           # |roll| or |pitch|
+    fall_height: 0.12              # [m] body height above ground
+    fall_detect_time: 0.3          # [s]
+    max_recovery_attempts: 3
+    assisted_reset: true           # gz set_pose after the attempts are exhausted
+    reset_height_offset: 0.5       # [m] above the current position, upright, current yaw
+    reset_settle_time: 1.0         # [s] wait after a reset before standing up
+    reset_confirm_timeout: 8.0     # [s] longest wait for the gz set_pose answer (settle starts at the answer)
+    recovery_retry_time: 5.0       # [s] recovery FAILED (e.g. gz set_pose failed): retry after this long, 0 = stay
+
+    # ---------------------------------------------------------------- gz tools (push / reset)
+    enable_gz_tools: true
+    gz_timeout: 3.0                # [s] subprocess timeout
+    push_force_x: 0.0              # [N] base frame, "push" command
+    push_force_y: 150.0
+    push_duration: 0.2             # [s]
+    grf_arrow_scale: 0.004         # [m/N] GRF marker length
+
+    # ---------------------------------------------------------------- MPC (5 s horizon: 10 x 0.05 s + 18 x 0.25 s)
+    mpc_mass: 15.0                 # [kg] robot_model.TOTAL_MASS
+    mpc_mu: 0.5                    # friction pyramid coefficient
+    mpc_f_min: 0.0                 # [N] normal force bounds (scaled by the contact fraction)
+    mpc_f_max: 250.0
+    #               roll  pitch  yaw   x    y    z    wx   wy   wz   vx   vy   vz
+    mpc_q_weights: [30.0, 30.0, 10.0, 4.0, 4.0, 60.0, 0.5, 0.5, 0.5, 2.0, 2.0, 1.0]
+    mpc_r_weight: 0.0002           # force regularisation (towards gravity compensation)
+    mpc_time_weighting: true       # stage weight = dt_k / dt_0 (cost = time integral)
+    mpc_tail_decay: 0.0            # [s] exponential discount of the far horizon (0 = off)
+    mpc_capture_gain: 0.6          # capture-point gain of the foothold heuristic
+    mpc_feedback_tau: 0.5          # [s] decay of the velocity-error terms along the horizon
+    mpc_max_foot_dx: 0.16          # [m] foothold offset limits around the hip (heading frame)
+    mpc_max_foot_dy: 0.14
+    mpc_terrain_horizon: 1.2       # [s] footholds refined by the foothold planner
+    mpc_sway_gain: 0.5             # crawl CoM sway: fraction of the way to the support-triangle centroid
+    mpc_sway_smooth: 0.5           # [s] Hann smoothing of the sway (peak sway accel ~3.6 m/s^2 < mu g)
+    mpc_sway_ramp: 0.6             # [s] fade-in of the sway when the crawl starts (smaller start transient)
+    mpc_anchor_window: 0.0         # [s] averaging window of the crawl path anchor (0 = one gait period)
+    mpc_terrain_robust: true       # terrain height / pitch reference: median / Theil-Sen fit over the body footprint
+                                   # (false: mean of the 4 nominal footholds - a 0.10 m pipe was a 12 deg "ramp")
+    mpc_qp_max_iter: 250           # ADMM iterations (then solution polishing)
+    mpc_qp_eps: 0.001              # ADMM abs/rel tolerance
+    mpc_qp_time_limit: 0.04        # [s] wall-clock cap of the ADMM loop
+
+    # ---------------------------------------------------------------- slippery ground (README §3.8)
+    # online slip detection: horizontal world speed of the stance feet (leg FK + odometry pose)
+    slip_detection: true
+    slip_speed_threshold: 0.08     # [m/s] stance-foot speed counted as slipping
+    slip_window: 0.06              # [s] finite-difference window of the foot speed
+    slip_settle_time: 0.03         # [s] ignored after each touch-down
+    slip_min_legs: 2               # slipping stance legs needed for a slip vote
+    slip_confirm_time: 0.10        # [s] integrated slip evidence -> slip flag
+    slip_decay: 0.5                # evidence decay (x dt) without a slip vote
+    slip_release_time: 2.0         # [s] without a slip vote ...
+    slip_release_distance: 3.0     # [m] ... and this much body travel since -> flag released (hysteresis)
+    slip_mu_min: 0.15              # lower bound of the MPC friction coefficient
+    slip_mu_margin: 1.0            # MPC mu = margin * (sliding-foot force ratio | /terrain/info friction_mu)
+    slip_mu_drop: 0.6              # mu factor per detection when no force ratio is observable
+    slip_recover_tau: 8.0          # [s] recovery of the mu estimate towards mpc_mu after the release
+    slip_min_normal_force: 20.0    # [N] legs with less (servo-estimated) normal force give no ratio
+    slip_max_force_ratio: 0.4      # sliding legs with a higher |f_t| / f_n do not vote (overload / push, not low friction)
+    slip_max_tilt_deg: 15.0        # no slip votes while |roll| or |pitch| is larger (a falling robot drags its feet)
+    # slip mode (slip flag or /terrain/info slippery = friction prior of the layout plates)
+    use_terrain_friction: true
+    slip_gait: "keep"              # gait in auto mode while slippery: keep (terrain choice) | trot | crawl (physics check: crawl fell)
+    slip_max_vx: 0.2               # [m/s] speed limits in slip mode (trot 0.4 m/s fell on the mu 0.15 plate)
+    slip_max_vy: 0.1
+    slip_max_wz: 0.4               # [rad/s]
+    slip_accel_scale: 0.5          # acceleration limits x this factor in slip mode
+    slip_torque_feedforward: 1.0   # torque feed-forward gain in slip mode (servo sag slides the feet otherwise)
+    slip_ff_ramp_time: 0.5         # [s] ramp of the feed-forward gain
+    slip_max_body_lead: 0.015      # [m] max_body_lead in slip mode (trot): the lead is a propulsive force demand
+    slip_resync_feet: true         # at a slip detection: latched stance-foot targets <- measured (slid) feet
+    slip_stance_width_offset: 0.0  # [m] extra lateral stance offset in slip mode
+    # ---------------------------------------------------------------- stable mode (stable_gait.py)
+    # shares stand-up / sit / fall recovery / slip speed limits / gait selection with the MPC mode;
+    # gait names as in the MPC mode: trot | crawl (= the 4-beat walk, also "gait:walk")
+    stable_trot_period: 0.40       # [s]
+    stable_trot_duty: 0.60         # 4-leg support for 0.04 s at each pair change (smaller pitch / roll after pushes than 0.55)
+    stable_walk_period: 1.20       # [s] 4-beat walk FL -> RR -> FR -> RL
+    stable_walk_duty: 0.80
+    stable_trot_max_vx: 0.5        # [m/s] conservative command limits of the stable mode
+    stable_trot_max_vy: 0.25
+    stable_trot_max_wz: 0.8        # [rad/s]
+    stable_walk_max_vx: 0.2
+    stable_walk_max_vy: 0.1
+    stable_walk_max_wz: 0.4
+    stable_step_height: 0.07       # [m] trot swing apex above the ground line
+    stable_walk_step_height: 0.08
+    stable_stance_depth: 0.005     # [m] stance push (sin profile) below the ground line
+    stable_raibert_gain: 0.1       # [s] touch-down offset per m/s velocity error (0: Gazebo 10 N s pushes 1/3, 0.1: 3/3)
+    stable_max_feedback: 0.05      # [m] limit of that offset
+    stable_max_step_x: 0.12        # [m] |touch-down - nominal foot| limits
+    stable_max_step_y: 0.08
+    stable_retarget_until: 0.8     # swing progress up to which the touch-down point follows the command
+    stable_max_retarget_step: 0.015  # [m/step] touch-down point changes after lift-off (only with the foothold planner / map)
+    stable_land_tau: 0.05          # [s] stance foot height after touch-down -> ground target
+    stable_stance_max_error: 0.015 # [m] stance force limit: target - measured foot (horizontal), ~70 N with the
+                                   #     4.5 kN/m servo; without it the open-loop sweep slid the feet (teleop 0/3)
+    stable_swing_attitude_blend: 0.0  # 0: swing feet in the commanded attitude | 1: in the measured attitude at touch-down
+    stable_kp_level: 0.3           # roll / pitch levelling: P on the IMU attitude
+    stable_ki_level: 1.0           # [1/s] I
+    stable_max_level: 0.15         # [rad]
+    stable_ki_height: 1.0          # [1/s] stance height trim from the leg kinematics
+    stable_max_height_corr: 0.03   # [m]
+    stable_gravity_ff: 1.0         # static weight feed-forward through the PD servo (removes the 1-2 cm load sag)
+    stable_load_ramp: 0.03         # [s] load hand-over at the start / end of each stance
+    stable_load_tau: 0.1           # [s] load filter while standing
+    stable_walk_sway: 0.4          # walk: CoM shift towards the support-triangle centroid (sideways 1.0: fell)
+    stable_walk_sway_smooth: 0.5   # [s]
+    stable_walk_sway_x: 0.0        # fore-aft part of the sway (the sideways part gives most of the margin)
+    stable_stand_center_tau: 0.5   # [s] STAND: body re-centred over the feet
+    stable_heading_hold_gain: 1.0  # [1/s] heading hold while no turn is commanded (0 = off)
+    stable_heading_hold_max: 0.2   # [rad/s]

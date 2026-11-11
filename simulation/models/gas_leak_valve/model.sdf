@@ -1,0 +1,201 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="gas_leak_valve">
+    <static>true</static>
+    <link name="link">
+      <particle_emitter name="gas_plume" type="point">
+        <pose>0.25 0 0.3997 0 0 -0.24498</pose>
+        <emitting>true</emitting>
+        <size>0.05 0.05 0.05</size>
+        <particle_size>0.10 0.10 0.10</particle_size>
+        <lifetime>4</lifetime>
+        <rate>12</rate>
+        <min_velocity>0.15</min_velocity>
+        <max_velocity>0.35</max_velocity>
+        <scale_rate>0.45</scale_rate>
+        <color_start>0.30 0.95 0.35 0.60</color_start>
+        <color_end>0.60 1.00 0.55 0.0</color_end>
+        <particle_scatter_ratio>0.0</particle_scatter_ratio>
+        <material>
+          <diffuse>0.55 1.0 0.55 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+          <pbr>
+            <metal>
+              <albedo_map>model://gas_leak_valve/materials/textures/smoke.png</albedo_map>
+            </metal>
+          </pbr>
+        </material>
+      </particle_emitter>
+      <collision name="base_flange_collision">
+        <pose>0 0 0.015 0 0 0</pose>
+        <geometry><cylinder><radius>0.09</radius><length>0.03</length></cylinder></geometry>
+      </collision>
+      <visual name="base_flange_visual">
+        <pose>0 0 0.015 0 0 0</pose>
+        <geometry><cylinder><radius>0.09</radius><length>0.03</length></cylinder></geometry>
+        <material>
+          <ambient>0.45 0.46 0.48 1</ambient>
+          <diffuse>0.45 0.46 0.48 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.6</metalness>
+              <roughness>0.4</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="stub_collision">
+        <pose>0 0 0.2748 0 0 0</pose>
+        <geometry><cylinder><radius>0.05</radius><length>0.5497</length></cylinder></geometry>
+      </collision>
+      <visual name="stub_visual">
+        <pose>0 0 0.2748 0 0 0</pose>
+        <geometry><cylinder><radius>0.05</radius><length>0.5497</length></cylinder></geometry>
+        <material>
+          <ambient>0.56 0.58 0.6 1</ambient>
+          <diffuse>0.56 0.58 0.6 1</diffuse>
+          <specular>0.6 0.6 0.6 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.6</metalness>
+              <roughness>0.35</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="valve_body_collision">
+        <pose>0 0 0.5997 0 0 0</pose>
+        <geometry><box><size>0.13 0.11 0.1</size></box></geometry>
+      </collision>
+      <visual name="valve_body_visual">
+        <pose>0 0 0.5997 0 0 0</pose>
+        <geometry><box><size>0.13 0.11 0.1</size></box></geometry>
+        <material>
+          <ambient>0.85 0.65 0.1 1</ambient>
+          <diffuse>0.85 0.65 0.1 1</diffuse>
+          <specular>0.4 0.4 0.4 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.3</metalness>
+              <roughness>0.4</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <visual name="stem_visual">
+        <pose>0 0 0.6797 0 0 0</pose>
+        <geometry><cylinder><radius>0.012</radius><length>0.08</length></cylinder></geometry>
+        <material>
+          <ambient>0.56 0.58 0.6 1</ambient>
+          <diffuse>0.56 0.58 0.6 1</diffuse>
+          <specular>0.6 0.6 0.6 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.6</metalness>
+              <roughness>0.35</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <visual name="hand_wheel_visual">
+        <pose>0 0 0.7197 0 0 0</pose>
+        <geometry><cylinder><radius>0.11</radius><length>0.02</length></cylinder></geometry>
+        <material>
+          <ambient>0.75 0.08 0.06 1</ambient>
+          <diffuse>0.75 0.08 0.06 1</diffuse>
+          <specular>0.4 0.4 0.4 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.3</metalness>
+              <roughness>0.4</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <visual name="wheel_spoke_a_visual">
+        <pose>0 0 0.7197 0 0 0</pose>
+        <geometry><box><size>0.22 0.015 0.012</size></box></geometry>
+        <material>
+          <ambient>0.75 0.08 0.06 1</ambient>
+          <diffuse>0.75 0.08 0.06 1</diffuse>
+          <specular>0.4 0.4 0.4 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.3</metalness>
+              <roughness>0.4</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <visual name="wheel_spoke_b_visual">
+        <pose>0 0 0.7197 0 0 0</pose>
+        <geometry><box><size>0.015 0.22 0.012</size></box></geometry>
+        <material>
+          <ambient>0.75 0.08 0.06 1</ambient>
+          <diffuse>0.75 0.08 0.06 1</diffuse>
+          <specular>0.4 0.4 0.4 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.3</metalness>
+              <roughness>0.4</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="outlet_collision">
+        <pose>0.125 0 0.3997 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.035</radius><length>0.25</length></cylinder></geometry>
+      </collision>
+      <visual name="outlet_visual">
+        <pose>0.125 0 0.3997 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.035</radius><length>0.25</length></cylinder></geometry>
+        <material>
+          <ambient>0.56 0.58 0.6 1</ambient>
+          <diffuse>0.56 0.58 0.6 1</diffuse>
+          <specular>0.6 0.6 0.6 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.6</metalness>
+              <roughness>0.35</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="outlet_tee_collision">
+        <pose>0 0 0.3997 0 0 0</pose>
+        <geometry><cylinder><radius>0.055</radius><length>0.12</length></cylinder></geometry>
+      </collision>
+      <visual name="outlet_tee_visual">
+        <pose>0 0 0.3997 0 0 0</pose>
+        <geometry><cylinder><radius>0.055</radius><length>0.12</length></cylinder></geometry>
+        <material>
+          <ambient>0.56 0.58 0.6 1</ambient>
+          <diffuse>0.56 0.58 0.6 1</diffuse>
+          <specular>0.6 0.6 0.6 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.6</metalness>
+              <roughness>0.35</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <visual name="nozzle_visual">
+        <pose>0.25 0 0.3997 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.045</radius><length>0.04</length></cylinder></geometry>
+        <material>
+          <ambient>0.75 0.08 0.06 1</ambient>
+          <diffuse>0.75 0.08 0.06 1</diffuse>
+          <specular>0.4 0.4 0.4 1</specular>
+          <pbr>
+            <metal>
+              <metalness>0.3</metalness>
+              <roughness>0.4</roughness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>
