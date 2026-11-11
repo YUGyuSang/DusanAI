@@ -32,9 +32,11 @@ bash scripts/run_bringup.sh teleop_terminal:=xterm             # 키보드 텔�
 bash scripts/run_bringup.sh thermal_source:=synthetic          # GPU 열화상 센서 대신 합성 열화상
 bash scripts/run_bringup.sh gui:=false headless_rendering:=true   # 화면 없이 (서버 + EGL 렌더링)
 bash scripts/run_demo.sh                                       # 데모 모드 (= demo:=true)
+bash scripts/run_demo.sh --low-memory                          # 8 GB 노트북 (= low_memory:=true, 9장)
 ```
 
 `run_bringup.sh`는 ROS와 워크스페이스를 source한 뒤, 받은 인자를 그대로 `ros2 launch plant_simulation bringup.launch.py`에 넘깁니다.
+`--low-memory`만 `low_memory:=true`로 바꿔 넘깁니다(`DUSAN_LOW_MEMORY=1`도 같음). RAM이 12 GB보다 작은데 이 옵션이 없으면 경고 한 줄이 나옵니다.
 
 **`bringup.launch.py` 인자**
 
@@ -56,6 +58,9 @@ bash scripts/run_demo.sh                                       # 데모 모드 (
 | `hud` | `true` | HUD 노드 `demo_hud` (`/demo/hud`, Gazebo "Robot HUD" 창) |
 | `follow_camera` | `''` (= `demo`) | Gazebo GUI 추적 카메라. `gui:=false`면 켜지지 않음 |
 | `follow_offset` | `-2.5,0.0,1.6` | 로봇 기준 추적 카메라 위치 (m, 뒤/옆/위) |
+| `low_memory` | `false` | 8 GB 노트북용 저메모리 설정 ([9. 저사양 PC 옵션](#low-spec)) |
+| `respawn` | `true` | 죽은 노드를 3 s 뒤 다시 띄움 (상태를 잃어도 되는 노드만, [Q9](#faq-q9)) |
+| `inspection_rate` `inspection_width` `inspection_height` `depth_rate` `thermal_rate` `shadows` `gui_config` `hud_rate` | `''` | 카메라 주기·해상도, 그림자, GUI 배치, HUD 주기를 하나씩 지정 (`''`이면 기본값 또는 `low_memory` 값) |
 
 **시작 순서**
 
@@ -192,7 +197,14 @@ bash scripts/run_bringup.sh teleop_terminal:=gz      # ③ 터미널 없이 Gaze
 
 - **터미널에서**: 텔레옵 터미널을 클릭하고 키를 누릅니다. 상태 줄에 모드, 속도 배율, 보행 모드, 배터리, 미션 상태가 나옵니다.
   `run_teleop.sh`는 실제 터미널에서 실행해야 합니다. IDE나 파이프에서 실행하면 키보드 입력을 받지 못하고 Gazebo 창 키만 받습니다.
-- **Gazebo 창에서**: 3D 화면을 한 번 클릭하고 같은 키를 누릅니다. 텔레옵 노드는 ①②③ 중 하나로 떠 있어야 합니다. Gazebo 창의 ESC는 "정지"입니다.
+- **Gazebo 창에서**: 3D 화면을 한 번 클릭하고 같은 키를 누릅니다. 이동·자세 키는 텔레옵 노드(①②③ 중 하나)가 떠 있어야 합니다. Gazebo 창의 ESC는 "정지"입니다.
+  미션 키 `t` `p` `g` `h` `o`는 텔레옵 노드가 없어도 동작합니다. 텔레옵이 없으면 미션 관리자가 Gazebo 키를 직접 받습니다(`mission.yaml`의 `gazebo_mission_keys`).
+- **미션 키 응답**: 미션 키를 누르면 텔레옵 터미널에 결과가 한 줄 나옵니다. `mission: 'start' accepted - ...`(받아들임),
+  `! mission: 'start' REJECTED - ...`(거절과 이유, 예: 이미 미션 실행 중), `! mission_manager is not answering ...`(미션 관리자가 아직 안 뜸).
+  응답이 없으면 텔레옵이 2 s 간격으로 최대 3번 다시 보내고, 미션 관리자가 아직 안 떴으면 60 s 동안 기다렸다가 뜨는 즉시 보냅니다.
+  같은 결과는 `/mission/state`의 `cmd_seq`와 `recent_commands`(최근 명령 5개, 수락 여부, 메시지)에도 나옵니다.
+- **너무 일찍 누른 `t`**: 순찰 계획(`/patrol/plan_json`)이 아직 없으면 `start`를 받아 두고 최대 30 s(`start_plan_wait`) 동안 계획을 기다린 뒤 출발합니다.
+  그래도 계획이 없으면 배치 파일의 게이지 앞 지점으로 순찰합니다.
 
 | 키 | 동작 | 발행 토픽 |
 |---|---|---|
@@ -392,11 +404,41 @@ YAML을 고친 뒤에는 노드를 다시 실행하면 반영됩니다(기본 �
 | `rviz:=false` (기본) | RViz를 띄우지 않음 |
 | `module_delay:=15.0` | 월드 로딩이 느린 PC에서 모듈 시작을 늦춤 |
 | `export LIBGL_ALWAYS_SOFTWARE=1` | GPU 없는 VM에서 소프트웨어 렌더링 (매우 느림, 최후의 수단) |
+| `low_memory:=true` (`--low-memory`) | 8 GB 노트북용 묶음 설정 (아래) |
 
 ```bash
 bash scripts/run_bringup.sh gui:=false thermal_source:=synthetic                           # 가장 가벼운 조합 (디스플레이 있음)
 bash scripts/run_bringup.sh gui:=false headless_rendering:=true thermal_source:=synthetic   # 디스플레이 없음
 ```
+
+**8 GB 노트북: `--low-memory`** (`low_memory:=true`)
+
+```bash
+bash scripts/run_demo.sh --low-memory        # 데모 영상 (미션 자동 시작 + 추적 카메라 + HUD)
+bash scripts/run_bringup.sh --low-memory     # 직접 운전 / t로 미션 시작
+```
+
+| 항목 | 기본 | `low_memory` |
+|---|---|---|
+| 점검 카메라 | 800×600, 10 Hz | 640×480, 5 Hz (게이지 판독 속도와 같음) |
+| 깊이 카메라 / 열화상 카메라 | 10 Hz / 5 Hz | 5 Hz / 2 Hz |
+| 그림자 | 켬 | 끔 (그림자를 끈 월드 사본을 임시 폴더에 만들어 실행, 원본 월드는 그대로) |
+| Gazebo GUI | `gui.config` | `gui_lean.config`: 점검·열화상 카메라 패널, Component inspector, Entity tree 없음. 3D 화면, 키 입력, 추적 카메라, Robot HUD는 유지 |
+| RViz | `rviz:=true`면 실행 | 실행하지 않음 |
+| HUD | 5 Hz | 3 Hz |
+| 프로세스 메모리 | — | `MALLOC_ARENA_MAX=2`, BLAS/OpenMP 스레드 1개 |
+| 대시보드, 실행 기록, 게이지 결과 저장 | 그대로 | 그대로 |
+
+- 각 항목은 같은 이름의 인자로 따로 바꿀 수 있고, 직접 준 값이 우선합니다. 예: `bash scripts/run_demo.sh --low-memory shadows:=true`.
+- 640×480 점검 카메라로도 게이지 판독은 그대로입니다. 그림자 없이 렌더링한 게이지 8개 × 5시점(정위치 + 위치·방향 오차) 40장을 모두 읽었고 오차 중앙값 0.015 %FS, 최대 0.04 %FS였습니다.
+- **절감량**: Gazebo 서버(로봇 카메라 3대가 렌더링 중인 발전소 월드)를 같은 PC에서 두 설정으로 각각 두 번 실행해 프로세스 메모리를 쟀습니다.
+  전용 메모리 약 840 → 775 MiB, 공유 GPU 메모리(내장 그래픽에서는 시스템 RAM) 약 240 → 165 MiB로 서버만 약 140 MiB 줄었습니다.
+  GUI(카메라 패널 2개와 Entity tree, GUI 화면의 그림자 맵)와 노드 약 18개의 `MALLOC_ARENA_MAX`·BLAS 스레드 효과는 이 방법으로 잴 수 없어 추정치입니다.
+  GUI 약 0.1–0.25 GB, 노드들 약 0.1–0.35 GB로, 합계 약 0.35–0.75 GB가 줄어든다고 봅니다(RViz를 함께 띄우던 경우 RViz 몫 0.2–0.4 GB가 더 줄어듦).
+  카메라가 그리는 화소 수는 점검 카메라 약 3배, 깊이 2배, 열화상 2.5배 줄어 CPU·GPU 부하도 내려갑니다.
+  실제 사용량은 실행 중 `free -h`나 `ps -eo rss,comm --sort=-rss | head -20`으로 확인하세요.
+- 그래도 메모리가 모자라면(`dmesg`에 `Out of memory`, 노드가 `process has died [exit code -9]`로 죽음) 다른 프로그램(브라우저 탭 등)을 닫고,
+  영상 촬영이 아니면 `gui:=false`로 Gazebo 창 없이 대시보드로만 보세요.
 
 - 모든 노드가 시뮬레이션 시간으로 동작하므로 RTF가 1보다 낮아도 결과는 같고 진행만 느려집니다.
 - MPC 모드에서 `mpc_solve_ms`가 30 ms를 넘으면 `locomotion.yaml`의 `mpc_rate`를 20.0 → 10.0으로, `mpc_qp_max_iter`(250)를 낮추세요
@@ -616,8 +658,14 @@ Gazebo 창 오른쪽 아래 World stats나 `ros2 topic hz /clock`(≈ 200 × RTF
 - **대시보드 데이터가 모두 멈춤**: `/clock`이 없습니다. `ros2 topic hz /clock`을 확인하고, Gazebo가 일시정지면 왼쪽 아래 ▶를 누르세요.
   `sim.launch.py clock_relay:=false`로 브리지가 `/clock`을 직접 발행하게 할 수도 있습니다.
 - **로봇이 명령에 반응하지 않음**: `ros2 topic echo /cmd_vel_mux/active`로 선택된 소스를 봅니다. 수동 오버라이드(`m`)나 비상정지(space)가 켜져 있으면 텔레옵이 계속 선택됩니다.
-- **`t`를 눌러도 미션이 시작되지 않음**: 텔레옵 상태 줄에 `mission ...(stale Ns)`가 보이거나 대시보드 **토픽 수신 상태**에서 `/mission/state`가 끊김이면 미션 관리자가 멈춘 것입니다.
-  bringup 터미널에서 Traceback이나 `process has died`를 찾고 bringup을 다시 띄우세요.
+- **`t`를 눌러도 미션이 시작되지 않음**: 텔레옵 터미널의 응답 줄을 먼저 보세요([4. 키보드 조작](#teleop)).
+  `REJECTED`면 이유가 함께 나옵니다(예: 미션이 이미 실행 중이면 대시보드 **임무 중단** 뒤 다시 `t`).
+  `accepted - waiting up to 30 s for the patrol plan`이면 순찰 계획을 기다리는 중이니 잠시 기다리면 출발합니다.
+  `not answering`이나 상태 줄의 `mission ...(stale Ns)`는 미션 관리자가 아직 안 떴거나 멈춘 것입니다.
+- **노드 자동 재시작**: `respawn:=true`(기본)이면 `mission_manager`, `cmd_vel_mux`, `monitor_dashboard`, `demo_hud`, 브리지, `robot_state_publisher`, `map_server_lite`, `clock_relay`,
+  가스 확산·통신·누출원 탐색·복귀(RTH) 노드가 죽어도 3 s 뒤 다시 뜹니다(로그에 `process has died` 다음 같은 노드의 시작 줄).
+  다시 뜬 `mission_manager`는 `IDLE`에서 로봇을 세워 두므로 진행 중이던 미션은 `t`로 새로 시작합니다. 이미 저장된 게이지 결과와 실행 기록은 그대로입니다.
+  배터리 시뮬레이터(다시 뜨면 충전량이 처음 값으로 돌아감), `metrics_logger`(기록 폴더가 둘로 나뉨), `odom_tf`(첫 샘플로 좌표 기준을 정함)는 재시작하지 않으니, 이들이 죽으면 bringup을 다시 띄우세요.
 - 로그에 `mission aborted after an internal error - press 't' to start again`이 있으면 `t`로 새로 시작할 수 있습니다.
 
 <a id="faq-slip"></a>

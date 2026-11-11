@@ -21,13 +21,11 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import BatteryState
 from std_msgs.msg import Float32, String
 
-from dusan_common.ros_helpers import parse_json_msg
-
 from .battery_model import (STATUS_CHARGING, STATUS_DISCHARGING, STATUS_FULL, STATUS_NAMES,
                             BatteryModel, DockDetector)
 from .layout_map import resolve_layout
-from .node_common import (best_effort_qos, declare, now_sec, odom_pose_twist_finite, reliable_qos, run_node, stamp,
-                          warn_throttled)
+from .node_common import (best_effort_qos, declare, finite_or_none, guarded, json_dict, now_sec,
+                          odom_pose_twist_finite, reliable_qos, run_node, stamp, warn_throttled)
 from .params import BATTERY_PARAMS, battery_config
 
 
@@ -51,11 +49,13 @@ class BatteryNode(Node):
         self._nominal_v = self.model.ocv(0.5)
 
         self.pub = self.create_publisher(BatteryState, "/battery/state", reliable_qos(10))
-        self.create_subscription(Odometry, p["odom_topic"], self._on_odom, best_effort_qos(5))
-        self.create_subscription(String, "/locomotion/state", self._on_loco, best_effort_qos(5))
-        self.create_subscription(Float32, "/battery/set_level", self._on_set, reliable_qos(10))
-        self.create_timer(1.0 / max(p["update_rate"], 0.5), self._on_update)
-        self.create_timer(1.0 / max(p["publish_rate"], 0.1), self._publish)
+        # every callback is guarded: an exception is logged and the node keeps running
+        g = lambda fn: guarded(self, fn.__name__, fn)  # noqa: E731
+        self.create_subscription(Odometry, p["odom_topic"], g(self._on_odom), best_effort_qos(5))
+        self.create_subscription(String, "/locomotion/state", g(self._on_loco), best_effort_qos(5))
+        self.create_subscription(Float32, "/battery/set_level", g(self._on_set), reliable_qos(10))
+        self.create_timer(1.0 / max(p["update_rate"], 0.5), g(self._on_update))
+        self.create_timer(1.0 / max(p["publish_rate"], 0.1), g(self._publish))
         self.get_logger().info(
             f"battery {self.model.cfg.capacity_wh:.0f} Wh, start {self.model.percentage:.0f} %, dock at "
             f"({dock[0]:.2f}, {dock[1]:.2f}) tol {tol:.2f} m, time_scale {self.model.cfg.time_scale}")
@@ -71,13 +71,17 @@ class BatteryNode(Node):
         self.wz = wz
 
     def _on_loco(self, msg: String) -> None:
-        d = parse_json_msg(msg, {}) or {}
-        mode = str(d.get("mode", "")).lower()
+        mode = json_dict(msg).get("mode")
+        mode = mode.lower() if isinstance(mode, str) else ""   # malformed / non-object JSON -> ignored
         if mode:
             self.mode = mode
 
     def _on_set(self, msg: Float32) -> None:
-        self.model.set_level(float(msg.data))
+        pct = finite_or_none(msg.data)
+        if pct is None:                       # NaN would poison the state of charge for good
+            warn_throttled(self, "set_level", f"/battery/set_level {msg.data!r} ignored (not a finite number)")
+            return
+        self.model.set_level(pct)
         self.get_logger().info(f"battery level set to {self.model.percentage:.1f} % (test override)")
         self._publish()
 

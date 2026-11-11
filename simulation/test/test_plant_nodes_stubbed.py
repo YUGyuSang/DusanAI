@@ -66,6 +66,7 @@ String = msg("String", data="")
 Bool = msg("Bool", data=False)
 Float32 = msg("Float32", data=0.0)
 Float64 = msg("Float64", data=0.0)
+Int32 = msg("Int32", data=0)
 Image = msg("Image", header=Header, height=0, width=0, encoding="", is_bigendian=0, step=0, data=bytes)
 BatteryState = msg("BatteryState", consts={"POWER_SUPPLY_STATUS_UNKNOWN": 0, "POWER_SUPPLY_STATUS_CHARGING": 1,
                                            "POWER_SUPPLY_STATUS_DISCHARGING": 2},
@@ -276,7 +277,7 @@ def _modules():
     mod("rclpy.qos", QoSProfile=lambda **kw: Rec(**kw), qos_profile_sensor_data=Rec(reliability="be"), **policies)
     mod("rclpy.clock", Clock=FakeClock, ClockType=type("ClockType", (), {"STEADY_TIME": 2, "ROS_TIME": 1}))
     mod("std_msgs")
-    mod("std_msgs.msg", String=String, Bool=Bool, Float32=Float32, Float64=Float64)
+    mod("std_msgs.msg", String=String, Bool=Bool, Float32=Float32, Float64=Float64, Int32=Int32)
     mod("geometry_msgs")
     mod("geometry_msgs.msg", Twist=Twist, TransformStamped=TransformStamped, Point=Point, PointStamped=PointStamped,
         PoseStamped=PoseStamped, Quaternion=Quaternion, Vector3=Vector3)

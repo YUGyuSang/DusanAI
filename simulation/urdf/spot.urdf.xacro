@@ -22,6 +22,9 @@
            enable_gazebo    (true)  - plugins + sensors
            enable_cameras   (true)  - depth / inspection / thermal cameras
            enable_thermal   (true)  - thermal camera only (needs the ogre2 thermal pipeline)
+           depth_rate (10) inspection_rate (10) thermal_rate (5)       - camera update rates [Hz]
+           inspection_width (800) inspection_height (600)              - inspection camera image size
+                            (bringup low_memory:=true: 640 x 480 @ 5 Hz, depth 5 Hz, thermal 2 Hz)
 -->
 <robot name="spot" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
@@ -29,6 +32,11 @@
   <xacro:arg name="enable_gazebo" default="true"/>
   <xacro:arg name="enable_cameras" default="true"/>
   <xacro:arg name="enable_thermal" default="true"/>
+  <xacro:arg name="depth_rate" default="10"/>
+  <xacro:arg name="inspection_rate" default="10"/>
+  <xacro:arg name="thermal_rate" default="5"/>
+  <xacro:arg name="inspection_width" default="800"/>
+  <xacro:arg name="inspection_height" default="600"/>
   <xacro:property name="mesh_prefix" value="$(arg mesh_uri_prefix)"/>
 
   <!-- ===================== robot_model.py constants =====================
@@ -391,7 +399,7 @@
       <gazebo reference="depth_camera_link">
         <sensor name="depth_camera" type="depth_camera">
           <always_on>true</always_on>
-          <update_rate>10</update_rate>
+          <update_rate>$(arg depth_rate)</update_rate>
           <visualize>false</visualize>
           <topic>/depth_camera/image</topic>
           <gz_frame_id>depth_camera_link</gz_frame_id>
@@ -421,15 +429,15 @@
       <gazebo reference="inspection_camera_link">
         <sensor name="inspection_camera" type="camera">
           <always_on>true</always_on>
-          <update_rate>10</update_rate>
+          <update_rate>$(arg inspection_rate)</update_rate>
           <visualize>false</visualize>
           <topic>/inspection_camera/image</topic>
           <gz_frame_id>inspection_camera_link</gz_frame_id>
           <camera name="inspection_camera">
             <horizontal_fov>0.9</horizontal_fov>
             <image>
-              <width>800</width>
-              <height>600</height>
+              <width>$(arg inspection_width)</width>
+              <height>$(arg inspection_height)</height>
               <format>R8G8B8</format>
             </image>
             <clip>
@@ -446,7 +454,7 @@
         <gazebo reference="thermal_camera_link">
           <sensor name="thermal_camera" type="thermal">
             <always_on>true</always_on>
-            <update_rate>5</update_rate>
+            <update_rate>$(arg thermal_rate)</update_rate>
             <visualize>false</visualize>
             <topic>/thermal_camera/image</topic>
             <gz_frame_id>thermal_camera_link</gz_frame_id>

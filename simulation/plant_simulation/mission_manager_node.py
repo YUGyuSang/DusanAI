@@ -22,7 +22,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import OccupancyGrid, Odometry, Path
 from sensor_msgs.msg import PointCloud2
-from std_msgs.msg import Bool, Float32, String
+from std_msgs.msg import Bool, Float32, Int32, String
 
 from dusan_common.geometry import yaw_from_quat
 from dusan_common.grid_map import OccupancyGridMap
@@ -38,6 +38,11 @@ from plant_simulation.node_utils import (best_effort_qos, guarded, map_fingerpri
 MAP_FILE_FALLBACK_AFTER = 10.0   # s (wall) without /map before loading the map file directly
 STEP_FAILURES_BEFORE_ABORT = 3   # consecutive MissionLogic.step exceptions -> abort, 't' starts afresh
 FRAME_WARN_PERIOD = 30.0         # s (wall) between warnings about rejected obstacle frames
+TELEOP_ALIVE_S = 2.0             # s (wall): a keyboard_teleop heartbeat this recent -> it handles the Gazebo keys
+GZ_KEY_REPEAT_S = 0.6            # s (wall): the same Gazebo key again within this gap = OS auto-repeat of a held key
+# Gazebo KeyPublisher (Qt key codes = upper-case ASCII) -> mission command, used only while NO keyboard_teleop
+# runs ('t' in the Gazebo window must start the mission even when the teleop terminal was never opened / quit)
+GZ_MISSION_KEYS = {ord("T"): "start", ord("P"): "patrol", ord("G"): "seek", ord("H"): "rth", ord("O"): "toggle"}
 
 
 class MissionManagerNode(Node):
@@ -70,8 +75,11 @@ class MissionManagerNode(Node):
         subscribe_any(self, String, "/safety/status", g("_on_safety"))
         subscribe_any(self, Bool, "/safety/rth_active",
                       g("rth_active", lambda m: self.logic.on_rth_active(m.data, now_sec(self))))
-        subscribe_any(self, Bool, "/teleop/active",
-                      g("teleop_active", lambda m: self.logic.on_teleop_active(m.data, now_sec(self))))
+        subscribe_any(self, Bool, "/teleop/active", g("teleop_active", self._on_teleop_active))
+        self._teleop_seen = None      # wall time of the last /teleop/active (true OR false heartbeat)
+        self._gz_key_last = (None, -1e9)   # (key code, wall time) of the last Gazebo key event
+        if self.p["gazebo_mission_keys"]:
+            self.create_subscription(Int32, "/keyboard/keypress", g("_on_gz_key"), reliable_qos(20))
         subscribe_any(self, String, "/locomotion/state", g("_on_loco"))
         self.create_subscription(String, "/mission/command", g("_on_command"), reliable_qos(10))
         # novel obstacles from terrain_mapper's elevation map (RELIABLE depth-1 publisher: a
@@ -148,11 +156,38 @@ class MissionManagerNode(Node):
     def _on_loco(self, msg):
         self.logic.on_locomotion_state(parse_json_msg(msg), now_sec(self))
 
+    def _on_teleop_active(self, msg):
+        self._teleop_seen = time.monotonic()
+        self.logic.on_teleop_active(msg.data, now_sec(self))
+
+    def _on_gz_key(self, msg):
+        code = int(msg.data)
+        cmd = GZ_MISSION_KEYS.get(code)
+        if cmd is None:
+            return
+        now = time.monotonic()
+        last_code, last_t = self._gz_key_last
+        self._gz_key_last = (code, now)
+        if code == last_code and now - last_t < GZ_KEY_REPEAT_S:
+            return                    # auto-repeat of a held key: one command per press ('o' must not flicker)
+        if self._teleop_seen is not None and now - self._teleop_seen < TELEOP_ALIVE_S:
+            return                    # keyboard_teleop is running and handles the key itself
+        if cmd == "toggle":
+            cmd = "resume" if self.logic.paused else "pause"
+        self.get_logger().info(f"Gazebo key -> mission command '{cmd}' (no keyboard_teleop running)")
+        t = now_sec(self)
+        self.logic.command(cmd, t)
+        self._state_pub(t, force=True)
+
     def _on_command(self, msg):
         cmd = (msg.data or "").strip()
         if cmd:
             self.get_logger().info(f"mission command: '{cmd}'")
-            self.logic.command(cmd, now_sec(self))
+            t = now_sec(self)
+            self.logic.command(cmd, t)
+            # acknowledge at once (the outputs follow on the next tick): the sender sees
+            # 'accepted' / 'rejected' even while the simulation clock is paused
+            self._state_pub(t, force=True)
 
     def _obstacle_frame_ok(self, frame_id):
         if frame_accepted(frame_id, self.p["obstacle_frames"]):

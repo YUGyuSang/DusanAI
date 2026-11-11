@@ -99,9 +99,13 @@ bash scripts/run_bringup.sh         # 터미널 1: 전체 시스템
 bash scripts/run_teleop.sh          # 터미널 2: 키보드 조작
 ```
 
+RAM 8 GB 노트북에서는 `--low-memory`를 붙입니다(`bash scripts/run_demo.sh --low-memory`, `bash scripts/run_bringup.sh --low-memory`).
+점검 카메라 640×480 5 Hz, 그림자·RViz 끔, 가벼운 Gazebo 화면으로 실행하고 대시보드와 결과 저장은 그대로입니다([USAGE 9장](docs/USAGE.md#low-spec)).
+
 1. 로봇이 충전소에서 생성되어 스스로 일어섭니다.
 2. 브라우저에서 **http://localhost:8080**을 엽니다. 대시보드 로봇 패널의 배지가 **서 있음**이면 준비가 끝난 것입니다.
 3. 데모는 25초 뒤 미션을 자동으로 시작합니다. 직접 운전할 때는 텔레옵 터미널에서 **`t`**를 누르면 전체 미션(게이지 순찰 → 가스 누출원 탐색 → 충전소 복귀)이 시작됩니다. 대시보드 **임무 시작** 버튼도 같습니다.
+   텔레옵 터미널에 `mission: 'start' accepted`가 나오면 받아들여진 것이고, 텔레옵 없이 Gazebo 3D 화면을 클릭한 뒤 `t`를 눌러도 됩니다.
 
 | 키 | 동작 | 키 | 동작 |
 |---|---|---|---|

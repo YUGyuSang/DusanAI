@@ -36,14 +36,14 @@ from geometry_msgs.msg import Twist
 from dusan_common.grid_map import OccupancyGridMap
 from dusan_common.obstacle_layer import EvidenceFrame, frame_accepted, organised_cloud_to_xyz
 from dusan_common.planning import path_to_msg
-from dusan_common.ros_helpers import json_msg, parse_json_msg
+from dusan_common.ros_helpers import json_msg
 
 from .battery_model import BatteryConfig, BatteryModel
 from .comm_model import CommModel, RssiMap, config_from_layout
 from .layout_map import map_fingerprint
-from .node_common import (best_effort_qos, declare, latched_qos, load_layout_and_map, now_sec,
-                          odom_pose_twist_finite, reliable_qos, run_node, stamp, subscribe_latched, twist_msg,
-                          warn_throttled)
+from .node_common import (best_effort_qos, declare, finite_or_none, guarded, json_dict, latched_qos,
+                          load_layout_and_map, now_sec, odom_pose_twist_finite, reliable_qos, run_node, stamp,
+                          subscribe_latched, twist_msg, warn_throttled)
 from .params import RTH_PARAMS, rth_config
 from .rth_logic import MONITOR, GeodesicField, PlannerWorker, RthInputs, RthLogic, terrain_cost_for
 
@@ -97,30 +97,33 @@ class ReturnToHomeNode(Node):
         self.pub_status = self.create_publisher(String, "/safety/status", reliable_qos(10))
         self.pub_active = self.create_publisher(Bool, "/safety/rth_active", reliable_qos(10))
 
-        self.create_subscription(Odometry, p["odom_topic"], self._on_odom, best_effort_qos(5))
-        self.create_subscription(BatteryState, "/battery/state", self._on_battery, best_effort_qos(5))
-        self.create_subscription(Float32, "/comm/rssi", self._on_rssi, best_effort_qos(5))
-        subscribe_latched(self, OccupancyGrid, "/comm/rssi_map", self._on_rssi_map)
-        subscribe_latched(self, Path, "/nav/plan", self._on_plan)
-        self.create_subscription(String, "/mission/command", self._on_command, reliable_qos(10))
-        self.create_subscription(String, "/locomotion/state", self._on_loco, best_effort_qos(5))
+        # every callback is guarded: an exception is logged and the node keeps running (a dead
+        # return_to_home would silently end the battery / comm-shadow supervision of the run)
+        g = lambda fn: guarded(self, fn.__name__, fn)  # noqa: E731
+        self.create_subscription(Odometry, p["odom_topic"], g(self._on_odom), best_effort_qos(5))
+        self.create_subscription(BatteryState, "/battery/state", g(self._on_battery), best_effort_qos(5))
+        self.create_subscription(Float32, "/comm/rssi", g(self._on_rssi), best_effort_qos(5))
+        subscribe_latched(self, OccupancyGrid, "/comm/rssi_map", g(self._on_rssi_map))
+        subscribe_latched(self, Path, "/nav/plan", g(self._on_plan))
+        self.create_subscription(String, "/mission/command", g(self._on_command), reliable_qos(10))
+        self.create_subscription(String, "/locomotion/state", g(self._on_loco), best_effort_qos(5))
         if p["use_map_topic"]:
-            subscribe_latched(self, OccupancyGrid, "/map", self._on_map)
+            subscribe_latched(self, OccupancyGrid, "/map", g(self._on_map))
         # novel obstacles from terrain_mapper (RELIABLE depth-1 publisher; best effort depth 1 = latest frame)
         self.obstacle_topic = None
         if p["obstacle_enabled"]:
             if str(p["obstacle_source"]).strip().lower() == "traversability":
                 self.obstacle_topic = p["obstacle_traversability_topic"]
-                self.create_subscription(OccupancyGrid, self.obstacle_topic, self._on_obstacle_grid,
+                self.create_subscription(OccupancyGrid, self.obstacle_topic, g(self._on_obstacle_grid),
                                          best_effort_qos(1))
             else:
                 self.obstacle_topic = p["obstacle_elevation_topic"]
-                self.create_subscription(PointCloud2, self.obstacle_topic, self._on_obstacle_cloud,
+                self.create_subscription(PointCloud2, self.obstacle_topic, g(self._on_obstacle_cloud),
                                          best_effort_qos(1))
 
-        self.create_timer(1.0 / max(p["rate"], 1.0), self._on_timer)
-        self.create_timer(1.0 / max(p["status_rate"], 0.1), self._publish_status)
-        self.create_timer(1.0 / max(p["active_rate"], 0.1), self._publish_active)
+        self.create_timer(1.0 / max(p["rate"], 1.0), g(self._on_timer))
+        self.create_timer(1.0 / max(p["status_rate"], 0.1), g(self._publish_status))
+        self.create_timer(1.0 / max(p["active_rate"], 0.1), g(self._publish_active))
         self._last_out = None
         self.get_logger().info(
             f"RTH supervisor: battery < {cfg.rth_battery_pct:.0f} %, resume at {cfg.resume_battery_pct:.0f} %, "
@@ -160,16 +163,22 @@ class ReturnToHomeNode(Node):
         self.vel = (vx, vy)
 
     def _on_battery(self, msg: BatteryState) -> None:
-        pct = float(msg.percentage)
-        if pct == pct:   # not NaN
+        pct = finite_or_none(msg.percentage)
+        if pct is not None:   # not NaN / inf
             self.battery_pct = 100.0 * pct if pct <= 1.0 + 1e-6 else pct
         self.charging = msg.power_supply_status in (BatteryState.POWER_SUPPLY_STATUS_CHARGING,
                                                     BatteryState.POWER_SUPPLY_STATUS_FULL)
 
     def _on_rssi(self, msg: Float32) -> None:
-        self.rssi = float(msg.data)
+        rssi = finite_or_none(msg.data)
+        if rssi is not None:
+            self.rssi = rssi
 
     def _on_rssi_map(self, msg: OccupancyGrid) -> None:
+        if msg.info.width <= 0 or msg.info.width * msg.info.height != len(msg.data):
+            warn_throttled(self, "rssi_map", f"/comm/rssi_map ignored: {len(msg.data)} cells for "
+                                             f"{msg.info.width}x{msg.info.height}", 30.0)
+            return
         self._rssi_map = RssiMap.from_grid_values(
             np.array(msg.data, dtype=float).reshape(msg.info.height, msg.info.width),
             msg.info.resolution, msg.info.origin.position.x, msg.info.origin.position.y)
@@ -190,8 +199,8 @@ class ReturnToHomeNode(Node):
             self.commands.append(cmd)
 
     def _on_loco(self, msg: String) -> None:
-        d = parse_json_msg(msg, {}) or {}
-        self.loco_mode = str(d.get("mode", "")).upper()
+        mode = json_dict(msg).get("mode")
+        self.loco_mode = mode.upper() if isinstance(mode, str) else ""   # malformed JSON -> ''
 
     def _obstacle_frame(self, msg, convert) -> None:
         """Frame check + conversion; a malformed message is logged, never raised."""

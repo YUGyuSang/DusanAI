@@ -20,7 +20,7 @@ from nav_msgs.msg import Odometry, OccupancyGrid
 from std_msgs.msg import Float32
 
 from .comm_model import CommModel, FadingProcess, config_from_layout
-from .node_common import (best_effort_qos, declare, latched_qos, load_layout_and_map, now_sec,
+from .node_common import (best_effort_qos, declare, guarded, latched_qos, load_layout_and_map, now_sec,
                           odom_pose_twist_finite, reliable_qos, run_node, stamp, warn_throttled)
 from .params import COMM_PARAMS
 
@@ -53,10 +53,11 @@ class CommNode(Node):
 
         self.pub_map = self.create_publisher(OccupancyGrid, "/comm/rssi_map", latched_qos(1))
         self.pub_rssi = self.create_publisher(Float32, "/comm/rssi", reliable_qos(10))
-        self.create_subscription(Odometry, p["odom_topic"], self._on_odom, best_effort_qos(5))
-        self.create_timer(1.0 / max(p["publish_rate"], 0.1), self._on_timer)
+        g = lambda fn: guarded(self, fn.__name__, fn)  # noqa: E731  (exceptions logged, node keeps running)
+        self.create_subscription(Odometry, p["odom_topic"], g(self._on_odom), best_effort_qos(5))
+        self.create_timer(1.0 / max(p["publish_rate"], 0.1), g(self._on_timer))
         if p["map_republish_period"] > 0.0:
-            self.create_timer(float(p["map_republish_period"]), self._publish_map)
+            self.create_timer(float(p["map_republish_period"]), g(self._publish_map))
         self._publish_map()
 
     def _publish_map(self) -> None:
