@@ -34,8 +34,9 @@ restarted when they die (3 s delay), as are the stateless nodes of sim.launch.py
 there).  A restarted mission_manager comes back IDLE with the robot held still - the mission
 progress is lost, but 't' starts again (without the restart 't' would do nothing until the whole
 bring-up is restarted); results already saved by metrics_logger / the inspection nodes are kept.
-metrics_logger is not respawned (a restart would split the run into two result folders),
-follow_camera exits by design once the camera follows.
+metrics_logger is not respawned (a restart would split the run into two result folders), nor is
+follow_camera (once the camera follows it only keeps its fall guard on /locomotion/state, and it
+exits when there is no rclpy or with --no-fall-guard).
 
 Arguments (defaults)
   gui (true)  rviz (false)  thermal_source (gazebo)  mission_autostart (false)
