@@ -335,7 +335,7 @@ stateDiagram-v2
 | **순찰만** | **순찰** / `p` / `"{data: patrol}"` | 게이지 8개 순회 후 그 자리에서 `DONE`. 가스 경보가 나면 탐색은 함 | 임무 `DONE`(완료), 계기 판독 표 |
 | **가스 추적** | 전체 미션 중 자동, 또는 **가스 추적** / `g` / `"{data: seek}"` | `SEARCH → SURGE → (CAST) → GRADIENT → FOUND`. 미션 쪽 제한 시간 180 s | 가스 패널, 지도의 추적 경로, `/gas/seek_status` |
 | **복귀 (RTH)** | **충전소 복귀** / `h` / `"{data: rth}"` | `RTH_PLANNING → RTH_NAVIGATING → DOCKING → DOCKED` → `CHARGING` → 95 % 또는 `resume`이면 `MONITOR` | 안전 · 전원 패널, `/safety/status` |
-| **넘어짐 테스트** | IDLE 또는 일시정지 상태에서 `f` / `"{data: push}"`. 더 세게: `"{data: 'push:0,300'}"` (fx, fy [N], 0.2 s) | `FALL_DETECTED → DAMP → TUCK → (ROCK) → SELF_RIGHT → PREPARE → STAND_UP → VERIFY`. 3회 실패하면 5 s 쉬고 다시 시도 (순간이동 보조 리셋은 기본 꺼짐) | 로봇 패널 "넘어짐 / 자가 복구"와 단계 배지, HUD 가운데 패널, `/locomotion/fall_event` |
+| **넘어짐 테스트** | IDLE 또는 일시정지 상태에서 `f` / `"{data: push}"`. 더 세게: `"{data: 'push:0,300'}"` (fx, fy [N], 0.2 s) | `FALL_DETECTED → DAMP → TUCK → (ROCK) → SELF_RIGHT → PREPARE → STAND_UP → VERIFY`. 배관 위에 누우면 `SLIDE`, 턱에 걸치면 `BACK_OFF`로 몸을 돌린 뒤 다시 시도. 3회 실패하면 5 s 쉬고 다시 시도 (순간이동 보조 리셋은 기본 꺼짐) | 로봇 패널 "넘어짐 / 자가 복구"와 단계 배지, HUD 가운데 패널, `/locomotion/fall_event` |
 | **배터리 테스트** | 순찰 중 **19 %로 설정** / `b` / `ros2 topic pub --once /battery/set_level std_msgs/msg/Float32 "{data: 19.0}"` | 20 % 미만 1 s → `battery_low` RTH → 도킹 → 충전. 남은 점검 지점은 보존 | 안전 · 전원 패널의 복귀 사유. 이어서 하려면 `resume`. `n` / **100 %로 설정**은 충전을 건너뜀 |
 
 - **가스 추적**: 누출원은 터빈홀(x −3.2, y 2.0)에 있습니다. 도크에서 바로 `seek`를 누르면 180 s 안에 못 찾을 수 있으니, 홀 안에서 누르세요.
@@ -583,7 +583,7 @@ python tools/generate_world.py                        # world_layout.yaml을 고
 | `tools/gazebo_check.py` (Gazebo 헤드리스 보행 검증) | `python tools/gazebo_check.py --scenarios a b --seeds 0 --duration 9 --no-save` | `docs/results/gazebo_check.json`, [module1 README §4.5](../module1_locomotion/README.md#45-gazebo-헤드리스-검증-toolsgazebo_checkpy) |
 | `tools/obstacle_check.py` (지도에 없는 박스를 넣은 미션) | `python tools/obstacle_check.py --scenarios u --seeds 0` | `--out` 파일, [REPORT §7.8.3](REPORT.md#783-gazebo-신규-박스-실험-toolsobstacle_checkpy) |
 | `tools/fall_check.py` (넘어짐 → 물리 자가 복구: 옆·등·밀기·벽·경사로·미션 중·배관 위에 누움·경사로 턱에 걸침) | `python tools/fall_check.py --cases side back --seeds 0 --no-save` | `docs/results/fall_check.json`, [module1 README §4.9](../module1_locomotion/README.md#49-gazebo-넘어짐-복구-검증-toolsfall_checkpy) |
-| `tools/mission_check.py` (데모 미션 전체: 도크 → 8개 계기판 → 가스 탐색 → 귀환·도킹) | `python tools/mission_check.py --seeds 0 --out <파일>.json` | `--out` 파일, [module1 README §4.10](../module1_locomotion/README.md#410-gazebo-전체-미션-검증-toolsmission_checkpy) |
+| `tools/mission_check.py` (데모 미션 전체: 도크 → 8개 계기판 → 가스 탐색 → 귀환·도킹) | `python tools/mission_check.py --seeds 0 --out <파일>.json` | `--out` 파일(`--save`면 `docs/results/mission_check.json`), [module1 README §4.10](../module1_locomotion/README.md#410-gazebo-전체-미션-검증-toolsmission_checkpy) |
 
 - Gazebo 도구 네 개는 gz-sim 8 파이썬 바인딩(`gz.sim8`, `gz.transport13`)이 필요합니다. conda-forge의 `gz-sim8` 등으로 설치합니다([SETUP_GUIDE §7](SETUP_GUIDE.md#7-개발-도구)).
   Jetty(gz-sim 10) 바인딩은 `GZ_CHECK_RELEASE=jetty`로 시도할 수 있습니다(미검증).
@@ -592,6 +592,10 @@ python tools/generate_world.py                        # world_layout.yaml을 고
 - physics_check는 `--out <파일>.json --no-figures`, gazebo_check·fall_check는 `--no-save`를 붙이면 저장소의 결과 파일을 덮어쓰지 않습니다. obstacle_check·mission_check는 `--out`에만 씁니다
   (mission_check는 `--save`일 때만 `docs/results/mission_check.json`).
   mission_check의 구간 실행: `--leg K --legs N`(순찰 계획의 K번째 구간부터 N개), `--spawn=x,y,yaw --goal=x,y`(임의 구간).
+- fall_check는 케이스·시드마다 순간이동 없이 일어났는지, 복구 시간, 시도 횟수, 거친 단계를 출력합니다(케이스 목록은 `--help`).
+  mission_check는 실행마다 완료 여부(DOCKED + 게이지 8/8 + 누출원 FOUND + 순간이동 0), 넘어진 위치와 구역, 멈춤을 출력하며
+  전체 미션 한 번에 벽시계 약 20분이 걸립니다(동시에 최대 `--jobs`개). 저장한 결과는 `python tools/fall_check.py --summary-only`,
+  `python tools/mission_check.py --summary docs/results/mission_check.json`으로 다시 볼 수 있습니다.
   시나리오와 다른 옵션은 각 도구의 `--help`에 있습니다.
 - `GZ_PYTHON=<바인딩이 있는 python 경로>`를 지정하면 `tools/test/test_gazebo_check.py`, `tools/test/test_fall_check.py`, `tools/test/test_mission_check.py`의 폐루프 테스트도 실행됩니다.
 
@@ -679,10 +683,13 @@ Gazebo 창 오른쪽 아래 World stats나 `ros2 topic hz /clock`(≈ 200 × RTF
 <a id="faq-fall"></a>
 ### Q8. 로봇이 넘어진다 / 일어나지 못한다
 
-- **자동 복구**: |roll| 또는 |pitch| > 55°, 또는 몸통 높이 < 0.12 m가 0.3 s 이어지면 넘어짐으로 봅니다. 로봇이 자기 다리로 일어납니다
-  (옆으로 누우면 다리로 밀어 배 쪽으로 굴리고, 등으로 누우면 먼저 옆으로 굴림). 3회 시도가 모두 실패하면 5 s(`recovery_retry_time`,
-  `locomotion.yaml`) 쉬고 처음부터 다시 시도하며, 일어설 때까지 반복합니다. 순간이동(`gz` set_pose) 보조 리셋은 기본으로 꺼져 있고
-  `locomotion.yaml`의 `assisted_reset: true`로 켤 수 있습니다.
+- **자동 복구**: |roll| 또는 |pitch| > 55°, 또는 몸통 높이 < 0.12 m가 0.3 s 이어지면 넘어짐으로 봅니다. 벽에 기대 30° 넘게 기운 채
+  2 s 서 있어도 넘어짐입니다(`fall_lean_deg`, `fall_lean_time`). 로봇이 순간이동 없이 자기 다리로 일어납니다
+  (옆으로 누우면 다리로 밀어 배 쪽으로 굴리고, 등으로 누우면 먼저 옆으로 굴림). 보통 6–15 s 걸립니다.
+  배관 위에 등을 대고 누우면 앞다리로 바닥을 짚고 몸을 돌린 뒤(`SLIDE`), 경사로 가장자리 턱에 걸치면 몸을 돌려 턱에서 내려온 뒤(`BACK_OFF`)
+  다시 굴려서 30–80 s 걸릴 수 있습니다. 3회 시도가 모두 실패하면 5 s(`recovery_retry_time`, `locomotion.yaml`) 힘을 뺐다가
+  처음부터 다시 시도하며, 일어설 때까지 반복합니다. 진행 단계는 HUD 가운데 패널과 대시보드 **로봇 · 전원**의 배지에 나옵니다.
+  순간이동(`gz` set_pose) 보조 리셋은 기본으로 꺼져 있고 `locomotion.yaml`의 `assisted_reset: true`로 켤 수 있습니다(3회 실패 뒤 현재 위치에 똑바로 놓음).
   미션 중 20 s(`recover_after`, `mission.yaml`) 넘게 넘어져 있으면 미션 관리자가 `recover`를 보내고, 일어서면 경로를 다시 계획해 이어 갑니다.
 - **수동 복구**: 대시보드 **복구**, 텔레옵 `r`, 또는 `ros2 topic pub --once /locomotion/command std_msgs/msg/String "{data: recover}"`.
   자세를 강제로 리셋하려면 텔레옵 `0`(`reset_pose`).

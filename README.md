@@ -147,8 +147,10 @@ ros2 launch module3_gas_safety gas_safety.launch.py   # M3 가스 확산 + 누�
 | 자율 복귀 (RTH) | 배터리 19.99 %에서 복귀 시작, 도킹 오차 0.113 m. 통신 음영 5.03 m 전에서 복귀 |
 | 5 s 예측 MPC 풀이 시간 | p95 14.71 ms, 100 % 30 ms 미만 |
 | 순찰 경로 | 게이지 8개 순환 150.50 m, 배치 순서보다 8.5 % 짧음 |
+| 넘어짐 자가 복구 (Gazebo) | 옆·등·밀기·벽·경사로·미션 중 넘어짐 90회 중 89회를 순간이동 없이 자기 다리로 일어섬 |
+| 데모 미션 전체 (Gazebo) | 도크 → 게이지 8개 → 가스 누출원 → 도킹을 5회 모두 완료, 넘어짐 실행당 0.4회(모두 스스로 일어나 이어 감) |
 
-평가 조건과 그래프는 [REPORT §1.3](docs/REPORT.md#13-결과-요약--요구사항--구현--핵심-수치)에 있습니다(`docs/results/*.json`).
+평가 조건과 그래프는 [REPORT §1.3](docs/REPORT.md#13-결과-요약--요구사항--구현--핵심-수치)에 있습니다(`docs/results/*.json`). Gazebo 두 행은 Gazebo Harmonic 헤드리스 검증값입니다([REPORT §4.4](docs/REPORT.md#44-fall-recovery-상태기계), [§4.10.8](docs/REPORT.md#4108-데모-미션-전체-toolsmission_checkpy-2026-11-11)).
 
 ## 문서
 

@@ -1416,7 +1416,9 @@ python tools/mission_check.py --seeds 0 1 --spawn=24.2,0.5,3.14 --goal=19.8,0.3 
   같은 조건에서 건너기 속도 0.15 m/s는 9/20, 건너는 동안 crawl 보행은 12/20으로 나아지지 않았습니다.
 - 회귀: `tools/gazebo_check.py --mode stable --map depth` 시드 0은 9/10(이전 8/10, l 복도 전체가 통과로 바뀜, j는 그대로 실패).
   `tools/obstacle_check.py` 21/21, 넘어짐 0으로 이전과 같습니다.
+- 이후 결과(시드 10–14)는 `docs/results/mission_check.json`에 있습니다(`python tools/mission_check.py --summary docs/results/mission_check.json`).
 
+## 5. 튜닝 가이드
 
 * **stable 모드 (기본)**: 먼저 Gazebo 하네스로 확인합니다(§4.5, `--mode stable`).
   - 발이 미끄러지거나 몸이 앞뒤로 출렁이면 `stable_stance_max_error`를 줄입니다(0.015 → 0.01, 밀기 6/6). 0.02는

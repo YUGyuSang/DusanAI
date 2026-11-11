@@ -15,7 +15,7 @@ Ubuntu에 저장소를 받아 설치·빌드하는 자세한 방법입니다. �
 
 권장 사양: CPU 4코어 이상(8스레드 권장), RAM 8 GB, OpenGL 3.3 드라이버가 동작하는 GPU. Gazebo와
 약 17개의 Python 노드가 여러 코어를 씁니다. 모든 노드가 시뮬레이션 시간을 따르므로 실시간 배율(RTF)이
-1보다 낮아도 동작은 같습니다.
+1보다 낮아도 동작은 같습니다. RAM이 8 GB인 PC에서는 실행 스크립트에 `--low-memory`를 붙이세요([USAGE 9장](USAGE.md#low-spec)).
 
 GPU: NVIDIA는 독점 드라이버(소프트웨어 & 업데이트 → 추가 드라이버)를 권장합니다. Intel/AMD 내장 GPU는 Mesa 드라이버로 동작합니다.
 렌더러는 `glxinfo -B`(`sudo apt install mesa-utils`)로 확인하며, `check_install.sh`도 출력합니다.
@@ -242,7 +242,7 @@ venv/bin/python -m pytest -q         # pytest.ini + conftest.py가 sys.path 설�
 | 배관·잔해 근처나 도는 중에 넘어짐 | 기본 보행 trot 유지(`5`를 눌렀다면 `3`), 속도 배율 0.5 이하, 도크 앞 0.10 m 배관은 북쪽 끝(벽 쪽)으로, 복도 위층 잔해(x 37–39)는 북쪽 벽 쪽 통로(y ≈ +1.1)로 돌아가기. [USAGE FAQ Q8](USAGE.md#faq-fall). |
 | 데모 HUD 글자가 영어(`GAS: X ppm`)로 나옴 | Pillow나 한글 글꼴이 없음: `sudo apt install python3-pil fonts-noto-cjk` 후 다시 실행(빌드는 필요 없음). `check_install.sh`가 WARN으로 알려 줌. |
 | 데모에서 Gazebo 화면이 로봇을 따라가지 않음 | `follow_camera` 로그 확인. Gazebo·로봇·GUI를 240 s까지 기다린 뒤 조용히 끝나므로, 그 뒤에 GUI가 떴으면 `ros2 run plant_simulation follow_camera`를 다시 실행. 3D 화면을 클릭하고 Esc를 누르면 자유 시점으로 돌아감. |
-| 넘어진 로봇이 일어나지 않음 | 자가 복구를 3회 시도한 뒤 `gz` CLI로 보조 리셋함. 등으로 떨어지면 자가 복구가 실패하기 쉬움. 수동: `/locomotion/command`에 `recover` 또는 `reset_pose`. |
+| 넘어진 로봇이 일어나지 않음 | 순간이동 없이 일어설 때까지 다시 시도함(3회 실패하면 5 s 쉬고 반복). 배관 위나 경사로 턱에서는 30–80 s 걸릴 수 있음. 기다려도 안 되면 `/locomotion/command`에 `recover` 또는 `reset_pose`(텔레옵 `0`). 자동 순간이동을 쓰려면 `locomotion.yaml`의 `assisted_reset: true`. [USAGE FAQ Q8](USAGE.md#faq-fall). |
 | 철판 근처나 평지에서 로봇이 갑자기 느려짐 | 슬립 모드(미끄러운 바닥 대응). `/locomotion/state`의 `slip_mode`, `slip_source`, `slip_events`를 확인. 평지에서 켜지면 [USAGE FAQ Q10](USAGE.md#faq-slip) 참고. |
 | MPC 풀이 시간이 30 ms를 크게 넘음 (`/locomotion/state`의 `mpc_solve_ms`) | `libopenblas0-pthread` 설치, 다른 무거운 프로그램 종료. 그래도 느리면 `locomotion.yaml`의 `mpc_rate`(20.0 → 10.0), `mpc_qp_max_iter`를 낮춤. |
 | 대시보드에 접속할 수 없음 | 로그에서 실제 포트(8080..8085)를 확인하고, 방화벽 포트를 열고, Ubuntu PC 자신에서 `http://127.0.0.1:8080`을 시도. |

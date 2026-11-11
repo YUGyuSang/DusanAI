@@ -1,0 +1,6270 @@
+{
+ "runs": {
+  "latest": {
+   "config": {
+    "seeds": [
+     10,
+     11,
+     12,
+     13,
+     14
+    ],
+    "leg": 1,
+    "legs": 0,
+    "spawn": null,
+    "goals": null,
+    "params": {},
+    "mission_params": {},
+    "map": "depth",
+    "duration": 1500.0
+   },
+   "summary": {
+    "runs": 5,
+    "complete": 5,
+    "falls_total": 2,
+    "falls_mean": 0.4,
+    "teleports": 0,
+    "stalls": 2,
+    "recovered": 2,
+    "gauges_read": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "gas": [
+     "FOUND",
+     "FOUND",
+     "FOUND",
+     "FOUND",
+     "FOUND"
+    ],
+    "mission_time_mean": 573.08,
+    "errors": 0
+   },
+   "runs": {
+    "10": {
+     "seed": 10,
+     "leg": 1,
+     "legs": 0,
+     "plan_order": [
+      "G08",
+      "G06",
+      "G05",
+      "G04",
+      "G01",
+      "G02",
+      "G03",
+      "G07"
+     ],
+     "spawn": [
+      61.868,
+      0.003,
+      -0.32,
+      3.175
+     ],
+     "params": {
+      "locomotion_mode": "stable"
+     },
+     "mission_params": {},
+     "final_state": "DOCKED",
+     "final_phase": "",
+     "stop_reason": "finished",
+     "error": null,
+     "sim_time": 513.0,
+     "wall_time": 1070.2,
+     "setup_time": 19.2,
+     "mission_t0": 4.2,
+     "mission_t_end": 502.7,
+     "mission_time": 498.5,
+     "completed": [
+      "G08",
+      "G06",
+      "G05",
+      "G04",
+      "G01",
+      "G02",
+      "G03",
+      "G07"
+     ],
+     "missed": [],
+     "results": {
+      "G08": {
+       "value": 0.9001,
+       "unit": "MPa",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 24.9,
+       "n_readings": 5
+      },
+      "G06": {
+       "value": 1.1184,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 187.6,
+       "n_readings": 5
+      },
+      "G05": {
+       "value": 3.666,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 206.4,
+       "n_readings": 5
+      },
+      "G04": {
+       "value": 18.6083,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 217.2,
+       "n_readings": 5
+      },
+      "G01": {
+       "value": 6.1166,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 243.9,
+       "n_readings": 5
+      },
+      "G02": {
+       "value": 11.4623,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 257.0,
+       "n_readings": 5
+      },
+      "G03": {
+       "value": 2.2594,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 292.3,
+       "n_readings": 5
+      },
+      "G07": {
+       "value": 4.7642,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 377.4,
+       "n_readings": 5
+      }
+     },
+     "seek_result": {
+      "result": "FOUND",
+      "estimate": [
+       -2.7522,
+       2.102
+      ],
+      "error_m": 0.4592,
+      "elapsed": 9.0,
+      "path_length": 1.4608,
+      "t": 233.7
+     },
+     "falls": 0,
+     "fall_info": [],
+     "recoveries": 0,
+     "recovery_attempts": 0,
+     "teleports": 0,
+     "recovery_events": [],
+     "stalls": [],
+     "stuck_events": [],
+     "path_len": 159.7,
+     "battery_end": 77.3093,
+     "max_ppm": 1088.9,
+     "timeline": [
+      [
+       0.6,
+       "IDLE",
+       "",
+       61.88,
+       0.0
+      ],
+      [
+       4.2,
+       "PATROL",
+       "starting",
+       61.92,
+       0.0
+      ],
+      [
+       5.1,
+       "PATROL",
+       "navigate",
+       61.92,
+       0.0
+      ],
+      [
+       21.9,
+       "PATROL",
+       "align",
+       57.2,
+       0.59
+      ],
+      [
+       23.8,
+       "INSPECTING",
+       "dwell",
+       57.17,
+       0.53
+      ],
+      [
+       24.9,
+       "PATROL",
+       "navigate",
+       57.18,
+       0.5
+      ],
+      [
+       184.6,
+       "PATROL",
+       "align",
+       3.68,
+       4.15
+      ],
+      [
+       186.3,
+       "INSPECTING",
+       "dwell",
+       3.65,
+       4.18
+      ],
+      [
+       187.6,
+       "PATROL",
+       "navigate",
+       3.65,
+       4.22
+      ],
+      [
+       204.6,
+       "PATROL",
+       "align",
+       -1.47,
+       7.52
+      ],
+      [
+       205.5,
+       "INSPECTING",
+       "dwell",
+       -1.52,
+       7.54
+      ],
+      [
+       206.5,
+       "PATROL",
+       "navigate",
+       -1.57,
+       7.53
+      ],
+      [
+       213.4,
+       "PATROL",
+       "align",
+       -1.68,
+       5.75
+      ],
+      [
+       216.3,
+       "INSPECTING",
+       "dwell",
+       -1.7,
+       5.71
+      ],
+      [
+       217.3,
+       "PATROL",
+       "navigate",
+       -1.74,
+       5.71
+      ],
+      [
+       224.7,
+       "SEEK",
+       "seeking",
+       -2.12,
+       3.42
+      ],
+      [
+       233.7,
+       "PATROL",
+       "navigate",
+       -2.72,
+       2.12
+      ],
+      [
+       242.5,
+       "PATROL",
+       "align",
+       -3.02,
+       -0.67
+      ],
+      [
+       242.6,
+       "INSPECTING",
+       "dwell",
+       -3.02,
+       -0.69
+      ],
+      [
+       243.9,
+       "PATROL",
+       "navigate",
+       -3.01,
+       -0.7
+      ],
+      [
+       252.3,
+       "PATROL",
+       "align",
+       -0.75,
+       -0.86
+      ],
+      [
+       255.9,
+       "INSPECTING",
+       "dwell",
+       -0.66,
+       -0.91
+      ],
+      [
+       257.0,
+       "PATROL",
+       "navigate",
+       -0.66,
+       -0.94
+      ],
+      [
+       287.6,
+       "PATROL",
+       "align",
+       4.46,
+       -5.11
+      ],
+      [
+       291.4,
+       "INSPECTING",
+       "dwell",
+       4.42,
+       -5.2
+      ],
+      [
+       292.4,
+       "PATROL",
+       "navigate",
+       4.38,
+       -5.21
+      ],
+      [
+       371.3,
+       "PATROL",
+       "align",
+       25.76,
+       -0.4
+      ],
+      [
+       375.5,
+       "INSPECTING",
+       "dwell",
+       25.86,
+       -0.33
+      ],
+      [
+       377.4,
+       "RTH",
+       "requested",
+       25.88,
+       -0.31
+      ],
+      [
+       377.5,
+       "RTH",
+       "yield",
+       25.89,
+       -0.31
+      ],
+      [
+       502.7,
+       "DOCKED",
+       "",
+       61.8,
+       0.01
+      ]
+     ],
+     "rth_transitions": [
+      [
+       377.5,
+       "RTH_PLANNING",
+       "manual"
+      ],
+      [
+       377.5,
+       "RTH_NAVIGATING",
+       "manual"
+      ],
+      [
+       495.4,
+       "DOCKING",
+       "manual"
+      ],
+      [
+       502.7,
+       "DOCKED",
+       "manual"
+      ],
+      [
+       504.7,
+       "CHARGING",
+       "manual"
+      ]
+     ],
+     "events": [
+      [
+       0.6,
+       "info",
+       "patrol plan: 8 viewpoints, order ['G08', 'G06', 'G05', 'G04', 'G01', 'G02', 'G03', 'G07']"
+      ],
+      [
+       4.2,
+       "info",
+       "full mission started: ['G08', 'G06', 'G05', 'G04', 'G01', 'G02', 'G03', 'G07']"
+      ],
+      [
+       4.2,
+       "info",
+       "state IDLE -> PATROL"
+      ],
+      [
+       5.1,
+       "info",
+       "next viewpoint G08 at (57.00, 0.45)"
+      ],
+      [
+       23.8,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       23.8,
+       "info",
+       "inspecting G08"
+      ],
+      [
+       24.9,
+       "info",
+       "G08 read: 0.900 MPa (normal) from 5 readings"
+      ],
+      [
+       24.9,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       24.9,
+       "info",
+       "next viewpoint G06 at (3.50, 4.30)"
+      ],
+      [
+       186.3,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       186.3,
+       "info",
+       "inspecting G06"
+      ],
+      [
+       187.6,
+       "info",
+       "G06 read: 1.118 bar (normal) from 5 readings"
+      ],
+      [
+       187.6,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       187.6,
+       "info",
+       "next viewpoint G05 at (-1.70, 7.60)"
+      ],
+      [
+       205.5,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       205.5,
+       "info",
+       "inspecting G05"
+      ],
+      [
+       206.5,
+       "info",
+       "G05 read: 3.666 bar (normal) from 5 readings"
+      ],
+      [
+       206.5,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       206.5,
+       "info",
+       "next viewpoint G04 at (-1.70, 5.50)"
+      ],
+      [
+       216.3,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       216.3,
+       "info",
+       "inspecting G04"
+      ],
+      [
+       217.3,
+       "info",
+       "G04 read: 18.608 bar (normal) from 5 readings"
+      ],
+      [
+       217.3,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       217.3,
+       "info",
+       "next viewpoint G01 at (-3.06, -0.91)"
+      ],
+      [
+       224.7,
+       "seeker",
+       "enabled"
+      ],
+      [
+       224.7,
+       "alarm",
+       "GAS ALARM: 47.6 ppm > 25 ppm"
+      ],
+      [
+       224.7,
+       "info",
+       "state PATROL -> SEEK"
+      ],
+      [
+       224.7,
+       "alarm",
+       "gas source seeking started (gas 47.6 ppm)"
+      ],
+      [
+       224.8,
+       "seeker",
+       "seek state -> SURGE (plume detected)"
+      ],
+      [
+       224.9,
+       "seeker",
+       "seek state -> GRADIENT (gradient reliable)"
+      ],
+      [
+       233.7,
+       "seeker",
+       "seek state -> FOUND (confirmation budget used)"
+      ],
+      [
+       233.7,
+       "seeker",
+       "disabled"
+      ],
+      [
+       233.7,
+       "alarm",
+       "GAS SOURCE FOUND at (-2.75, 2.10), error 0.46 m"
+      ],
+      [
+       233.7,
+       "info",
+       "state SEEK -> PATROL"
+      ],
+      [
+       242.6,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       242.6,
+       "info",
+       "inspecting G01"
+      ],
+      [
+       243.9,
+       "info",
+       "G01 read: 6.117 bar (normal) from 5 readings"
+      ],
+      [
+       243.9,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       243.9,
+       "info",
+       "next viewpoint G02 at (-0.50, -0.85)"
+      ],
+      [
+       255.9,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       255.9,
+       "info",
+       "inspecting G02"
+      ],
+      [
+       257.0,
+       "info",
+       "G02 read: 11.462 bar (normal) from 5 readings"
+      ],
+      [
+       257.0,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       257.0,
+       "info",
+       "next viewpoint G03 at (4.60, -5.30)"
+      ],
+      [
+       291.4,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       291.4,
+       "info",
+       "inspecting G03"
+      ],
+      [
+       292.4,
+       "info",
+       "G03 read: 2.259 bar (normal) from 5 readings"
+      ],
+      [
+       292.4,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       292.4,
+       "info",
+       "next viewpoint G07 at (26.00, -0.45)"
+      ],
+      [
+       303.8,
+       "alarm",
+       "GAS ALARM: 30.5 ppm > 25 ppm"
+      ],
+      [
+       375.5,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       375.5,
+       "info",
+       "inspecting G07"
+      ],
+      [
+       377.4,
+       "info",
+       "G07 read: 4.764 bar (normal) from 5 readings"
+      ],
+      [
+       377.4,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       377.4,
+       "info",
+       "all viewpoints done (8 read, 0 missed) - returning home"
+      ],
+      [
+       377.4,
+       "info",
+       "state PATROL -> RTH"
+      ],
+      [
+       377.4,
+       "info",
+       "return to home (mission_complete) - waiting for return_to_home"
+      ],
+      [
+       377.5,
+       "rth",
+       "RTH triggered: manual (bat 75.81284603608887, rssi -48.24440568830426)"
+      ],
+      [
+       377.5,
+       "rth",
+       "safety state -> RTH_NAVIGATING (path 37.2 m)"
+      ],
+      [
+       495.4,
+       "rth",
+       "safety state -> DOCKING (docking)"
+      ],
+      [
+       502.7,
+       "rth",
+       "safety state -> DOCKED (docked)"
+      ],
+      [
+       502.7,
+       "info",
+       "state RTH -> DOCKED"
+      ],
+      [
+       502.7,
+       "info",
+       "mission complete - docked (8 read, 0 missed)"
+      ],
+      [
+       504.7,
+       "rth",
+       "safety state -> CHARGING (charging)"
+      ]
+     ],
+     "gauge_log": {
+      "G08": {
+       "attempts": 6,
+       "ok": 5,
+       "moving": 1,
+       "first": {
+        "t": 23.9,
+        "pose": [
+         57.161,
+         0.53,
+         -1.66
+        ],
+        "dist": 1.59,
+        "inc": 21.3,
+        "px": 156.7
+       },
+       "reasons": {
+        "moving": 1
+       }
+      },
+      "G06": {
+       "attempts": 7,
+       "ok": 5,
+       "moving": 2,
+       "first": {
+        "t": 186.4,
+        "pose": [
+         3.647,
+         4.18,
+         1.653
+        ],
+        "dist": 1.79,
+        "inc": 25.4,
+        "px": 139.8
+       },
+       "reasons": {
+        "moving": 2
+       }
+      },
+      "G05": {
+       "attempts": 5,
+       "ok": 5,
+       "moving": 0,
+       "first": {
+        "t": 205.6,
+        "pose": [
+         -1.526,
+         7.534,
+         3.05
+        ],
+        "dist": 1.64,
+        "inc": 16.3,
+        "px": 151.9
+       },
+       "reasons": {}
+      },
+      "G04": {
+       "attempts": 5,
+       "ok": 5,
+       "moving": 0,
+       "first": {
+        "t": 216.4,
+        "pose": [
+         -1.703,
+         5.716,
+         -3.091
+        ],
+        "dist": 1.56,
+        "inc": 26.3,
+        "px": 161.7
+       },
+       "reasons": {}
+      },
+      "G01": {
+       "attempts": 7,
+       "ok": 5,
+       "moving": 2,
+       "first": {
+        "t": 242.7,
+        "pose": [
+         -2.997,
+         -0.692,
+         -1.767
+        ],
+        "dist": 1.69,
+        "inc": 22.2,
+        "px": 147.9
+       },
+       "reasons": {
+        "moving": 2
+       }
+      },
+      "G02": {
+       "attempts": 6,
+       "ok": 5,
+       "moving": 1,
+       "first": {
+        "t": 256.0,
+        "pose": [
+         -0.633,
+         -0.911,
+         -1.489
+        ],
+        "dist": 1.42,
+        "inc": 19.4,
+        "px": 174.9
+       },
+       "reasons": {
+        "moving": 1
+       }
+      },
+      "G03": {
+       "attempts": 5,
+       "ok": 5,
+       "moving": 0,
+       "first": {
+        "t": 291.5,
+        "pose": [
+         4.416,
+         -5.204,
+         -3.113
+        ],
+        "dist": 1.18,
+        "inc": 18.4,
+        "px": 211.6
+       },
+       "reasons": {}
+      },
+      "G07": {
+       "attempts": 10,
+       "ok": 5,
+       "moving": 5,
+       "first": {
+        "t": 375.6,
+        "pose": [
+         25.876,
+         -0.319,
+         1.491
+        ],
+        "dist": 1.39,
+        "inc": 24.1,
+        "px": 179.7
+       },
+       "reasons": {
+        "moving": 5
+       }
+      }
+     },
+     "seek_track": [
+      [
+       224.8,
+       -2.12,
+       3.38,
+       "SURGE"
+      ],
+      [
+       225.8,
+       -2.14,
+       3.24,
+       "GRADIENT"
+      ],
+      [
+       226.8,
+       -2.25,
+       2.96,
+       "GRADIENT"
+      ],
+      [
+       227.8,
+       -2.36,
+       2.65,
+       "GRADIENT"
+      ],
+      [
+       228.8,
+       -2.38,
+       2.57,
+       "GRADIENT"
+      ],
+      [
+       229.8,
+       -2.53,
+       2.36,
+       "GRADIENT"
+      ],
+      [
+       230.8,
+       -2.71,
+       2.15,
+       "GRADIENT"
+      ],
+      [
+       231.8,
+       -2.7,
+       2.11,
+       "GRADIENT"
+      ],
+      [
+       232.8,
+       -2.72,
+       2.12,
+       "GRADIENT"
+      ]
+     ],
+     "frames": 2414,
+     "wait_timeouts": 0,
+     "complete": true,
+     "checks": {
+      "docked": true,
+      "gauges": true,
+      "gas_found": true,
+      "no_teleport": true
+     }
+    },
+    "14": {
+     "seed": 14,
+     "leg": 1,
+     "legs": 0,
+     "plan_order": [
+      "G08",
+      "G06",
+      "G05",
+      "G04",
+      "G01",
+      "G02",
+      "G03",
+      "G07"
+     ],
+     "spawn": [
+      61.895,
+      0.007,
+      -0.32,
+      3.173
+     ],
+     "params": {
+      "locomotion_mode": "stable"
+     },
+     "mission_params": {},
+     "final_state": "DOCKED",
+     "final_phase": "",
+     "stop_reason": "finished",
+     "error": null,
+     "sim_time": 573.0,
+     "wall_time": 1173.5,
+     "setup_time": 18.6,
+     "mission_t0": 4.55,
+     "mission_t_end": 567.85,
+     "mission_time": 563.3,
+     "completed": [
+      "G08",
+      "G06",
+      "G05",
+      "G04",
+      "G01",
+      "G02",
+      "G03",
+      "G07"
+     ],
+     "missed": [],
+     "results": {
+      "G08": {
+       "value": 0.9001,
+       "unit": "MPa",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 24.95,
+       "n_readings": 5
+      },
+      "G06": {
+       "value": 1.1352,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 188.45,
+       "n_readings": 5
+      },
+      "G05": {
+       "value": 3.7455,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 207.95,
+       "n_readings": 5
+      },
+      "G04": {
+       "value": 18.1855,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 219.05,
+       "n_readings": 5
+      },
+      "G01": {
+       "value": 6.129,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 245.95,
+       "n_readings": 5
+      },
+      "G02": {
+       "value": 11.2743,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 259.75,
+       "n_readings": 5
+      },
+      "G03": {
+       "value": 2.3577,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 296.75,
+       "n_readings": 5
+      },
+      "G07": {
+       "value": 4.8064,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 386.55,
+       "n_readings": 5
+      }
+     },
+     "seek_result": {
+      "result": "FOUND",
+      "estimate": [
+       -2.7268,
+       2.0088
+      ],
+      "error_m": 0.4733,
+      "elapsed": 9.8,
+      "path_length": 1.4001,
+      "t": 236.45
+     },
+     "falls": 0,
+     "fall_info": [],
+     "recoveries": 0,
+     "recovery_attempts": 0,
+     "teleports": 0,
+     "recovery_events": [],
+     "stalls": [],
+     "stuck_events": [],
+     "path_len": 165.2,
+     "battery_end": 73.9615,
+     "max_ppm": 988.1,
+     "timeline": [
+      [
+       0.55,
+       "IDLE",
+       "",
+       61.91,
+       0.01
+      ],
+      [
+       4.55,
+       "PATROL",
+       "starting",
+       61.95,
+       0.01
+      ],
+      [
+       5.45,
+       "PATROL",
+       "navigate",
+       61.95,
+       0.01
+      ],
+      [
+       21.85,
+       "PATROL",
+       "align",
+       57.2,
+       0.59
+      ],
+      [
+       23.65,
+       "INSPECTING",
+       "dwell",
+       57.16,
+       0.51
+      ],
+      [
+       24.95,
+       "PATROL",
+       "navigate",
+       57.14,
+       0.46
+      ],
+      [
+       185.35,
+       "PATROL",
+       "align",
+       3.67,
+       4.12
+      ],
+      [
+       187.15,
+       "INSPECTING",
+       "dwell",
+       3.67,
+       4.19
+      ],
+      [
+       188.45,
+       "PATROL",
+       "navigate",
+       3.67,
+       4.23
+      ],
+      [
+       205.45,
+       "PATROL",
+       "align",
+       -1.47,
+       7.52
+      ],
+      [
+       206.25,
+       "INSPECTING",
+       "dwell",
+       -1.51,
+       7.53
+      ],
+      [
+       207.95,
+       "PATROL",
+       "navigate",
+       -1.52,
+       7.53
+      ],
+      [
+       215.25,
+       "PATROL",
+       "align",
+       -1.69,
+       5.75
+      ],
+      [
+       217.95,
+       "INSPECTING",
+       "dwell",
+       -1.69,
+       5.71
+      ],
+      [
+       219.05,
+       "PATROL",
+       "navigate",
+       -1.72,
+       5.72
+      ],
+      [
+       226.65,
+       "SEEK",
+       "seeking",
+       -2.15,
+       3.3
+      ],
+      [
+       236.45,
+       "PATROL",
+       "navigate",
+       -2.71,
+       1.99
+      ],
+      [
+       244.55,
+       "PATROL",
+       "align",
+       -2.99,
+       -0.67
+      ],
+      [
+       244.65,
+       "INSPECTING",
+       "dwell",
+       -3.0,
+       -0.69
+      ],
+      [
+       245.95,
+       "PATROL",
+       "navigate",
+       -3.02,
+       -0.73
+      ],
+      [
+       254.35,
+       "PATROL",
+       "align",
+       -0.74,
+       -0.89
+      ],
+      [
+       258.05,
+       "INSPECTING",
+       "dwell",
+       -0.68,
+       -0.87
+      ],
+      [
+       259.75,
+       "PATROL",
+       "navigate",
+       -0.69,
+       -0.91
+      ],
+      [
+       291.85,
+       "PATROL",
+       "align",
+       4.45,
+       -5.11
+      ],
+      [
+       295.65,
+       "INSPECTING",
+       "dwell",
+       4.43,
+       -5.16
+      ],
+      [
+       296.75,
+       "PATROL",
+       "navigate",
+       4.39,
+       -5.21
+      ],
+      [
+       380.75,
+       "PATROL",
+       "align",
+       25.76,
+       -0.39
+      ],
+      [
+       385.05,
+       "INSPECTING",
+       "dwell",
+       25.89,
+       -0.32
+      ],
+      [
+       386.55,
+       "RTH",
+       "requested",
+       25.89,
+       -0.28
+      ],
+      [
+       386.65,
+       "RTH",
+       "yield",
+       25.9,
+       -0.28
+      ],
+      [
+       567.85,
+       "DOCKED",
+       "",
+       61.8,
+       0.02
+      ]
+     ],
+     "rth_transitions": [
+      [
+       386.65,
+       "RTH_PLANNING",
+       "manual"
+      ],
+      [
+       386.65,
+       "RTH_NAVIGATING",
+       "manual"
+      ],
+      [
+       559.85,
+       "DOCKING",
+       "manual"
+      ],
+      [
+       567.85,
+       "DOCKED",
+       "manual"
+      ],
+      [
+       569.85,
+       "CHARGING",
+       "manual"
+      ]
+     ],
+     "events": [
+      [
+       0.55,
+       "info",
+       "patrol plan: 8 viewpoints, order ['G08', 'G06', 'G05', 'G04', 'G01', 'G02', 'G03', 'G07']"
+      ],
+      [
+       4.55,
+       "info",
+       "full mission started: ['G08', 'G06', 'G05', 'G04', 'G01', 'G02', 'G03', 'G07']"
+      ],
+      [
+       4.55,
+       "info",
+       "state IDLE -> PATROL"
+      ],
+      [
+       5.45,
+       "info",
+       "next viewpoint G08 at (57.00, 0.45)"
+      ],
+      [
+       23.65,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       23.65,
+       "info",
+       "inspecting G08"
+      ],
+      [
+       24.95,
+       "info",
+       "G08 read: 0.900 MPa (normal) from 5 readings"
+      ],
+      [
+       24.95,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       24.95,
+       "info",
+       "next viewpoint G06 at (3.50, 4.30)"
+      ],
+      [
+       187.15,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       187.15,
+       "info",
+       "inspecting G06"
+      ],
+      [
+       188.45,
+       "info",
+       "G06 read: 1.135 bar (normal) from 5 readings"
+      ],
+      [
+       188.45,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       188.45,
+       "info",
+       "next viewpoint G05 at (-1.70, 7.60)"
+      ],
+      [
+       206.25,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       206.25,
+       "info",
+       "inspecting G05"
+      ],
+      [
+       207.95,
+       "info",
+       "G05 read: 3.745 bar (normal) from 5 readings"
+      ],
+      [
+       207.95,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       207.95,
+       "info",
+       "next viewpoint G04 at (-1.70, 5.50)"
+      ],
+      [
+       217.95,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       217.95,
+       "info",
+       "inspecting G04"
+      ],
+      [
+       219.05,
+       "info",
+       "G04 read: 18.186 bar (normal) from 5 readings"
+      ],
+      [
+       219.05,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       219.05,
+       "info",
+       "next viewpoint G01 at (-3.06, -0.91)"
+      ],
+      [
+       226.65,
+       "seeker",
+       "enabled"
+      ],
+      [
+       226.65,
+       "alarm",
+       "GAS ALARM: 53.5 ppm > 25 ppm"
+      ],
+      [
+       226.65,
+       "info",
+       "state PATROL -> SEEK"
+      ],
+      [
+       226.65,
+       "alarm",
+       "gas source seeking started (gas 53.5 ppm)"
+      ],
+      [
+       226.75,
+       "seeker",
+       "seek state -> SURGE (plume detected)"
+      ],
+      [
+       226.85,
+       "seeker",
+       "seek state -> GRADIENT (gradient reliable)"
+      ],
+      [
+       236.45,
+       "seeker",
+       "seek state -> FOUND (confirmation budget used)"
+      ],
+      [
+       236.45,
+       "seeker",
+       "disabled"
+      ],
+      [
+       236.45,
+       "alarm",
+       "GAS SOURCE FOUND at (-2.73, 2.01), error 0.47 m"
+      ],
+      [
+       236.45,
+       "info",
+       "state SEEK -> PATROL"
+      ],
+      [
+       244.65,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       244.65,
+       "info",
+       "inspecting G01"
+      ],
+      [
+       245.95,
+       "info",
+       "G01 read: 6.129 bar (normal) from 5 readings"
+      ],
+      [
+       245.95,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       245.95,
+       "info",
+       "next viewpoint G02 at (-0.50, -0.85)"
+      ],
+      [
+       258.05,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       258.05,
+       "info",
+       "inspecting G02"
+      ],
+      [
+       259.75,
+       "info",
+       "G02 read: 11.274 bar (normal) from 5 readings"
+      ],
+      [
+       259.75,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       259.75,
+       "info",
+       "next viewpoint G03 at (4.60, -5.30)"
+      ],
+      [
+       295.65,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       295.65,
+       "info",
+       "inspecting G03"
+      ],
+      [
+       296.75,
+       "info",
+       "G03 read: 2.358 bar (normal) from 5 readings"
+      ],
+      [
+       296.75,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       296.75,
+       "info",
+       "next viewpoint G07 at (26.00, -0.45)"
+      ],
+      [
+       307.55,
+       "alarm",
+       "GAS ALARM: 31.4 ppm > 25 ppm"
+      ],
+      [
+       385.05,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       385.05,
+       "info",
+       "inspecting G07"
+      ],
+      [
+       386.55,
+       "info",
+       "G07 read: 4.806 bar (normal) from 5 readings"
+      ],
+      [
+       386.55,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       386.55,
+       "info",
+       "all viewpoints done (8 read, 0 missed) - returning home"
+      ],
+      [
+       386.55,
+       "info",
+       "state PATROL -> RTH"
+      ],
+      [
+       386.55,
+       "info",
+       "return to home (mission_complete) - waiting for return_to_home"
+      ],
+      [
+       386.65,
+       "rth",
+       "RTH triggered: manual (bat 75.92550281244127, rssi -49.31410651041731)"
+      ],
+      [
+       386.65,
+       "rth",
+       "safety state -> RTH_NAVIGATING (path 37.2 m)"
+      ],
+      [
+       559.85,
+       "rth",
+       "safety state -> DOCKING (docking)"
+      ],
+      [
+       567.85,
+       "rth",
+       "safety state -> DOCKED (docked)"
+      ],
+      [
+       567.85,
+       "info",
+       "state RTH -> DOCKED"
+      ],
+      [
+       567.85,
+       "info",
+       "mission complete - docked (8 read, 0 missed)"
+      ],
+      [
+       569.85,
+       "rth",
+       "safety state -> CHARGING (charging)"
+      ]
+     ],
+     "gauge_log": {
+      "G08": {
+       "attempts": 7,
+       "ok": 5,
+       "moving": 2,
+       "first": {
+        "t": 23.75,
+        "pose": [
+         57.144,
+         0.504,
+         -1.645
+        ],
+        "dist": 1.56,
+        "inc": 21.5,
+        "px": 159.3
+       },
+       "reasons": {
+        "moving": 2
+       }
+      },
+      "G06": {
+       "attempts": 7,
+       "ok": 5,
+       "moving": 2,
+       "first": {
+        "t": 187.25,
+        "pose": [
+         3.655,
+         4.197,
+         1.626
+        ],
+        "dist": 1.78,
+        "inc": 25.7,
+        "px": 141.0
+       },
+       "reasons": {
+        "moving": 2
+       }
+      },
+      "G05": {
+       "attempts": 9,
+       "ok": 5,
+       "moving": 4,
+       "first": {
+        "t": 206.35,
+        "pose": [
+         -1.508,
+         7.521,
+         3.052
+        ],
+        "dist": 1.66,
+        "inc": 16.2,
+        "px": 150.2
+       },
+       "reasons": {
+        "moving": 4
+       }
+      },
+      "G04": {
+       "attempts": 6,
+       "ok": 5,
+       "moving": 1,
+       "first": {
+        "t": 218.05,
+        "pose": [
+         -1.686,
+         5.716,
+         -3.071
+        ],
+        "dist": 1.57,
+        "inc": 25.9,
+        "px": 159.6
+       },
+       "reasons": {
+        "moving": 1
+       }
+      },
+      "G01": {
+       "attempts": 7,
+       "ok": 5,
+       "moving": 2,
+       "first": {
+        "t": 244.75,
+        "pose": [
+         -3.016,
+         -0.696,
+         -1.817
+        ],
+        "dist": 1.68,
+        "inc": 21.5,
+        "px": 147.9
+       },
+       "reasons": {
+        "moving": 2
+       }
+      },
+      "G02": {
+       "attempts": 9,
+       "ok": 5,
+       "moving": 4,
+       "first": {
+        "t": 258.15,
+        "pose": [
+         -0.696,
+         -0.892,
+         -1.512
+        ],
+        "dist": 1.45,
+        "inc": 20.0,
+        "px": 172.5
+       },
+       "reasons": {
+        "moving": 4
+       }
+      },
+      "G03": {
+       "attempts": 6,
+       "ok": 5,
+       "moving": 1,
+       "first": {
+        "t": 295.75,
+        "pose": [
+         4.427,
+         -5.172,
+         -3.074
+        ],
+        "dist": 1.19,
+        "inc": 18.4,
+        "px": 209.2
+       },
+       "reasons": {
+        "moving": 1
+       }
+      },
+      "G07": {
+       "attempts": 8,
+       "ok": 5,
+       "moving": 3,
+       "first": {
+        "t": 385.15,
+        "pose": [
+         25.894,
+         -0.314,
+         1.479
+        ],
+        "dist": 1.39,
+        "inc": 24.1,
+        "px": 180.6
+       },
+       "reasons": {
+        "moving": 3
+       }
+      }
+     },
+     "seek_track": [
+      [
+       226.75,
+       -2.15,
+       3.26,
+       "SURGE"
+      ],
+      [
+       227.75,
+       -2.17,
+       3.11,
+       "GRADIENT"
+      ],
+      [
+       228.75,
+       -2.31,
+       2.83,
+       "GRADIENT"
+      ],
+      [
+       229.75,
+       -2.43,
+       2.51,
+       "GRADIENT"
+      ],
+      [
+       230.75,
+       -2.47,
+       2.47,
+       "GRADIENT"
+      ],
+      [
+       231.75,
+       -2.46,
+       2.47,
+       "GRADIENT"
+      ],
+      [
+       232.75,
+       -2.46,
+       2.47,
+       "GRADIENT"
+      ],
+      [
+       233.75,
+       -2.63,
+       2.2,
+       "GRADIENT"
+      ],
+      [
+       234.75,
+       -2.7,
+       2.0,
+       "GRADIENT"
+      ],
+      [
+       235.75,
+       -2.72,
+       2.0,
+       "GRADIENT"
+      ]
+     ],
+     "frames": 2745,
+     "wait_timeouts": 0,
+     "complete": true,
+     "checks": {
+      "docked": true,
+      "gauges": true,
+      "gas_found": true,
+      "no_teleport": true
+     }
+    },
+    "11": {
+     "seed": 11,
+     "leg": 1,
+     "legs": 0,
+     "plan_order": [
+      "G08",
+      "G06",
+      "G05",
+      "G04",
+      "G01",
+      "G02",
+      "G03",
+      "G07"
+     ],
+     "spawn": [
+      61.883,
+      0.005,
+      -0.32,
+      3.119
+     ],
+     "params": {
+      "locomotion_mode": "stable"
+     },
+     "mission_params": {},
+     "final_state": "DOCKED",
+     "final_phase": "",
+     "stop_reason": "finished",
+     "error": null,
+     "sim_time": 583.0,
+     "wall_time": 1206.0,
+     "setup_time": 19.2,
+     "mission_t0": 4.34,
+     "mission_t_end": 572.44,
+     "mission_time": 568.1,
+     "completed": [
+      "G08",
+      "G06",
+      "G05",
+      "G04",
+      "G01",
+      "G02",
+      "G03",
+      "G07"
+     ],
+     "missed": [],
+     "results": {
+      "G08": {
+       "value": 0.9134,
+       "unit": "MPa",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 25.14,
+       "n_readings": 5
+      },
+      "G06": {
+       "value": 1.149,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 186.64,
+       "n_readings": 5
+      },
+      "G05": {
+       "value": 3.8473,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 206.34,
+       "n_readings": 5
+      },
+      "G04": {
+       "value": 18.9261,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 217.84,
+       "n_readings": 5
+      },
+      "G01": {
+       "value": 6.0798,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 306.54,
+       "n_readings": 5
+      },
+      "G02": {
+       "value": 11.43,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 320.04,
+       "n_readings": 5
+      },
+      "G03": {
+       "value": 2.3669,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 356.14,
+       "n_readings": 5
+      },
+      "G07": {
+       "value": 4.6569,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 445.54,
+       "n_readings": 5
+      }
+     },
+     "seek_result": {
+      "result": "FOUND",
+      "estimate": [
+       -2.9565,
+       2.4956
+      ],
+      "error_m": 0.5522,
+      "elapsed": 66.5,
+      "path_length": 7.0436,
+      "t": 291.84
+     },
+     "falls": 0,
+     "fall_info": [],
+     "recoveries": 0,
+     "recovery_attempts": 0,
+     "teleports": 0,
+     "recovery_events": [],
+     "stalls": [
+      {
+       "t0": 259.6,
+       "t1": 281.8,
+       "x": -3.4,
+       "y": 2.91,
+       "mission": "SEEK/seeking",
+       "duration": 22.2,
+       "area": "factory",
+       "debris": null
+      },
+      {
+       "t0": 553.6,
+       "t1": 572.3,
+       "x": 61.79,
+       "y": 0.01,
+       "mission": "RTH/yield",
+       "duration": 18.7,
+       "area": "dock",
+       "debris": null
+      }
+     ],
+     "stuck_events": [],
+     "path_len": 171.9,
+     "battery_end": 76.6518,
+     "max_ppm": 1297.1,
+     "timeline": [
+      [
+       0.54,
+       "IDLE",
+       "",
+       61.9,
+       0.0
+      ],
+      [
+       4.34,
+       "PATROL",
+       "starting",
+       61.94,
+       0.0
+      ],
+      [
+       5.24,
+       "PATROL",
+       "navigate",
+       61.94,
+       0.0
+      ],
+      [
+       21.94,
+       "PATROL",
+       "align",
+       57.2,
+       0.59
+      ],
+      [
+       23.84,
+       "INSPECTING",
+       "dwell",
+       57.17,
+       0.52
+      ],
+      [
+       25.14,
+       "PATROL",
+       "navigate",
+       57.16,
+       0.48
+      ],
+      [
+       184.04,
+       "PATROL",
+       "align",
+       3.68,
+       4.15
+      ],
+      [
+       185.74,
+       "INSPECTING",
+       "dwell",
+       3.65,
+       4.22
+      ],
+      [
+       186.74,
+       "PATROL",
+       "navigate",
+       3.63,
+       4.24
+      ],
+      [
+       203.94,
+       "PATROL",
+       "align",
+       -1.47,
+       7.51
+      ],
+      [
+       204.84,
+       "INSPECTING",
+       "dwell",
+       -1.5,
+       7.52
+      ],
+      [
+       206.34,
+       "PATROL",
+       "navigate",
+       -1.53,
+       7.52
+      ],
+      [
+       213.14,
+       "PATROL",
+       "align",
+       -1.69,
+       5.75
+      ],
+      [
+       215.94,
+       "INSPECTING",
+       "dwell",
+       -1.73,
+       5.65
+      ],
+      [
+       217.84,
+       "PATROL",
+       "navigate",
+       -1.73,
+       5.65
+      ],
+      [
+       225.34,
+       "SEEK",
+       "seeking",
+       -2.13,
+       3.38
+      ],
+      [
+       291.84,
+       "PATROL",
+       "navigate",
+       -2.96,
+       2.41
+      ],
+      [
+       305.34,
+       "PATROL",
+       "align",
+       -3.0,
+       -0.68
+      ],
+      [
+       305.44,
+       "INSPECTING",
+       "dwell",
+       -3.01,
+       -0.69
+      ],
+      [
+       306.54,
+       "PATROL",
+       "navigate",
+       -3.0,
+       -0.74
+      ],
+      [
+       314.84,
+       "PATROL",
+       "align",
+       -0.74,
+       -0.87
+      ],
+      [
+       318.94,
+       "INSPECTING",
+       "dwell",
+       -0.66,
+       -0.92
+      ],
+      [
+       320.04,
+       "PATROL",
+       "navigate",
+       -0.64,
+       -0.96
+      ],
+      [
+       350.94,
+       "PATROL",
+       "align",
+       4.46,
+       -5.11
+      ],
+      [
+       354.84,
+       "INSPECTING",
+       "dwell",
+       4.44,
+       -5.22
+      ],
+      [
+       356.14,
+       "PATROL",
+       "navigate",
+       4.43,
+       -5.2
+      ],
+      [
+       441.24,
+       "PATROL",
+       "align",
+       25.78,
+       -0.39
+      ],
+      [
+       444.44,
+       "INSPECTING",
+       "dwell",
+       25.88,
+       -0.37
+      ],
+      [
+       445.54,
+       "RTH",
+       "requested",
+       25.9,
+       -0.34
+      ],
+      [
+       445.64,
+       "RTH",
+       "yield",
+       25.88,
+       -0.34
+      ],
+      [
+       572.44,
+       "DOCKED",
+       "",
+       61.79,
+       0.01
+      ]
+     ],
+     "rth_transitions": [
+      [
+       445.64,
+       "RTH_PLANNING",
+       "manual"
+      ],
+      [
+       445.64,
+       "RTH_NAVIGATING",
+       "manual"
+      ],
+      [
+       549.44,
+       "DOCKING",
+       "manual"
+      ],
+      [
+       565.84,
+       "RTH_PLANNING",
+       "manual"
+      ],
+      [
+       565.94,
+       "RTH_NAVIGATING",
+       "manual"
+      ],
+      [
+       566.04,
+       "DOCKING",
+       "manual"
+      ],
+      [
+       572.44,
+       "DOCKED",
+       "manual"
+      ],
+      [
+       574.44,
+       "CHARGING",
+       "manual"
+      ]
+     ],
+     "events": [
+      [
+       0.54,
+       "info",
+       "patrol plan: 8 viewpoints, order ['G08', 'G06', 'G05', 'G04', 'G01', 'G02', 'G03', 'G07']"
+      ],
+      [
+       4.34,
+       "info",
+       "full mission started: ['G08', 'G06', 'G05', 'G04', 'G01', 'G02', 'G03', 'G07']"
+      ],
+      [
+       4.34,
+       "info",
+       "state IDLE -> PATROL"
+      ],
+      [
+       5.24,
+       "info",
+       "next viewpoint G08 at (57.00, 0.45)"
+      ],
+      [
+       23.84,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       23.84,
+       "info",
+       "inspecting G08"
+      ],
+      [
+       25.14,
+       "info",
+       "G08 read: 0.913 MPa (normal) from 5 readings"
+      ],
+      [
+       25.14,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       25.14,
+       "info",
+       "next viewpoint G06 at (3.50, 4.30)"
+      ],
+      [
+       185.74,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       185.74,
+       "info",
+       "inspecting G06"
+      ],
+      [
+       186.74,
+       "info",
+       "G06 read: 1.149 bar (normal) from 5 readings"
+      ],
+      [
+       186.74,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       186.74,
+       "info",
+       "next viewpoint G05 at (-1.70, 7.60)"
+      ],
+      [
+       204.84,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       204.84,
+       "info",
+       "inspecting G05"
+      ],
+      [
+       206.34,
+       "info",
+       "G05 read: 3.847 bar (normal) from 5 readings"
+      ],
+      [
+       206.34,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       206.34,
+       "info",
+       "next viewpoint G04 at (-1.70, 5.50)"
+      ],
+      [
+       215.94,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       215.94,
+       "info",
+       "inspecting G04"
+      ],
+      [
+       217.84,
+       "info",
+       "G04 read: 18.926 bar (normal) from 5 readings"
+      ],
+      [
+       217.84,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       217.84,
+       "info",
+       "next viewpoint G01 at (-3.06, -0.91)"
+      ],
+      [
+       225.34,
+       "seeker",
+       "enabled"
+      ],
+      [
+       225.34,
+       "alarm",
+       "GAS ALARM: 48.2 ppm > 25 ppm"
+      ],
+      [
+       225.34,
+       "info",
+       "state PATROL -> SEEK"
+      ],
+      [
+       225.34,
+       "alarm",
+       "gas source seeking started (gas 48.2 ppm)"
+      ],
+      [
+       225.44,
+       "seeker",
+       "seek state -> SURGE (plume detected)"
+      ],
+      [
+       225.54,
+       "seeker",
+       "seek state -> GRADIENT (gradient reliable)"
+      ],
+      [
+       291.84,
+       "seeker",
+       "seek state -> FOUND (confirmation budget used)"
+      ],
+      [
+       291.84,
+       "seeker",
+       "disabled"
+      ],
+      [
+       291.84,
+       "alarm",
+       "GAS SOURCE FOUND at (-2.96, 2.50), error 0.55 m"
+      ],
+      [
+       291.84,
+       "info",
+       "state SEEK -> PATROL"
+      ],
+      [
+       305.44,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       305.44,
+       "info",
+       "inspecting G01"
+      ],
+      [
+       306.54,
+       "info",
+       "G01 read: 6.080 bar (normal) from 5 readings"
+      ],
+      [
+       306.54,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       306.54,
+       "info",
+       "next viewpoint G02 at (-0.50, -0.85)"
+      ],
+      [
+       318.94,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       318.94,
+       "info",
+       "inspecting G02"
+      ],
+      [
+       320.04,
+       "info",
+       "G02 read: 11.430 bar (normal) from 5 readings"
+      ],
+      [
+       320.04,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       320.04,
+       "info",
+       "next viewpoint G03 at (4.60, -5.30)"
+      ],
+      [
+       329.14,
+       "alarm",
+       "GAS ALARM: 31.4 ppm > 25 ppm"
+      ],
+      [
+       354.84,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       354.84,
+       "info",
+       "inspecting G03"
+      ],
+      [
+       356.14,
+       "info",
+       "G03 read: 2.367 bar (normal) from 5 readings"
+      ],
+      [
+       356.14,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       356.14,
+       "info",
+       "next viewpoint G07 at (26.00, -0.45)"
+      ],
+      [
+       370.24,
+       "alarm",
+       "GAS ALARM: 34.1 ppm > 25 ppm"
+      ],
+      [
+       444.44,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       444.44,
+       "info",
+       "inspecting G07"
+      ],
+      [
+       445.54,
+       "info",
+       "G07 read: 4.657 bar (normal) from 5 readings"
+      ],
+      [
+       445.54,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       445.54,
+       "info",
+       "all viewpoints done (8 read, 0 missed) - returning home"
+      ],
+      [
+       445.54,
+       "info",
+       "state PATROL -> RTH"
+      ],
+      [
+       445.54,
+       "info",
+       "return to home (mission_complete) - waiting for return_to_home"
+      ],
+      [
+       445.64,
+       "rth",
+       "RTH triggered: manual (bat 74.93880679528515, rssi -53.750203831749346)"
+      ],
+      [
+       445.64,
+       "rth",
+       "safety state -> RTH_NAVIGATING (path 37.2 m)"
+      ],
+      [
+       549.44,
+       "rth",
+       "safety state -> DOCKING (docking)"
+      ],
+      [
+       565.84,
+       "rth",
+       "safety state -> RTH_PLANNING (no docking progress for 10 s: re-planning)"
+      ],
+      [
+       565.94,
+       "rth",
+       "safety state -> RTH_NAVIGATING (path 0.2 m)"
+      ],
+      [
+       566.04,
+       "rth",
+       "safety state -> DOCKING (docking)"
+      ],
+      [
+       572.44,
+       "rth",
+       "safety state -> DOCKED (docked)"
+      ],
+      [
+       572.44,
+       "info",
+       "state RTH -> DOCKED"
+      ],
+      [
+       572.44,
+       "info",
+       "mission complete - docked (8 read, 0 missed)"
+      ],
+      [
+       574.44,
+       "rth",
+       "safety state -> CHARGING (charging)"
+      ]
+     ],
+     "gauge_log": {
+      "G08": {
+       "attempts": 7,
+       "ok": 5,
+       "moving": 2,
+       "first": {
+        "t": 23.94,
+        "pose": [
+         57.169,
+         0.516,
+         -1.631
+        ],
+        "dist": 1.58,
+        "inc": 21.6,
+        "px": 158.0
+       },
+       "reasons": {
+        "moving": 2
+       }
+      },
+      "G06": {
+       "attempts": 5,
+       "ok": 5,
+       "moving": 0,
+       "first": {
+        "t": 185.84,
+        "pose": [
+         3.646,
+         4.228,
+         1.632
+        ],
+        "dist": 1.75,
+        "inc": 26.1,
+        "px": 143.4
+       },
+       "reasons": {}
+      },
+      "G05": {
+       "attempts": 8,
+       "ok": 5,
+       "moving": 3,
+       "first": {
+        "t": 204.94,
+        "pose": [
+         -1.518,
+         7.513,
+         3.066
+        ],
+        "dist": 1.65,
+        "inc": 16.4,
+        "px": 150.7
+       },
+       "reasons": {
+        "moving": 3
+       }
+      },
+      "G04": {
+       "attempts": 10,
+       "ok": 5,
+       "moving": 5,
+       "first": {
+        "t": 216.04,
+        "pose": [
+         -1.719,
+         5.664,
+         -3.124
+        ],
+        "dist": 1.54,
+        "inc": 26.2,
+        "px": 164.0
+       },
+       "reasons": {
+        "moving": 5
+       }
+      },
+      "G01": {
+       "attempts": 6,
+       "ok": 5,
+       "moving": 1,
+       "first": {
+        "t": 305.54,
+        "pose": [
+         -3.014,
+         -0.705,
+         -1.818
+        ],
+        "dist": 1.67,
+        "inc": 21.7,
+        "px": 148.6
+       },
+       "reasons": {
+        "moving": 1
+       }
+      },
+      "G02": {
+       "attempts": 6,
+       "ok": 5,
+       "moving": 1,
+       "first": {
+        "t": 319.04,
+        "pose": [
+         -0.641,
+         -0.926,
+         -1.517
+        ],
+        "dist": 1.41,
+        "inc": 19.8,
+        "px": 176.7
+       },
+       "reasons": {
+        "moving": 1
+       }
+      },
+      "G03": {
+       "attempts": 7,
+       "ok": 5,
+       "moving": 2,
+       "first": {
+        "t": 354.94,
+        "pose": [
+         4.46,
+         -5.206,
+         -3.137
+        ],
+        "dist": 1.22,
+        "inc": 17.8,
+        "px": 205.0
+       },
+       "reasons": {
+        "moving": 2
+       }
+      },
+      "G07": {
+       "attempts": 6,
+       "ok": 5,
+       "moving": 1,
+       "first": {
+        "t": 444.54,
+        "pose": [
+         25.884,
+         -0.37,
+         1.505
+        ],
+        "dist": 1.44,
+        "inc": 23.3,
+        "px": 173.5
+       },
+       "reasons": {
+        "moving": 1
+       }
+      }
+     },
+     "seek_track": [
+      [
+       225.44,
+       -2.13,
+       3.35,
+       "SURGE"
+      ],
+      [
+       226.44,
+       -2.15,
+       3.19,
+       "GRADIENT"
+      ],
+      [
+       227.44,
+       -2.3,
+       2.93,
+       "GRADIENT"
+      ],
+      [
+       228.44,
+       -2.41,
+       2.6,
+       "GRADIENT"
+      ],
+      [
+       229.44,
+       -2.46,
+       2.51,
+       "GRADIENT"
+      ],
+      [
+       230.44,
+       -2.56,
+       2.29,
+       "GRADIENT"
+      ],
+      [
+       231.44,
+       -2.68,
+       1.96,
+       "GRADIENT"
+      ],
+      [
+       232.44,
+       -2.79,
+       1.66,
+       "GRADIENT"
+      ],
+      [
+       233.44,
+       -2.98,
+       1.43,
+       "GRADIENT"
+      ],
+      [
+       234.44,
+       -3.27,
+       1.41,
+       "GRADIENT"
+      ],
+      [
+       235.44,
+       -3.36,
+       1.41,
+       "GRADIENT"
+      ],
+      [
+       236.44,
+       -3.44,
+       1.41,
+       "GRADIENT"
+      ],
+      [
+       237.44,
+       -3.6,
+       1.41,
+       "GRADIENT"
+      ],
+      [
+       238.44,
+       -3.65,
+       1.43,
+       "GRADIENT"
+      ],
+      [
+       239.44,
+       -3.69,
+       1.44,
+       "GRADIENT"
+      ],
+      [
+       240.44,
+       -3.59,
+       1.45,
+       "GRADIENT"
+      ],
+      [
+       241.44,
+       -3.53,
+       1.38,
+       "GRADIENT"
+      ],
+      [
+       242.44,
+       -3.37,
+       1.39,
+       "GRADIENT"
+      ],
+      [
+       243.44,
+       -3.15,
+       1.45,
+       "GRADIENT"
+      ],
+      [
+       244.44,
+       -2.85,
+       1.54,
+       "GRADIENT"
+      ],
+      [
+       245.44,
+       -2.76,
+       1.57,
+       "GRADIENT"
+      ],
+      [
+       246.44,
+       -2.71,
+       1.6,
+       "GRADIENT"
+      ],
+      [
+       247.44,
+       -2.65,
+       1.73,
+       "GRADIENT"
+      ],
+      [
+       248.44,
+       -2.63,
+       2.01,
+       "GRADIENT"
+      ],
+      [
+       249.44,
+       -2.59,
+       2.17,
+       "GRADIENT"
+      ],
+      [
+       250.44,
+       -2.61,
+       2.21,
+       "GRADIENT"
+      ],
+      [
+       251.44,
+       -2.61,
+       2.21,
+       "GRADIENT"
+      ],
+      [
+       252.44,
+       -2.71,
+       2.24,
+       "GRADIENT"
+      ],
+      [
+       253.44,
+       -2.75,
+       2.26,
+       "GRADIENT"
+      ],
+      [
+       254.44,
+       -2.75,
+       2.3,
+       "GRADIENT"
+      ],
+      [
+       255.44,
+       -2.79,
+       2.33,
+       "GRADIENT"
+      ],
+      [
+       256.44,
+       -2.86,
+       2.39,
+       "GRADIENT"
+      ],
+      [
+       257.44,
+       -2.86,
+       2.37,
+       "GRADIENT"
+      ],
+      [
+       258.44,
+       -2.94,
+       2.47,
+       "GRADIENT"
+      ],
+      [
+       259.44,
+       -3.18,
+       2.74,
+       "GRADIENT"
+      ],
+      [
+       260.44,
+       -3.39,
+       2.96,
+       "GRADIENT"
+      ],
+      [
+       261.44,
+       -3.42,
+       3.04,
+       "GRADIENT"
+      ],
+      [
+       262.44,
+       -3.43,
+       3.03,
+       "GRADIENT"
+      ],
+      [
+       263.44,
+       -3.45,
+       2.98,
+       "GRADIENT"
+      ],
+      [
+       264.44,
+       -3.39,
+       2.95,
+       "GRADIENT"
+      ],
+      [
+       265.44,
+       -3.41,
+       2.96,
+       "GRADIENT"
+      ],
+      [
+       266.44,
+       -3.39,
+       2.94,
+       "GRADIENT"
+      ],
+      [
+       267.44,
+       -3.42,
+       2.93,
+       "GRADIENT"
+      ],
+      [
+       268.44,
+       -3.42,
+       2.95,
+       "GRADIENT"
+      ],
+      [
+       269.44,
+       -3.4,
+       2.94,
+       "GRADIENT"
+      ],
+      [
+       270.44,
+       -3.41,
+       2.96,
+       "GRADIENT"
+      ],
+      [
+       271.44,
+       -3.39,
+       2.95,
+       "GRADIENT"
+      ],
+      [
+       272.44,
+       -3.4,
+       2.94,
+       "GRADIENT"
+      ],
+      [
+       273.44,
+       -3.41,
+       2.95,
+       "GRADIENT"
+      ],
+      [
+       274.44,
+       -3.4,
+       2.93,
+       "GRADIENT"
+      ],
+      [
+       275.44,
+       -3.41,
+       2.93,
+       "GRADIENT"
+      ],
+      [
+       276.44,
+       -3.4,
+       2.93,
+       "GRADIENT"
+      ],
+      [
+       277.44,
+       -3.42,
+       2.95,
+       "GRADIENT"
+      ],
+      [
+       278.44,
+       -3.41,
+       2.96,
+       "GRADIENT"
+      ],
+      [
+       279.44,
+       -3.39,
+       2.91,
+       "GRADIENT"
+      ],
+      [
+       280.44,
+       -3.41,
+       2.93,
+       "GRADIENT"
+      ],
+      [
+       281.44,
+       -3.36,
+       2.91,
+       "GRADIENT"
+      ],
+      [
+       282.44,
+       -3.09,
+       2.67,
+       "GRADIENT"
+      ],
+      [
+       283.44,
+       -2.93,
+       2.49,
+       "GRADIENT"
+      ],
+      [
+       284.44,
+       -2.91,
+       2.5,
+       "GRADIENT"
+      ],
+      [
+       285.44,
+       -2.93,
+       2.5,
+       "GRADIENT"
+      ],
+      [
+       286.44,
+       -2.94,
+       2.45,
+       "GRADIENT"
+      ],
+      [
+       287.44,
+       -2.96,
+       2.43,
+       "GRADIENT"
+      ],
+      [
+       288.44,
+       -2.96,
+       2.44,
+       "GRADIENT"
+      ],
+      [
+       289.44,
+       -2.97,
+       2.43,
+       "GRADIENT"
+      ],
+      [
+       290.44,
+       -2.94,
+       2.43,
+       "GRADIENT"
+      ],
+      [
+       291.44,
+       -2.96,
+       2.41,
+       "GRADIENT"
+      ]
+     ],
+     "frames": 2793,
+     "wait_timeouts": 0,
+     "complete": true,
+     "checks": {
+      "docked": true,
+      "gauges": true,
+      "gas_found": true,
+      "no_teleport": true
+     }
+    },
+    "13": {
+     "seed": 13,
+     "leg": 1,
+     "legs": 0,
+     "plan_order": [
+      "G08",
+      "G06",
+      "G05",
+      "G04",
+      "G01",
+      "G02",
+      "G03",
+      "G07"
+     ],
+     "spawn": [
+      61.924,
+      -0.034,
+      -0.32,
+      3.155
+     ],
+     "params": {
+      "locomotion_mode": "stable"
+     },
+     "mission_params": {},
+     "final_state": "DOCKED",
+     "final_phase": "",
+     "stop_reason": "finished",
+     "error": null,
+     "sim_time": 603.0,
+     "wall_time": 1233.3,
+     "setup_time": 19.2,
+     "mission_t0": 4.42,
+     "mission_t_end": 596.12,
+     "mission_time": 591.7,
+     "completed": [
+      "G08",
+      "G06",
+      "G05",
+      "G04",
+      "G01",
+      "G02",
+      "G03",
+      "G07"
+     ],
+     "missed": [],
+     "results": {
+      "G08": {
+       "value": 0.9308,
+       "unit": "MPa",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 25.82,
+       "n_readings": 5
+      },
+      "G06": {
+       "value": 1.1206,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 278.82,
+       "n_readings": 5
+      },
+      "G05": {
+       "value": 3.7125,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 298.12,
+       "n_readings": 5
+      },
+      "G04": {
+       "value": 18.5947,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 308.72,
+       "n_readings": 5
+      },
+      "G01": {
+       "value": 6.3021,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 355.92,
+       "n_readings": 5
+      },
+      "G02": {
+       "value": 11.4575,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 368.82,
+       "n_readings": 5
+      },
+      "G03": {
+       "value": 2.3711,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 404.62,
+       "n_readings": 5
+      },
+      "G07": {
+       "value": 4.9677,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 481.62,
+       "n_readings": 5
+      }
+     },
+     "seek_result": {
+      "result": "FOUND",
+      "estimate": [
+       -2.7879,
+       2.1439
+      ],
+      "error_m": 0.4365,
+      "elapsed": 30.0,
+      "path_length": 4.0103,
+      "t": 344.82
+     },
+     "falls": 2,
+     "fall_info": [
+      {
+       "t": 126.9,
+       "t_onset": 125.83,
+       "x": 22.25,
+       "y": 0.27,
+       "yaw_deg": -164.1,
+       "fall_x": 22.28,
+       "fall_y": -0.34,
+       "rpy_deg": [
+        -156.3,
+        -9.5,
+        -166.4
+       ],
+       "area": "upper corridor",
+       "debris": {
+        "id": "C-OBS5",
+        "type": "pipe",
+        "dist": 0.29
+       },
+       "mission": "PATROL/navigate",
+       "mux": "patrol",
+       "mode_before": "WALK",
+       "gait": "trot",
+       "gait_phase": 0.82,
+       "speed": 0.305,
+       "cmd": [
+        0.25,
+        0.0,
+        0.0
+       ],
+       "wz_cmd_max": 0.0,
+       "heading_change_deg": 5.7,
+       "terrain_class": "rough",
+       "height": 0.355,
+       "t_recovered": 157.39,
+       "time_to_recover": 30.49
+      },
+      {
+       "t": 200.07,
+       "t_onset": 199.44,
+       "x": 10.49,
+       "y": 1.27,
+       "yaw_deg": -115.1,
+       "fall_x": 10.94,
+       "fall_y": 1.13,
+       "rpy_deg": [
+        -139.2,
+        -0.2,
+        -111.5
+       ],
+       "area": "back room",
+       "debris": {
+        "id": "F-OBS3",
+        "type": "pipe",
+        "dist": 0.11
+       },
+       "mission": "PATROL/navigate",
+       "mux": "patrol",
+       "mode_before": "WALK",
+       "gait": "trot",
+       "gait_phase": 0.44,
+       "speed": 0.358,
+       "cmd": [
+        0.25,
+        0.0,
+        0.04
+       ],
+       "wz_cmd_max": 0.35,
+       "heading_change_deg": 35.2,
+       "terrain_class": "obstacle",
+       "height": 0.355,
+       "t_recovered": 233.89,
+       "time_to_recover": 33.82
+      }
+     ],
+     "recoveries": 2,
+     "recovery_attempts": 7,
+     "teleports": 0,
+     "recovery_events": [
+      {
+       "event": "fall",
+       "t": 126.9,
+       "x": 22.288,
+       "y": -0.349,
+       "roll": -2.699,
+       "pitch": -0.171
+      },
+      {
+       "event": "recovered",
+       "t": 157.39,
+       "x": 22.487,
+       "y": 0.783,
+       "roll": 0.0,
+       "pitch": -0.004
+      },
+      {
+       "event": "fall",
+       "t": 200.07,
+       "x": 10.938,
+       "y": 1.133,
+       "roll": -2.397,
+       "pitch": -0.004
+      },
+      {
+       "event": "recovery_failed",
+       "t": 220.89,
+       "x": 11.496,
+       "y": 1.668,
+       "roll": 3.046,
+       "pitch": -0.061
+      },
+      {
+       "event": "recovery_retry",
+       "t": 225.89,
+       "x": 11.507,
+       "y": 1.633,
+       "roll": -3.141,
+       "pitch": -0.0
+      },
+      {
+       "event": "recovered",
+       "t": 233.89,
+       "x": 11.25,
+       "y": 1.151,
+       "roll": -0.0,
+       "pitch": -0.004
+      }
+     ],
+     "stalls": [],
+     "stuck_events": [],
+     "path_len": 175.4,
+     "battery_end": 74.5212,
+     "max_ppm": 1054.9,
+     "timeline": [
+      [
+       0.62,
+       "IDLE",
+       "",
+       61.94,
+       -0.03
+      ],
+      [
+       4.42,
+       "PATROL",
+       "starting",
+       61.98,
+       -0.03
+      ],
+      [
+       5.32,
+       "PATROL",
+       "navigate",
+       61.98,
+       -0.03
+      ],
+      [
+       22.32,
+       "PATROL",
+       "align",
+       57.21,
+       0.58
+      ],
+      [
+       24.32,
+       "INSPECTING",
+       "dwell",
+       57.18,
+       0.54
+      ],
+      [
+       25.82,
+       "PATROL",
+       "navigate",
+       57.18,
+       0.49
+      ],
+      [
+       126.92,
+       "PATROL",
+       "hold",
+       22.28,
+       -0.34
+      ],
+      [
+       157.42,
+       "PATROL",
+       "navigate",
+       22.49,
+       0.78
+      ],
+      [
+       200.12,
+       "PATROL",
+       "hold",
+       10.97,
+       1.12
+      ],
+      [
+       233.92,
+       "PATROL",
+       "navigate",
+       11.25,
+       1.15
+      ],
+      [
+       276.22,
+       "PATROL",
+       "align",
+       3.68,
+       4.14
+      ],
+      [
+       277.92,
+       "INSPECTING",
+       "dwell",
+       3.63,
+       4.2
+      ],
+      [
+       278.92,
+       "PATROL",
+       "navigate",
+       3.63,
+       4.25
+      ],
+      [
+       295.82,
+       "PATROL",
+       "align",
+       -1.47,
+       7.53
+      ],
+      [
+       296.82,
+       "INSPECTING",
+       "dwell",
+       -1.52,
+       7.53
+      ],
+      [
+       298.12,
+       "PATROL",
+       "navigate",
+       -1.57,
+       7.54
+      ],
+      [
+       304.92,
+       "PATROL",
+       "align",
+       -1.69,
+       5.75
+      ],
+      [
+       307.62,
+       "INSPECTING",
+       "dwell",
+       -1.73,
+       5.66
+      ],
+      [
+       308.72,
+       "PATROL",
+       "navigate",
+       -1.78,
+       5.67
+      ],
+      [
+       314.82,
+       "SEEK",
+       "seeking",
+       -2.0,
+       3.95
+      ],
+      [
+       344.82,
+       "PATROL",
+       "navigate",
+       -2.89,
+       2.3
+      ],
+      [
+       353.92,
+       "PATROL",
+       "align",
+       -3.0,
+       -0.67
+      ],
+      [
+       354.02,
+       "INSPECTING",
+       "dwell",
+       -3.0,
+       -0.69
+      ],
+      [
+       355.92,
+       "PATROL",
+       "navigate",
+       -3.02,
+       -0.7
+      ],
+      [
+       364.22,
+       "PATROL",
+       "align",
+       -0.74,
+       -0.88
+      ],
+      [
+       367.92,
+       "INSPECTING",
+       "dwell",
+       -0.69,
+       -0.9
+      ],
+      [
+       368.92,
+       "PATROL",
+       "navigate",
+       -0.68,
+       -0.92
+      ],
+      [
+       399.42,
+       "PATROL",
+       "align",
+       4.46,
+       -5.11
+      ],
+      [
+       403.12,
+       "INSPECTING",
+       "dwell",
+       4.45,
+       -5.19
+      ],
+      [
+       404.62,
+       "PATROL",
+       "navigate",
+       4.39,
+       -5.19
+      ],
+      [
+       477.42,
+       "PATROL",
+       "align",
+       25.77,
+       -0.39
+      ],
+      [
+       480.72,
+       "INSPECTING",
+       "dwell",
+       25.86,
+       -0.31
+      ],
+      [
+       481.72,
+       "RTH",
+       "requested",
+       25.89,
+       -0.28
+      ],
+      [
+       481.82,
+       "RTH",
+       "yield",
+       25.88,
+       -0.27
+      ],
+      [
+       596.12,
+       "DOCKED",
+       "",
+       61.79,
+       0.02
+      ]
+     ],
+     "rth_transitions": [
+      [
+       481.82,
+       "RTH_PLANNING",
+       "manual"
+      ],
+      [
+       481.82,
+       "RTH_NAVIGATING",
+       "manual"
+      ],
+      [
+       586.02,
+       "DOCKING",
+       "manual"
+      ],
+      [
+       596.12,
+       "DOCKED",
+       "manual"
+      ],
+      [
+       598.12,
+       "CHARGING",
+       "manual"
+      ]
+     ],
+     "events": [
+      [
+       0.62,
+       "info",
+       "patrol plan: 8 viewpoints, order ['G08', 'G06', 'G05', 'G04', 'G01', 'G02', 'G03', 'G07']"
+      ],
+      [
+       4.42,
+       "info",
+       "full mission started: ['G08', 'G06', 'G05', 'G04', 'G01', 'G02', 'G03', 'G07']"
+      ],
+      [
+       4.42,
+       "info",
+       "state IDLE -> PATROL"
+      ],
+      [
+       5.32,
+       "info",
+       "next viewpoint G08 at (57.00, 0.45)"
+      ],
+      [
+       24.32,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       24.32,
+       "info",
+       "inspecting G08"
+      ],
+      [
+       25.82,
+       "info",
+       "G08 read: 0.931 MPa (normal) from 5 readings"
+      ],
+      [
+       25.82,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       25.82,
+       "info",
+       "next viewpoint G06 at (3.50, 4.30)"
+      ],
+      [
+       126.92,
+       "warn",
+       "locomotion not ready (FALLEN) - holding"
+      ],
+      [
+       157.42,
+       "info",
+       "locomotion ready again (STAND) - re-planning"
+      ],
+      [
+       200.12,
+       "warn",
+       "locomotion not ready (FALLEN) - holding"
+      ],
+      [
+       233.92,
+       "info",
+       "locomotion ready again (STAND) - re-planning"
+      ],
+      [
+       277.92,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       277.92,
+       "info",
+       "inspecting G06"
+      ],
+      [
+       278.92,
+       "info",
+       "G06 read: 1.121 bar (normal) from 5 readings"
+      ],
+      [
+       278.92,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       278.92,
+       "info",
+       "next viewpoint G05 at (-1.70, 7.60)"
+      ],
+      [
+       296.82,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       296.82,
+       "info",
+       "inspecting G05"
+      ],
+      [
+       298.12,
+       "info",
+       "G05 read: 3.712 bar (normal) from 5 readings"
+      ],
+      [
+       298.12,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       298.12,
+       "info",
+       "next viewpoint G04 at (-1.70, 5.50)"
+      ],
+      [
+       307.62,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       307.62,
+       "info",
+       "inspecting G04"
+      ],
+      [
+       308.72,
+       "info",
+       "G04 read: 18.595 bar (normal) from 5 readings"
+      ],
+      [
+       308.72,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       308.72,
+       "info",
+       "next viewpoint G01 at (-3.06, -0.91)"
+      ],
+      [
+       314.82,
+       "seeker",
+       "enabled"
+      ],
+      [
+       314.82,
+       "alarm",
+       "GAS ALARM: 48.3 ppm > 25 ppm"
+      ],
+      [
+       314.82,
+       "info",
+       "state PATROL -> SEEK"
+      ],
+      [
+       314.82,
+       "alarm",
+       "gas source seeking started (gas 48.3 ppm)"
+      ],
+      [
+       314.92,
+       "seeker",
+       "seek state -> SURGE (plume detected)"
+      ],
+      [
+       315.02,
+       "seeker",
+       "seek state -> GRADIENT (gradient reliable)"
+      ],
+      [
+       344.82,
+       "seeker",
+       "seek state -> FOUND (confirmation budget used)"
+      ],
+      [
+       344.82,
+       "seeker",
+       "disabled"
+      ],
+      [
+       344.82,
+       "alarm",
+       "GAS SOURCE FOUND at (-2.79, 2.14), error 0.44 m"
+      ],
+      [
+       344.82,
+       "info",
+       "state SEEK -> PATROL"
+      ],
+      [
+       354.02,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       354.02,
+       "info",
+       "inspecting G01"
+      ],
+      [
+       355.92,
+       "info",
+       "G01 read: 6.302 bar (normal) from 5 readings"
+      ],
+      [
+       355.92,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       355.92,
+       "info",
+       "next viewpoint G02 at (-0.50, -0.85)"
+      ],
+      [
+       367.92,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       367.92,
+       "info",
+       "inspecting G02"
+      ],
+      [
+       368.92,
+       "info",
+       "G02 read: 11.457 bar (normal) from 5 readings"
+      ],
+      [
+       368.92,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       368.92,
+       "info",
+       "next viewpoint G03 at (4.60, -5.30)"
+      ],
+      [
+       403.12,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       403.12,
+       "info",
+       "inspecting G03"
+      ],
+      [
+       404.62,
+       "info",
+       "G03 read: 2.371 bar (normal) from 5 readings"
+      ],
+      [
+       404.62,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       404.62,
+       "info",
+       "next viewpoint G07 at (26.00, -0.45)"
+      ],
+      [
+       414.12,
+       "alarm",
+       "GAS ALARM: 32.0 ppm > 25 ppm"
+      ],
+      [
+       480.72,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       480.72,
+       "info",
+       "inspecting G07"
+      ],
+      [
+       481.72,
+       "info",
+       "G07 read: 4.968 bar (normal) from 5 readings"
+      ],
+      [
+       481.72,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       481.72,
+       "info",
+       "all viewpoints done (8 read, 0 missed) - returning home"
+      ],
+      [
+       481.72,
+       "info",
+       "state PATROL -> RTH"
+      ],
+      [
+       481.72,
+       "info",
+       "return to home (mission_complete) - waiting for return_to_home"
+      ],
+      [
+       481.82,
+       "rth",
+       "RTH triggered: manual (bat 74.48582564221078, rssi -51.04511433131467)"
+      ],
+      [
+       481.82,
+       "rth",
+       "safety state -> RTH_NAVIGATING (path 37.2 m)"
+      ],
+      [
+       586.02,
+       "rth",
+       "safety state -> DOCKING (docking)"
+      ],
+      [
+       596.12,
+       "rth",
+       "safety state -> DOCKED (docked)"
+      ],
+      [
+       596.12,
+       "info",
+       "state RTH -> DOCKED"
+      ],
+      [
+       596.12,
+       "info",
+       "mission complete - docked (8 read, 0 missed)"
+      ],
+      [
+       598.12,
+       "rth",
+       "safety state -> CHARGING (charging)"
+      ]
+     ],
+     "gauge_log": {
+      "G08": {
+       "attempts": 8,
+       "ok": 5,
+       "moving": 3,
+       "first": {
+        "t": 24.42,
+        "pose": [
+         57.161,
+         0.54,
+         -1.641
+        ],
+        "dist": 1.6,
+        "inc": 21.2,
+        "px": 155.7
+       },
+       "reasons": {
+        "moving": 3
+       }
+      },
+      "G06": {
+       "attempts": 5,
+       "ok": 5,
+       "moving": 0,
+       "first": {
+        "t": 278.02,
+        "pose": [
+         3.623,
+         4.207,
+         1.653
+        ],
+        "dist": 1.77,
+        "inc": 25.7,
+        "px": 141.9
+       },
+       "reasons": {}
+      },
+      "G05": {
+       "attempts": 7,
+       "ok": 5,
+       "moving": 2,
+       "first": {
+        "t": 296.92,
+        "pose": [
+         -1.529,
+         7.542,
+         3.111
+        ],
+        "dist": 1.64,
+        "inc": 16.4,
+        "px": 151.6
+       },
+       "reasons": {
+        "moving": 2
+       }
+      },
+      "G04": {
+       "attempts": 6,
+       "ok": 5,
+       "moving": 1,
+       "first": {
+        "t": 307.72,
+        "pose": [
+         -1.723,
+         5.665,
+         -3.106
+        ],
+        "dist": 1.54,
+        "inc": 26.2,
+        "px": 164.0
+       },
+       "reasons": {
+        "moving": 1
+       }
+      },
+      "G01": {
+       "attempts": 10,
+       "ok": 5,
+       "moving": 5,
+       "first": {
+        "t": 354.12,
+        "pose": [
+         -2.989,
+         -0.704,
+         -1.837
+        ],
+        "dist": 1.68,
+        "inc": 22.1,
+        "px": 147.9
+       },
+       "reasons": {
+        "moving": 5
+       }
+      },
+      "G02": {
+       "attempts": 5,
+       "ok": 5,
+       "moving": 0,
+       "first": {
+        "t": 368.02,
+        "pose": [
+         -0.676,
+         -0.913,
+         -1.507
+        ],
+        "dist": 1.42,
+        "inc": 20.0,
+        "px": 175.0
+       },
+       "reasons": {}
+      },
+      "G03": {
+       "attempts": 8,
+       "ok": 5,
+       "moving": 3,
+       "first": {
+        "t": 403.22,
+        "pose": [
+         4.443,
+         -5.21,
+         -3.078
+        ],
+        "dist": 1.2,
+        "inc": 17.8,
+        "px": 206.8
+       },
+       "reasons": {
+        "moving": 3
+       }
+      },
+      "G07": {
+       "attempts": 5,
+       "ok": 5,
+       "moving": 0,
+       "first": {
+        "t": 480.82,
+        "pose": [
+         25.874,
+         -0.301,
+         1.521
+        ],
+        "dist": 1.38,
+        "inc": 24.5,
+        "px": 182.0
+       },
+       "reasons": {}
+      }
+     },
+     "seek_track": [
+      [
+       314.92,
+       -2.02,
+       3.91,
+       "SURGE"
+      ],
+      [
+       315.92,
+       -2.05,
+       3.76,
+       "GRADIENT"
+      ],
+      [
+       316.92,
+       -2.13,
+       3.46,
+       "GRADIENT"
+      ],
+      [
+       317.92,
+       -2.25,
+       3.14,
+       "GRADIENT"
+      ],
+      [
+       318.92,
+       -2.28,
+       3.06,
+       "GRADIENT"
+      ],
+      [
+       319.92,
+       -2.42,
+       2.8,
+       "GRADIENT"
+      ],
+      [
+       320.92,
+       -2.57,
+       2.47,
+       "GRADIENT"
+      ],
+      [
+       321.92,
+       -2.68,
+       2.2,
+       "GRADIENT"
+      ],
+      [
+       322.92,
+       -2.69,
+       2.18,
+       "GRADIENT"
+      ],
+      [
+       323.92,
+       -2.69,
+       2.18,
+       "GRADIENT"
+      ],
+      [
+       324.92,
+       -2.7,
+       2.16,
+       "GRADIENT"
+      ],
+      [
+       325.92,
+       -2.73,
+       2.1,
+       "GRADIENT"
+      ],
+      [
+       326.92,
+       -2.72,
+       2.09,
+       "GRADIENT"
+      ],
+      [
+       327.92,
+       -2.69,
+       1.88,
+       "GRADIENT"
+      ],
+      [
+       328.92,
+       -2.67,
+       1.56,
+       "GRADIENT"
+      ],
+      [
+       329.92,
+       -2.67,
+       1.42,
+       "GRADIENT"
+      ],
+      [
+       330.92,
+       -2.68,
+       1.39,
+       "GRADIENT"
+      ],
+      [
+       331.92,
+       -2.69,
+       1.48,
+       "GRADIENT"
+      ],
+      [
+       332.92,
+       -2.71,
+       1.82,
+       "GRADIENT"
+      ],
+      [
+       333.92,
+       -2.69,
+       2.0,
+       "GRADIENT"
+      ],
+      [
+       334.92,
+       -2.69,
+       1.97,
+       "GRADIENT"
+      ],
+      [
+       335.92,
+       -2.69,
+       1.99,
+       "GRADIENT"
+      ],
+      [
+       336.92,
+       -2.73,
+       1.98,
+       "GRADIENT"
+      ],
+      [
+       337.92,
+       -2.73,
+       1.96,
+       "GRADIENT"
+      ],
+      [
+       338.92,
+       -2.69,
+       2.14,
+       "GRADIENT"
+      ],
+      [
+       339.92,
+       -2.69,
+       2.32,
+       "GRADIENT"
+      ],
+      [
+       340.92,
+       -2.69,
+       2.3,
+       "GRADIENT"
+      ],
+      [
+       341.92,
+       -2.71,
+       2.29,
+       "GRADIENT"
+      ],
+      [
+       342.92,
+       -2.87,
+       2.34,
+       "GRADIENT"
+      ],
+      [
+       343.92,
+       -2.88,
+       2.3,
+       "GRADIENT"
+      ]
+     ],
+     "frames": 2908,
+     "wait_timeouts": 0,
+     "complete": true,
+     "checks": {
+      "docked": true,
+      "gauges": true,
+      "gas_found": true,
+      "no_teleport": true
+     }
+    },
+    "12": {
+     "seed": 12,
+     "leg": 1,
+     "legs": 0,
+     "plan_order": [
+      "G08",
+      "G06",
+      "G05",
+      "G04",
+      "G01",
+      "G02",
+      "G03",
+      "G07"
+     ],
+     "spawn": [
+      61.885,
+      0.022,
+      -0.32,
+      3.121
+     ],
+     "params": {
+      "locomotion_mode": "stable"
+     },
+     "mission_params": {},
+     "final_state": "DOCKED",
+     "final_phase": "",
+     "stop_reason": "finished",
+     "error": null,
+     "sim_time": 653.0,
+     "wall_time": 1353.6,
+     "setup_time": 19.2,
+     "mission_t0": 4.38,
+     "mission_t_end": 648.18,
+     "mission_time": 643.8,
+     "completed": [
+      "G08",
+      "G06",
+      "G05",
+      "G04",
+      "G01",
+      "G02",
+      "G03",
+      "G07"
+     ],
+     "missed": [],
+     "results": {
+      "G08": {
+       "value": 0.9321,
+       "unit": "MPa",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 25.58,
+       "n_readings": 5
+      },
+      "G06": {
+       "value": 1.1608,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 351.38,
+       "n_readings": 5
+      },
+      "G05": {
+       "value": 3.5002,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 369.58,
+       "n_readings": 5
+      },
+      "G04": {
+       "value": 18.6418,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 380.48,
+       "n_readings": 5
+      },
+      "G01": {
+       "value": 6.1382,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 400.48,
+       "n_readings": 5
+      },
+      "G02": {
+       "value": 11.5527,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 414.08,
+       "n_readings": 5
+      },
+      "G03": {
+       "value": 2.3747,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 452.38,
+       "n_readings": 5
+      },
+      "G07": {
+       "value": 4.7794,
+       "unit": "bar",
+       "status": "normal",
+       "confidence": 0.9,
+       "t": 529.58,
+       "n_readings": 5
+      }
+     },
+     "seek_result": {
+      "result": "FOUND",
+      "estimate": [
+       -2.7822,
+       2.1174
+      ],
+      "error_m": 0.434,
+      "elapsed": 153.5,
+      "path_length": 32.1493,
+      "t": 330.18
+     },
+     "falls": 0,
+     "fall_info": [],
+     "recoveries": 0,
+     "recovery_attempts": 0,
+     "teleports": 0,
+     "recovery_events": [],
+     "stalls": [],
+     "stuck_events": [],
+     "path_len": 197.0,
+     "battery_end": 72.3767,
+     "max_ppm": 1069.6,
+     "timeline": [
+      [
+       0.58,
+       "IDLE",
+       "",
+       61.9,
+       0.02
+      ],
+      [
+       4.38,
+       "PATROL",
+       "starting",
+       61.94,
+       0.02
+      ],
+      [
+       5.28,
+       "PATROL",
+       "navigate",
+       61.94,
+       0.02
+      ],
+      [
+       22.28,
+       "PATROL",
+       "align",
+       57.18,
+       0.58
+      ],
+      [
+       24.28,
+       "INSPECTING",
+       "dwell",
+       57.14,
+       0.55
+      ],
+      [
+       25.58,
+       "PATROL",
+       "navigate",
+       57.14,
+       0.51
+      ],
+      [
+       176.68,
+       "SEEK",
+       "seeking",
+       8.05,
+       0.32
+      ],
+      [
+       330.18,
+       "PATROL",
+       "navigate",
+       -2.66,
+       2.06
+      ],
+      [
+       347.98,
+       "PATROL",
+       "align",
+       3.28,
+       4.19
+      ],
+      [
+       350.28,
+       "INSPECTING",
+       "dwell",
+       3.31,
+       4.25
+      ],
+      [
+       351.38,
+       "PATROL",
+       "navigate",
+       3.34,
+       4.27
+      ],
+      [
+       367.68,
+       "PATROL",
+       "align",
+       -1.47,
+       7.53
+      ],
+      [
+       368.68,
+       "INSPECTING",
+       "dwell",
+       -1.52,
+       7.53
+      ],
+      [
+       369.68,
+       "PATROL",
+       "navigate",
+       -1.57,
+       7.53
+      ],
+      [
+       376.58,
+       "PATROL",
+       "align",
+       -1.69,
+       5.74
+      ],
+      [
+       379.18,
+       "INSPECTING",
+       "dwell",
+       -1.73,
+       5.65
+      ],
+      [
+       380.48,
+       "PATROL",
+       "navigate",
+       -1.77,
+       5.66
+      ],
+      [
+       399.28,
+       "PATROL",
+       "align",
+       -3.02,
+       -0.67
+      ],
+      [
+       399.38,
+       "INSPECTING",
+       "dwell",
+       -3.01,
+       -0.69
+      ],
+      [
+       400.48,
+       "PATROL",
+       "navigate",
+       -3.02,
+       -0.71
+      ],
+      [
+       408.88,
+       "PATROL",
+       "align",
+       -0.74,
+       -0.88
+      ],
+      [
+       412.58,
+       "INSPECTING",
+       "dwell",
+       -0.64,
+       -0.93
+      ],
+      [
+       414.08,
+       "PATROL",
+       "navigate",
+       -0.63,
+       -0.97
+      ],
+      [
+       447.68,
+       "PATROL",
+       "align",
+       4.46,
+       -5.1
+      ],
+      [
+       451.28,
+       "INSPECTING",
+       "dwell",
+       4.43,
+       -5.18
+      ],
+      [
+       452.38,
+       "PATROL",
+       "navigate",
+       4.38,
+       -5.2
+      ],
+      [
+       525.18,
+       "PATROL",
+       "align",
+       25.77,
+       -0.4
+      ],
+      [
+       528.48,
+       "INSPECTING",
+       "dwell",
+       25.82,
+       -0.35
+      ],
+      [
+       529.58,
+       "RTH",
+       "requested",
+       25.83,
+       -0.32
+      ],
+      [
+       529.68,
+       "RTH",
+       "yield",
+       25.83,
+       -0.32
+      ],
+      [
+       648.18,
+       "DOCKED",
+       "",
+       61.79,
+       -0.01
+      ]
+     ],
+     "rth_transitions": [
+      [
+       529.68,
+       "RTH_PLANNING",
+       "manual"
+      ],
+      [
+       529.68,
+       "RTH_NAVIGATING",
+       "manual"
+      ],
+      [
+       634.68,
+       "DOCKING",
+       "manual"
+      ],
+      [
+       648.18,
+       "DOCKED",
+       "manual"
+      ],
+      [
+       650.18,
+       "CHARGING",
+       "manual"
+      ]
+     ],
+     "events": [
+      [
+       0.58,
+       "info",
+       "patrol plan: 8 viewpoints, order ['G08', 'G06', 'G05', 'G04', 'G01', 'G02', 'G03', 'G07']"
+      ],
+      [
+       4.38,
+       "info",
+       "full mission started: ['G08', 'G06', 'G05', 'G04', 'G01', 'G02', 'G03', 'G07']"
+      ],
+      [
+       4.38,
+       "info",
+       "state IDLE -> PATROL"
+      ],
+      [
+       5.28,
+       "info",
+       "next viewpoint G08 at (57.00, 0.45)"
+      ],
+      [
+       24.28,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       24.28,
+       "info",
+       "inspecting G08"
+      ],
+      [
+       25.58,
+       "info",
+       "G08 read: 0.932 MPa (normal) from 5 readings"
+      ],
+      [
+       25.58,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       25.58,
+       "info",
+       "next viewpoint G06 at (3.50, 4.30)"
+      ],
+      [
+       176.68,
+       "seeker",
+       "enabled"
+      ],
+      [
+       176.68,
+       "alarm",
+       "GAS ALARM: 28.1 ppm > 25 ppm"
+      ],
+      [
+       176.68,
+       "info",
+       "state PATROL -> SEEK"
+      ],
+      [
+       176.68,
+       "alarm",
+       "gas source seeking started (gas 28.1 ppm)"
+      ],
+      [
+       176.78,
+       "seeker",
+       "seek state -> SURGE (plume detected)"
+      ],
+      [
+       176.88,
+       "seeker",
+       "seek state -> GRADIENT (gradient reliable)"
+      ],
+      [
+       194.58,
+       "alarm",
+       "GAS ALARM: 29.7 ppm > 25 ppm"
+      ],
+      [
+       209.88,
+       "alarm",
+       "GAS ALARM: 37.9 ppm > 25 ppm"
+      ],
+      [
+       258.78,
+       "seeker",
+       "seek state -> SURGE (ascent blocked by obstacle)"
+      ],
+      [
+       258.88,
+       "seeker",
+       "seek state -> GRADIENT (gradient reliable)"
+      ],
+      [
+       259.68,
+       "seeker",
+       "seek state -> SURGE (ascent blocked by obstacle)"
+      ],
+      [
+       259.78,
+       "seeker",
+       "seek state -> GRADIENT (gradient reliable)"
+      ],
+      [
+       264.28,
+       "alarm",
+       "GAS ALARM: 59.7 ppm > 25 ppm"
+      ],
+      [
+       330.18,
+       "seeker",
+       "seek state -> FOUND (confirmation budget used)"
+      ],
+      [
+       330.18,
+       "seeker",
+       "disabled"
+      ],
+      [
+       330.18,
+       "alarm",
+       "GAS SOURCE FOUND at (-2.78, 2.12), error 0.43 m"
+      ],
+      [
+       330.18,
+       "info",
+       "state SEEK -> PATROL"
+      ],
+      [
+       350.28,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       350.28,
+       "info",
+       "inspecting G06"
+      ],
+      [
+       350.98,
+       "alarm",
+       "GAS ALARM: 28.0 ppm > 25 ppm"
+      ],
+      [
+       351.38,
+       "info",
+       "G06 read: 1.161 bar (normal) from 5 readings"
+      ],
+      [
+       351.38,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       351.38,
+       "info",
+       "next viewpoint G05 at (-1.70, 7.60)"
+      ],
+      [
+       368.68,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       368.68,
+       "info",
+       "inspecting G05"
+      ],
+      [
+       369.68,
+       "info",
+       "G05 read: 3.500 bar (normal) from 5 readings"
+      ],
+      [
+       369.68,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       369.68,
+       "info",
+       "next viewpoint G04 at (-1.70, 5.50)"
+      ],
+      [
+       379.18,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       379.18,
+       "info",
+       "inspecting G04"
+      ],
+      [
+       380.48,
+       "info",
+       "G04 read: 18.642 bar (normal) from 5 readings"
+      ],
+      [
+       380.48,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       380.48,
+       "info",
+       "next viewpoint G01 at (-3.06, -0.91)"
+      ],
+      [
+       385.28,
+       "alarm",
+       "GAS ALARM: 46.0 ppm > 25 ppm"
+      ],
+      [
+       399.38,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       399.38,
+       "info",
+       "inspecting G01"
+      ],
+      [
+       400.48,
+       "info",
+       "G01 read: 6.138 bar (normal) from 5 readings"
+      ],
+      [
+       400.48,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       400.48,
+       "info",
+       "next viewpoint G02 at (-0.50, -0.85)"
+      ],
+      [
+       412.58,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       412.58,
+       "info",
+       "inspecting G02"
+      ],
+      [
+       414.08,
+       "info",
+       "G02 read: 11.553 bar (normal) from 5 readings"
+      ],
+      [
+       414.08,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       414.08,
+       "info",
+       "next viewpoint G03 at (4.60, -5.30)"
+      ],
+      [
+       421.78,
+       "alarm",
+       "GAS ALARM: 34.8 ppm > 25 ppm"
+      ],
+      [
+       451.28,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       451.28,
+       "info",
+       "inspecting G03"
+      ],
+      [
+       452.38,
+       "info",
+       "G03 read: 2.375 bar (normal) from 5 readings"
+      ],
+      [
+       452.38,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       452.38,
+       "info",
+       "next viewpoint G07 at (26.00, -0.45)"
+      ],
+      [
+       466.68,
+       "alarm",
+       "GAS ALARM: 31.8 ppm > 25 ppm"
+      ],
+      [
+       528.48,
+       "info",
+       "state PATROL -> INSPECTING"
+      ],
+      [
+       528.48,
+       "info",
+       "inspecting G07"
+      ],
+      [
+       529.58,
+       "info",
+       "G07 read: 4.779 bar (normal) from 5 readings"
+      ],
+      [
+       529.58,
+       "info",
+       "state INSPECTING -> PATROL"
+      ],
+      [
+       529.58,
+       "info",
+       "all viewpoints done (8 read, 0 missed) - returning home"
+      ],
+      [
+       529.58,
+       "info",
+       "state PATROL -> RTH"
+      ],
+      [
+       529.58,
+       "info",
+       "return to home (mission_complete) - waiting for return_to_home"
+      ],
+      [
+       529.68,
+       "rth",
+       "RTH triggered: manual (bat 73.44781298150804, rssi -50.28235564533154)"
+      ],
+      [
+       529.68,
+       "rth",
+       "safety state -> RTH_NAVIGATING (path 37.2 m)"
+      ],
+      [
+       634.68,
+       "rth",
+       "safety state -> DOCKING (docking)"
+      ],
+      [
+       648.18,
+       "rth",
+       "safety state -> DOCKED (docked)"
+      ],
+      [
+       648.18,
+       "info",
+       "state RTH -> DOCKED"
+      ],
+      [
+       648.18,
+       "info",
+       "mission complete - docked (8 read, 0 missed)"
+      ],
+      [
+       650.18,
+       "rth",
+       "safety state -> CHARGING (charging)"
+      ]
+     ],
+     "gauge_log": {
+      "G08": {
+       "attempts": 7,
+       "ok": 5,
+       "moving": 2,
+       "first": {
+        "t": 24.38,
+        "pose": [
+         57.149,
+         0.559,
+         -1.635
+        ],
+        "dist": 1.62,
+        "inc": 20.8,
+        "px": 154.0
+       },
+       "reasons": {
+        "moving": 2
+       }
+      },
+      "G06": {
+       "attempts": 6,
+       "ok": 5,
+       "moving": 1,
+       "first": {
+        "t": 350.38,
+        "pose": [
+         3.313,
+         4.254,
+         1.549
+        ],
+        "dist": 1.73,
+        "inc": 26.8,
+        "px": 145.8
+       },
+       "reasons": {
+        "moving": 1
+       }
+      },
+      "G05": {
+       "attempts": 5,
+       "ok": 5,
+       "moving": 0,
+       "first": {
+        "t": 368.78,
+        "pose": [
+         -1.522,
+         7.527,
+         3.117
+        ],
+        "dist": 1.65,
+        "inc": 16.4,
+        "px": 151.0
+       },
+       "reasons": {}
+      },
+      "G04": {
+       "attempts": 7,
+       "ok": 5,
+       "moving": 2,
+       "first": {
+        "t": 379.28,
+        "pose": [
+         -1.742,
+         5.644,
+         -3.084
+        ],
+        "dist": 1.52,
+        "inc": 26.3,
+        "px": 165.8
+       },
+       "reasons": {
+        "moving": 2
+       }
+      },
+      "G01": {
+       "attempts": 6,
+       "ok": 5,
+       "moving": 1,
+       "first": {
+        "t": 399.48,
+        "pose": [
+         -3.003,
+         -0.702,
+         -1.798
+        ],
+        "dist": 1.68,
+        "inc": 22.0,
+        "px": 148.3
+       },
+       "reasons": {
+        "moving": 1
+       }
+      },
+      "G02": {
+       "attempts": 8,
+       "ok": 5,
+       "moving": 3,
+       "first": {
+        "t": 412.68,
+        "pose": [
+         -0.635,
+         -0.941,
+         -1.492
+        ],
+        "dist": 1.39,
+        "inc": 19.9,
+        "px": 178.5
+       },
+       "reasons": {
+        "moving": 3
+       }
+      },
+      "G03": {
+       "attempts": 6,
+       "ok": 5,
+       "moving": 1,
+       "first": {
+        "t": 451.38,
+        "pose": [
+         4.418,
+         -5.193,
+         -3.056
+        ],
+        "dist": 1.18,
+        "inc": 18.3,
+        "px": 210.9
+       },
+       "reasons": {
+        "moving": 1
+       }
+      },
+      "G07": {
+       "attempts": 6,
+       "ok": 5,
+       "moving": 1,
+       "first": {
+        "t": 528.58,
+        "pose": [
+         25.814,
+         -0.356,
+         1.513
+        ],
+        "dist": 1.43,
+        "inc": 24.1,
+        "px": 175.0
+       },
+       "reasons": {
+        "moving": 1
+       }
+      }
+     },
+     "seek_track": [
+      [
+       176.78,
+       8.02,
+       0.33,
+       "SURGE"
+      ],
+      [
+       177.78,
+       7.87,
+       0.36,
+       "GRADIENT"
+      ],
+      [
+       178.78,
+       7.67,
+       0.31,
+       "GRADIENT"
+      ],
+      [
+       179.78,
+       7.39,
+       0.18,
+       "GRADIENT"
+      ],
+      [
+       180.78,
+       7.32,
+       0.16,
+       "GRADIENT"
+      ],
+      [
+       181.78,
+       7.14,
+       -0.08,
+       "GRADIENT"
+      ],
+      [
+       182.78,
+       6.87,
+       -0.28,
+       "GRADIENT"
+      ],
+      [
+       183.78,
+       6.69,
+       -0.53,
+       "GRADIENT"
+      ],
+      [
+       184.78,
+       6.65,
+       -0.55,
+       "GRADIENT"
+      ],
+      [
+       185.78,
+       6.57,
+       -0.86,
+       "GRADIENT"
+      ],
+      [
+       186.78,
+       6.57,
+       -1.2,
+       "GRADIENT"
+      ],
+      [
+       187.78,
+       6.55,
+       -1.54,
+       "GRADIENT"
+      ],
+      [
+       188.78,
+       6.45,
+       -1.88,
+       "GRADIENT"
+      ],
+      [
+       189.78,
+       6.32,
+       -2.03,
+       "GRADIENT"
+      ],
+      [
+       190.78,
+       6.06,
+       -2.09,
+       "GRADIENT"
+      ],
+      [
+       191.78,
+       5.96,
+       -2.12,
+       "GRADIENT"
+      ],
+      [
+       192.78,
+       5.98,
+       -2.11,
+       "GRADIENT"
+      ],
+      [
+       193.78,
+       6.07,
+       -2.08,
+       "GRADIENT"
+      ],
+      [
+       194.78,
+       6.19,
+       -2.06,
+       "GRADIENT"
+      ],
+      [
+       195.78,
+       6.42,
+       -1.87,
+       "GRADIENT"
+      ],
+      [
+       196.78,
+       6.63,
+       -1.6,
+       "GRADIENT"
+      ],
+      [
+       197.78,
+       6.69,
+       -1.28,
+       "GRADIENT"
+      ],
+      [
+       198.78,
+       6.74,
+       -0.95,
+       "GRADIENT"
+      ],
+      [
+       199.78,
+       6.69,
+       -0.6,
+       "GRADIENT"
+      ],
+      [
+       200.78,
+       6.69,
+       -0.26,
+       "GRADIENT"
+      ],
+      [
+       201.78,
+       6.63,
+       0.09,
+       "GRADIENT"
+      ],
+      [
+       202.78,
+       6.6,
+       0.45,
+       "GRADIENT"
+      ],
+      [
+       203.78,
+       6.58,
+       0.81,
+       "GRADIENT"
+      ],
+      [
+       204.78,
+       6.55,
+       1.14,
+       "GRADIENT"
+      ],
+      [
+       205.78,
+       6.49,
+       1.48,
+       "GRADIENT"
+      ],
+      [
+       206.78,
+       6.48,
+       1.83,
+       "GRADIENT"
+      ],
+      [
+       207.78,
+       6.25,
+       2.02,
+       "GRADIENT"
+      ],
+      [
+       208.78,
+       5.92,
+       2.1,
+       "GRADIENT"
+      ],
+      [
+       209.78,
+       5.56,
+       2.11,
+       "GRADIENT"
+      ],
+      [
+       210.78,
+       5.21,
+       2.12,
+       "GRADIENT"
+      ],
+      [
+       211.78,
+       4.86,
+       2.08,
+       "GRADIENT"
+      ],
+      [
+       212.78,
+       4.52,
+       2.12,
+       "GRADIENT"
+      ],
+      [
+       213.78,
+       4.22,
+       2.09,
+       "GRADIENT"
+      ],
+      [
+       214.78,
+       4.0,
+       2.09,
+       "GRADIENT"
+      ],
+      [
+       215.78,
+       3.77,
+       2.11,
+       "GRADIENT"
+      ],
+      [
+       216.78,
+       3.52,
+       2.08,
+       "GRADIENT"
+      ],
+      [
+       217.78,
+       3.35,
+       2.1,
+       "GRADIENT"
+      ],
+      [
+       218.78,
+       3.32,
+       2.11,
+       "GRADIENT"
+      ],
+      [
+       219.78,
+       3.17,
+       2.13,
+       "GRADIENT"
+      ],
+      [
+       220.78,
+       2.85,
+       2.22,
+       "GRADIENT"
+      ],
+      [
+       221.78,
+       2.51,
+       2.26,
+       "GRADIENT"
+      ],
+      [
+       222.78,
+       2.35,
+       2.3,
+       "GRADIENT"
+      ],
+      [
+       223.78,
+       2.16,
+       2.24,
+       "GRADIENT"
+      ],
+      [
+       224.78,
+       1.84,
+       2.15,
+       "GRADIENT"
+      ],
+      [
+       225.78,
+       1.51,
+       2.04,
+       "GRADIENT"
+      ],
+      [
+       226.78,
+       1.42,
+       2.05,
+       "GRADIENT"
+      ],
+      [
+       227.78,
+       1.29,
+       2.1,
+       "GRADIENT"
+      ],
+      [
+       228.78,
+       1.0,
+       2.27,
+       "GRADIENT"
+      ],
+      [
+       229.78,
+       0.67,
+       2.33,
+       "GRADIENT"
+      ],
+      [
+       230.78,
+       0.37,
+       2.34,
+       "GRADIENT"
+      ],
+      [
+       231.78,
+       0.09,
+       2.14,
+       "GRADIENT"
+      ],
+      [
+       232.78,
+       -0.21,
+       1.97,
+       "GRADIENT"
+      ],
+      [
+       233.78,
+       -0.47,
+       1.72,
+       "GRADIENT"
+      ],
+      [
+       234.78,
+       -0.75,
+       1.5,
+       "GRADIENT"
+      ],
+      [
+       235.78,
+       -1.01,
+       1.26,
+       "GRADIENT"
+      ],
+      [
+       236.78,
+       -1.28,
+       1.06,
+       "GRADIENT"
+      ],
+      [
+       237.78,
+       -1.51,
+       0.84,
+       "GRADIENT"
+      ],
+      [
+       238.78,
+       -1.58,
+       0.83,
+       "GRADIENT"
+      ],
+      [
+       239.78,
+       -1.87,
+       0.88,
+       "GRADIENT"
+      ],
+      [
+       240.78,
+       -2.18,
+       1.02,
+       "GRADIENT"
+      ],
+      [
+       241.78,
+       -2.51,
+       1.13,
+       "GRADIENT"
+      ],
+      [
+       242.78,
+       -2.75,
+       1.24,
+       "GRADIENT"
+      ],
+      [
+       243.78,
+       -2.84,
+       1.27,
+       "GRADIENT"
+      ],
+      [
+       244.78,
+       -3.02,
+       1.33,
+       "GRADIENT"
+      ],
+      [
+       245.78,
+       -3.3,
+       1.36,
+       "GRADIENT"
+      ],
+      [
+       246.78,
+       -3.54,
+       1.44,
+       "GRADIENT"
+      ],
+      [
+       247.78,
+       -3.68,
+       1.47,
+       "GRADIENT"
+      ],
+      [
+       248.78,
+       -3.7,
+       1.48,
+       "GRADIENT"
+      ],
+      [
+       249.78,
+       -3.6,
+       1.54,
+       "GRADIENT"
+      ],
+      [
+       250.78,
+       -3.56,
+       1.53,
+       "GRADIENT"
+      ],
+      [
+       251.78,
+       -3.27,
+       1.48,
+       "GRADIENT"
+      ],
+      [
+       252.78,
+       -3.28,
+       1.5,
+       "GRADIENT"
+      ],
+      [
+       253.78,
+       -3.54,
+       1.43,
+       "GRADIENT"
+      ],
+      [
+       254.78,
+       -3.67,
+       1.42,
+       "GRADIENT"
+      ],
+      [
+       255.78,
+       -3.66,
+       1.39,
+       "GRADIENT"
+      ],
+      [
+       256.78,
+       -3.61,
+       1.21,
+       "GRADIENT"
+      ],
+      [
+       257.78,
+       -3.69,
+       1.08,
+       "GRADIENT"
+      ],
+      [
+       258.78,
+       -3.7,
+       1.05,
+       "SURGE"
+      ],
+      [
+       259.78,
+       -3.71,
+       1.04,
+       "GRADIENT"
+      ],
+      [
+       260.78,
+       -3.71,
+       1.04,
+       "GRADIENT"
+      ],
+      [
+       261.78,
+       -3.72,
+       1.03,
+       "GRADIENT"
+      ],
+      [
+       262.78,
+       -3.69,
+       1.05,
+       "GRADIENT"
+      ],
+      [
+       263.78,
+       -3.71,
+       1.01,
+       "GRADIENT"
+      ],
+      [
+       264.78,
+       -3.7,
+       1.02,
+       "GRADIENT"
+      ],
+      [
+       265.78,
+       -3.7,
+       1.13,
+       "GRADIENT"
+      ],
+      [
+       266.78,
+       -3.66,
+       1.4,
+       "GRADIENT"
+      ],
+      [
+       267.78,
+       -3.65,
+       1.47,
+       "GRADIENT"
+      ],
+      [
+       268.78,
+       -3.6,
+       1.47,
+       "GRADIENT"
+      ],
+      [
+       269.78,
+       -3.37,
+       1.41,
+       "GRADIENT"
+      ],
+      [
+       270.78,
+       -3.08,
+       1.48,
+       "GRADIENT"
+      ],
+      [
+       271.78,
+       -2.72,
+       1.54,
+       "GRADIENT"
+      ],
+      [
+       272.78,
+       -2.55,
+       1.65,
+       "GRADIENT"
+      ],
+      [
+       273.78,
+       -2.61,
+       1.85,
+       "GRADIENT"
+      ],
+      [
+       274.78,
+       -2.72,
+       2.15,
+       "GRADIENT"
+      ],
+      [
+       275.78,
+       -2.83,
+       2.48,
+       "GRADIENT"
+      ],
+      [
+       276.78,
+       -3.03,
+       2.75,
+       "GRADIENT"
+      ],
+      [
+       277.78,
+       -3.2,
+       2.97,
+       "GRADIENT"
+      ],
+      [
+       278.78,
+       -3.27,
+       3.06,
+       "GRADIENT"
+      ],
+      [
+       279.78,
+       -3.31,
+       3.16,
+       "GRADIENT"
+      ],
+      [
+       280.78,
+       -3.54,
+       3.29,
+       "GRADIENT"
+      ],
+      [
+       281.78,
+       -3.66,
+       3.39,
+       "GRADIENT"
+      ],
+      [
+       282.78,
+       -3.66,
+       3.42,
+       "GRADIENT"
+      ],
+      [
+       283.78,
+       -3.51,
+       3.48,
+       "GRADIENT"
+      ],
+      [
+       284.78,
+       -3.43,
+       3.47,
+       "GRADIENT"
+      ],
+      [
+       285.78,
+       -3.17,
+       3.48,
+       "GRADIENT"
+      ],
+      [
+       286.78,
+       -3.23,
+       3.51,
+       "GRADIENT"
+      ],
+      [
+       287.78,
+       -3.29,
+       3.63,
+       "GRADIENT"
+      ],
+      [
+       288.78,
+       -3.37,
+       3.85,
+       "GRADIENT"
+      ],
+      [
+       289.78,
+       -3.39,
+       3.89,
+       "GRADIENT"
+      ],
+      [
+       290.78,
+       -3.38,
+       3.91,
+       "GRADIENT"
+      ],
+      [
+       291.78,
+       -3.34,
+       3.92,
+       "GRADIENT"
+      ],
+      [
+       292.78,
+       -3.33,
+       3.9,
+       "GRADIENT"
+      ],
+      [
+       293.78,
+       -3.36,
+       3.9,
+       "GRADIENT"
+      ],
+      [
+       294.78,
+       -3.39,
+       3.82,
+       "GRADIENT"
+      ],
+      [
+       295.78,
+       -3.41,
+       3.53,
+       "GRADIENT"
+      ],
+      [
+       296.78,
+       -3.48,
+       3.27,
+       "GRADIENT"
+      ],
+      [
+       297.78,
+       -3.47,
+       3.06,
+       "GRADIENT"
+      ],
+      [
+       298.78,
+       -3.49,
+       3.03,
+       "GRADIENT"
+      ],
+      [
+       299.78,
+       -3.29,
+       2.85,
+       "GRADIENT"
+      ],
+      [
+       300.78,
+       -3.07,
+       2.58,
+       "GRADIENT"
+      ],
+      [
+       301.78,
+       -2.82,
+       2.36,
+       "GRADIENT"
+      ],
+      [
+       302.78,
+       -2.6,
+       2.07,
+       "GRADIENT"
+      ],
+      [
+       303.78,
+       -2.51,
+       1.83,
+       "GRADIENT"
+      ],
+      [
+       304.78,
+       -2.69,
+       1.68,
+       "GRADIENT"
+      ],
+      [
+       305.78,
+       -2.92,
+       1.51,
+       "GRADIENT"
+      ],
+      [
+       306.78,
+       -3.13,
+       1.46,
+       "GRADIENT"
+      ],
+      [
+       307.78,
+       -3.26,
+       1.42,
+       "GRADIENT"
+      ],
+      [
+       308.78,
+       -3.3,
+       1.4,
+       "GRADIENT"
+      ],
+      [
+       309.78,
+       -3.38,
+       1.41,
+       "GRADIENT"
+      ],
+      [
+       310.78,
+       -3.47,
+       1.48,
+       "GRADIENT"
+      ],
+      [
+       311.78,
+       -3.51,
+       1.51,
+       "GRADIENT"
+      ],
+      [
+       312.78,
+       -3.46,
+       1.51,
+       "GRADIENT"
+      ],
+      [
+       313.78,
+       -3.4,
+       1.45,
+       "GRADIENT"
+      ],
+      [
+       314.78,
+       -3.28,
+       1.4,
+       "GRADIENT"
+      ],
+      [
+       315.78,
+       -3.03,
+       1.42,
+       "GRADIENT"
+      ],
+      [
+       316.78,
+       -2.69,
+       1.46,
+       "GRADIENT"
+      ],
+      [
+       317.78,
+       -2.49,
+       1.55,
+       "GRADIENT"
+      ],
+      [
+       318.78,
+       -2.53,
+       1.56,
+       "GRADIENT"
+      ],
+      [
+       319.78,
+       -2.69,
+       1.74,
+       "GRADIENT"
+      ],
+      [
+       320.78,
+       -2.65,
+       1.74,
+       "GRADIENT"
+      ],
+      [
+       321.78,
+       -2.64,
+       1.74,
+       "GRADIENT"
+      ],
+      [
+       322.78,
+       -2.69,
+       1.94,
+       "GRADIENT"
+      ],
+      [
+       323.78,
+       -2.69,
+       2.06,
+       "GRADIENT"
+      ],
+      [
+       324.78,
+       -2.66,
+       2.04,
+       "GRADIENT"
+      ],
+      [
+       325.78,
+       -2.66,
+       2.07,
+       "GRADIENT"
+      ],
+      [
+       326.78,
+       -2.64,
+       2.06,
+       "GRADIENT"
+      ],
+      [
+       327.78,
+       -2.66,
+       2.06,
+       "GRADIENT"
+      ],
+      [
+       328.78,
+       -2.68,
+       2.06,
+       "GRADIENT"
+      ],
+      [
+       329.78,
+       -2.66,
+       2.06,
+       "GRADIENT"
+      ]
+     ],
+     "frames": 3146,
+     "wait_timeouts": 0,
+     "complete": true,
+     "checks": {
+      "docked": true,
+      "gauges": true,
+      "gas_found": true,
+      "no_teleport": true
+     }
+    }
+   },
+   "created": "2026-11-12 01:12:17"
+  }
+ },
+ "tool": "tools/mission_check.py",
+ "engine": "gz-sim 8 (Harmonic) + DART, headless, gz-transport lock-step"
+}

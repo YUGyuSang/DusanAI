@@ -99,7 +99,10 @@ DusanAI/
   turns in place onto that heading before its feet reach the pipe (0.6 + 0.3 m before the axis),
   then crosses at a steady 0.25 m/s with no sideways command and yaw rate 0 (module1's heading
   hold) until 0.6 m past it; next to a pipe it does not cross (an end) speed / yaw rate are scaled
-  down along the same curve (<= 0.25 m/s, <= 0.35 rad/s).
+  down along the same curve (<= 0.25 m/s, <= 0.35 rad/s). source_seeker applies the same
+  `CrossingGovernor` to its steps (`SourceSeeker.set_pipes()`, `crossing_*` in seeker.yaml): a crossing
+  is cancelled while no foot has reached the pipe if the new step no longer crosses it, and a step goal
+  within 0.6 m of a pipe axis is moved 0.6 m out on the same side.
 * Seeker map: `terrain_cost.debris_blocked_grid` marks the layout debris of the seeker parameter
   `debris_blocked_kinds` (default `rubble,pipe`, + 0.10 m) occupied in source_seeker's nav grid,
   except an item whose blocking would cut the free space apart at the seeker's robot radius
@@ -195,7 +198,7 @@ All JSON payloads are `std_msgs/String` produced with `dusan_common.ros_helpers.
 | /terrain/info | String JSON | terrain_mapper | locomotion_controller, dashboard | `{roughness, max_step, slope_deg, class: flat|rough|stairs|slope|obstacle|unknown|slippery, recommended_gait: trot|crawl, ahead_clear}` + friction prior of the layout plates / `friction_zones`: `slippery` (bool), `friction_mu` (lowest μ of the overlapping zones or null), `friction_zones` (ids), `friction_distance` (m ahead, 0 on the zone, null if none); `slippery` replaces flat / slope / unknown only (module1 TERRAIN_AND_TELEOP.md §5.1) |
 | /cmd_vel/teleop | Twist | keyboard_teleop | cmd_vel_mux | |
 | /teleop/active | std_msgs/Bool | keyboard_teleop | mux, mission | true while manual override |
-| /keyboard/keypress | std_msgs/Int32 | gz KeyPublisher (optional bridge) | keyboard_teleop | Qt key codes |
+| /keyboard/keypress | std_msgs/Int32 | gz KeyPublisher (optional bridge) | keyboard_teleop, mission_manager (mission keys only while no teleop runs) | Qt key codes |
 
 ### Inspection (module2)
 | topic | type | pub | sub | notes |
@@ -241,7 +244,7 @@ All JSON payloads are `std_msgs/String` produced with `dusan_common.ros_helpers.
 | /nav/plan | nav_msgs/Path | mission_manager & return_to_home | rth (comm prediction), dashboard | path currently being followed |
 | /cmd_vel_mux/active | String | cmd_vel_mux | dashboard | name of the selected source |
 | /mission/command | String | teleop, dashboard | mission_manager, return_to_home | `start` `patrol` `seek` `rth` `pause` `resume` `abort` `dock` |
-| /mission/state | String JSON | mission_manager | dashboard, metrics, demo_hud | `{state: IDLE|PATROL|INSPECTING|SEEK|RTH|DOCKED|MANUAL|PAUSED|DONE, target, completed:[ids], pending:[ids], gas_alarm, message}` + `obstacle` object (see below) |
+| /mission/state | String JSON | mission_manager | dashboard, metrics, demo_hud | `{state: IDLE|PATROL|INSPECTING|SEEK|RTH|DOCKED|MANUAL|PAUSED|DONE, target, completed:[ids], pending:[ids], gas_alarm, message}` + `results` (`{<gauge id>: confirmed reading {value, unit, status, confidence, t, n_readings} or {status: missed, reason}}`), `cmd_seq` (number of `/mission/command` messages received), `recent_commands` (last 5 `{seq, cmd, accepted, message}`: keyboard_teleop acknowledgement) + `obstacle` object (see below) |
 | /twin/markers | MarkerArray | monitor_dashboard | rviz | gauge status labels, hot spots, leak estimate |
 | /metrics/session | String JSON (latched) | metrics_logger | dashboard, demo_hud | `{session_dir, session, report, report_json, report_final, report_written, gauges:{<id>:{image, image_full, stamp, value, unit, status, wall}}}`: metrics session directory and its files relative to it (`gauges/<id>_<t>.jpg`, `inspection_report.html`); republished after every photo / report write. The dashboard serves them same-origin under `/session/<file>` (only for a `session_dir` inside its `metrics_root`, default `~/dusan_metrics`) and adds `image_url` / `image_full_url` per gauge and a `report` link (+ `dir`: the session directory with the home directory as `~`) to its snapshot |
 | /demo/hud | Image (bgr8) | demo_hud | rqt_image_view, ros2 bag | robot camera (`/inspection_camera/image`) + gas ppm bar (10 / 25 ppm colours, blinking alarm frame), battery, current mission step in words (target gauge, step n/8, RTH reason), locomotion state, sim time; banners for a few seconds after a gauge result (value, status, inspection photo of `/inspection/gauge_snapshot`), a skipped gauge, the gas source found, an RTH start; robot-down panel from `/locomotion/state` `recovery_state` (4 steps: fall detected, self-righting, standing up, recovered); result panel at the dock (gauges, mean error vs. layout truth, gas, falls / self-recoveries, duration, `/metrics/session` directory); 640×480 at `rate` 5 Hz |
@@ -321,6 +324,12 @@ re-plans stay in its own counters). No new topic exists for novel obstacles: the
   upright robot (0.3 s) counts as recovered and stands up, otherwise the 3 attempts restart after
   `recovery_retry_time` (5 s, event `recovery_retry`; 0 or `auto_recover: false` = stay FAILED); the upright height
   check uses max(map-based, foot-kinematics) height (the map under the body can be wrong right after a fall).
+  A lean beyond `fall_lean_deg` (30°) for `fall_lean_time` (2 s, 0 = off) also counts as a fall (propped up on a wall).
+  SLIDE: the back roll timed out both ways while propped up on an obstacle (median |pitch| > 7°, height < 0.2 m) →
+  front legs as stilts sweep sideways until the heading turned 80° (≤ 6 strokes), then a new attempt.
+  BACK_OFF: VERIFY failed twice upright but pitched > 30° (hanging over a ledge) → low-side legs folded, high-side legs
+  sweep sideways until the heading turned 70° (≤ 6 strokes, next one the other way), then a new attempt.
+  `recovery_state` in `/locomotion/state` carries the current phase.
 * `elevation_map.py`, `foothold_planner.py`, `terrain_classifier.py`, `terrain_mapping_node.py`:
   robot-centric elevation map (6 m × 6 m, 0.04 m) fused from depth points (Kalman height
   fusion with variance, ray-free), layers slope / roughness / step / traversability; foothold
@@ -330,6 +339,9 @@ re-plans stay in its own counters). No new topic exists for novel obstacles: the
 * `keyboard_teleop.py`: terminal raw-mode teleop (see §7) + optional `/keyboard/keypress`. The status line shows
   `mission <state>(stale Ns)` when no `/mission/state` arrived for 5 s (it is republished every 0.5 s), and a mission
   key (`t p g h o`) pressed then prints a warning that mission_manager is not answering.
+  Mission keys are delivered reliably (`teleop_keys.MissionCommandTracker`): a key is kept until `/mission/state`
+  `cmd_seq` / `recent_commands` acknowledge it, re-sent every 2 s at most 3 times, held up to 60 s while
+  mission_manager is not up; the outcome (`accepted` / `REJECTED - <reason>` / not answering) is printed.
 * `/elevation_map/points` is also the input of the novel-obstacle layer of mission_manager, return_to_home and
   source_seeker (below); `obstacle_step_height` / `obstacle_step_window` must equal terrain.yaml `map.step_crit` /
   `map.step_window` (tested), `publish_rate` 5 Hz sets the confirmation latency (2 frames = 0.4 s).
@@ -424,7 +436,11 @@ def max_height_along(emap, p0_xy, p1_xy) -> float   # swing apex helper (NaN-saf
   (section 2) and avoids novel obstacles (below: steps (a)–(d), patrol legs validated against detected obstacles).
   mission_manager robustness: every callback is wrapped by `plant_simulation.node_utils.guarded` (exception logged
   with traceback on the 1st and every 50th failure, the node keeps spinning); 3 consecutive `MissionLogic.step`
-  exceptions abort the mission so that `start` begins afresh. A FALLEN robot during a mission gets `recover` every
+  exceptions abort the mission so that `start` begins afresh. A `start` / `patrol` without a patrol plan yet waits up to
+  `start_plan_wait` (30 s) for `/patrol/plan_json` (an accepted `rth` / `dock` / `seek` cancels the wait);
+  `gazebo_mission_keys` (true): `/keyboard/keypress` mission keys are taken directly while no `/teleop/active`
+  heartbeat arrived for 2 s (debounced 0.6 s). module3 nodes wrap every callback the same way
+  (`module3_gas_safety.node_common.guarded`; NaN / non-object inputs ignored). A FALLEN robot during a mission gets `recover` every
   `recover_after` (20 s); after STAND the mission re-plans from the current pose.
   mission_manager logging: mission events `(level, text)` are logged through `_log_event` (one rclpy call
   site per severity: `warn`/`alarm` → warning, `error` → error, else info) AFTER the tick's commands
@@ -435,7 +451,12 @@ def max_height_along(emap, p0_xy, p1_xy) -> float   # swing apex helper (NaN-saf
   `simulation/launch/bringup.launch.py` (everything; args `gui`, `rviz`, `thermal_source`,
   `mission_autostart`, `dashboard_port`, `demo` (false: true = mission_autostart + follow camera +
   HUD, `scripts/run_demo.sh`), `hud` (true), `follow_camera` ('' = demo, only with gui),
-  `follow_offset` (-2.5,0.0,1.6)), each module has `launch/<module>.launch.py`.
+  `follow_offset` (-2.5,0.0,1.6), `low_memory` (false: true = inspection camera 640×480 @ 5 Hz, thermal 2 Hz,
+  depth stays 10 Hz, shadows off via a world copy, `gui_lean.config`, no RViz, HUD 3 Hz, `MALLOC_ARENA_MAX=2`,
+  one BLAS thread; scripts: `--low-memory`), single overrides `inspection_rate` `inspection_width`
+  `inspection_height` `depth_rate` `thermal_rate` `shadows` `gui_config` `hud_rate` ('' = profile value),
+  `respawn` (true: stateless nodes restart after 3 s, `respawn_max_retries` 10 where launch supports it;
+  battery_simulator, metrics_logger, odom_tf are never respawned)), each module has `launch/<module>.launch.py`.
 * RViz config `simulation/rviz/plant.rviz`.
 
 **Novel (unmapped) obstacles** (`dusan_common/obstacle_layer.py`, ROS-free, numpy only; shared by mission_manager

@@ -50,9 +50,12 @@ ros2 topic echo /safety/status
 
 Launch 인자: `use_sim_time`(`true`), `map_yaml`(`''` → `world_layout.yaml`의 `nav_map.yaml`, 즉
 `plant_simulation/maps/plant_map.yaml`), `layout_file`(`''` →
-`plant_simulation/config/world_layout.yaml`). 생성된 맵이 없으면 모든 노드가 레이아웃에서 같은
+`plant_simulation/config/world_layout.yaml`), `respawn`(`true`: `gas_dispersion_sim`, `source_seeker`,
+`comm_simulator`, `return_to_home`이 죽으면 3 s 뒤 다시 띄움. `battery_simulator`는 충전량이 처음 값으로
+돌아가므로 다시 띄우지 않음). 생성된 맵이 없으면 모든 노드가 레이아웃에서 같은
 맵을 래스터화합니다(로그에 경고). `source_seeker`와 `return_to_home`은 `map_server_lite`가
-`/map`을 발행하면 자기 맵을 그것으로 바꿉니다.
+`/map`을 발행하면 자기 맵을 그것으로 바꿉니다. 모든 노드의 콜백은 예외를 로그로만 남기고 계속 돌며,
+NaN 값이나 형식이 맞지 않는 JSON 입력은 무시합니다(`node_common.guarded`).
 
 오프라인 (Windows, ROS 없음):
 
@@ -249,6 +252,7 @@ python tools/eval_gas.py                         # 그림 -> docs/images, 수치
   - 그래서 위의 자유 길이, 국소 A* 우회, 속도 투영, 척력이 탐지 장애물도 그대로 피합니다. 별도의 감속·우회 단계는 없습니다.
   - 진행 중인 우회 경로나 스텝 직선이 새 장애물을 지나게 되면 다시 계획합니다.
   - 비활성(IDLE)일 때는 프레임을 1 Hz(`obstacle_idle_period`)로 메모리에만 넣고, enable할 때 격자를 다시 만듭니다.
+* **레이아웃 잔해**: 잔해와 배관(`debris_blocked_kinds`)은 탐색 내비 격자에서 벽처럼 막아 피합니다. 막으면 통로가 끊기는 배관은 빼고 아래처럼 건넙니다.
 * **누운 배관 건너기**: 칸막이 출입구의 F-OBS3처럼 막을 수 없는 배관을 넘는 스텝은 순찰 경로와 같은
   `dusan_common.debris_crossing.CrossingGovernor`를 거칩니다. 발이 배관에 닿기 전(배관 축에서 0.9 m)에 제자리에서
   배관과 직각이 되게 돌고, 그다음 0.25 m/s로 곧게 넘습니다. 넘는 동안은 회전·옆걸음이 없고, 뒷발이 배관을 지날
@@ -385,6 +389,7 @@ C-OBS5 배관) 그대로 지나갑니다. 비용은 유한하므로 경로를 �
 | seeker | `step_init/min/max`, `momentum`, `upwind_bias` | 0.8/0.25/1.6, 0.5, 0.5 | 경사 스텝 |
 | seeker | `detour_*` | 활성, 도달 거리 5 m, ±8 m 창 | 장애물 우회 |
 | seeker | `crossing_enabled`, `crossing_speed`, `crossing_zone` | true, 0.25, 0.6 | 누운 배관 건너기(순찰과 같은 값) |
+| seeker | `debris_blocked_kinds` | `"rubble,pipe"` | 탐색 내비 격자에서 벽처럼 피할 레이아웃 잔해 종류(+0.10 m). 막으면 통로가 끊기는 배관(C-OBS1, C-OBS5, F-OBS3)은 비워 둠. `""` = 끔 |
 | seeker | `timeout` | 300 | 이 시간 [s] 뒤 FAILED |
 | seeker | `resume_window_s` | 45 | enable false → true가 이 시간 안이면 실행을 이어 감 (0 = 항상 새로 시작) |
 | battery | `capacity_wh`, `initial_pct` | 200, 80 | 팩 |

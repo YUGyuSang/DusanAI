@@ -5,13 +5,14 @@
 | 대상 플랫폼 | Ubuntu 26.04 + ROS 2 Lyrical + Gazebo Jetty (gz-sim 10). Ubuntu 24.04 + Jazzy + Harmonic 도 지원 |
 | 저장소 구조 | `module1_locomotion/`, `module2_inspection/`, `module3_gas_safety/`, `simulation/` (ROS 패키지 `plant_simulation`), `dusan_common/`, `docs/`, `tools/`, `scripts/` |
 | 함께 볼 문서 | [README](../README.md) (개요·설치), [USAGE](USAGE.md) (실행·사용), [SETUP_GUIDE](SETUP_GUIDE.md), [DESIGN_SPEC](DESIGN_SPEC.md) (인터페이스 계약), 모듈별 README (부록 A) |
-| 수치 출처 | `docs/results/*.json`: 오프라인 평가 6종(2026-10-12 릴리스 재실행본. `locomotion_eval.json`만 2026-10-13 최종 점검에서 다시 실행), MuJoCo 물리 검증 `physics_check.json`과 파라미터 탐색 `tuning.json`(2026-10-13), **Gazebo 헤드리스 검증 `gazebo_check.json`(2026-10-13, Gazebo Harmonic. MPC 최종 검증 `mpc_final2`와 stable 회귀 `stable_regress2`는 2026-10-26)**, Gazebo 넘어짐 복구 검증 `fall_check.json`(2026-11-11). 릴리스 테스트 요약, 오프라인 대시보드 데모의 `summary.json`. 지도에 없는 장애물의 Gazebo 점검(`tools/obstacle_check.py`, 2026-10-26)은 결과 JSON을 커밋하지 않았고 수치는 §7.8에 옮겼다. 데모 미션 전체 점검(`tools/mission_check.py`, 2026-11-11)도 같으며 수치는 §4.10.8에 있다 |
+| 수치 출처 | `docs/results/*.json`: 오프라인 평가 6종(2026-10-12 릴리스 재실행본. `locomotion_eval.json`만 2026-10-13 최종 점검에서 다시 실행), MuJoCo 물리 검증 `physics_check.json`과 파라미터 탐색 `tuning.json`(2026-10-13), **Gazebo 헤드리스 검증 `gazebo_check.json`(2026-10-13, Gazebo Harmonic. MPC 최종 검증 `mpc_final2`와 stable 회귀 `stable_regress2`는 2026-10-26)**, Gazebo 넘어짐 복구 검증 `fall_check.json`(2026-11-11, 9개 케이스 × 시드 0–9), Gazebo 데모 미션 전체 `mission_check.json`(2026-11-12, 시드 10–14). 릴리스 테스트 요약, 오프라인 대시보드 데모의 `summary.json`. 지도에 없는 장애물의 Gazebo 점검(`tools/obstacle_check.py`, 2026-10-26)은 결과 JSON을 커밋하지 않았고 수치는 §7.8에 옮겼다. 배관 위·경사로 턱 복구 케이스(§4.4), 미션 이전 코드와의 비교(§4.10.8), Gazebo 렌더 프레임 게이지 판독(§5.1.5)도 결과 JSON 없이 수치만 옮겼다 |
 
 > [!IMPORTANT]
 > **검증 범위.** 이 보고서의 수치는 모두 ROS가 없는 Windows 개발 PC에서 나왔다.
 > (1) 단위·폐루프·스텁 노드 테스트, (2) `tools/eval_*.py` 오프라인 평가, (3) 오프라인 대시보드 데모(`plant_simulation.dashboard_demo`),
 > (4) Gazebo 설정을 흉내 낸 MuJoCo 플랜트에서 실제 보행 제어 코드를 돌린 물리 검증(`tools/physics_check.py`, §4.7)과 그 위의 파라미터 탐색(`tools/tune_locomotion.py`, §4.9),
-> (5) **실제 Gazebo Harmonic(gz-sim 8 + DART)을 헤드리스로 돌린 보행 검증**(`tools/gazebo_check.py`, §4.10). 로봇의 gz 플러그인과 실제 제어기를 쓰고 실제 `plant.sdf`에서도 돌렸다. 렌더링(카메라 영상, GUI)과 ROS 노드·브리지는 없다.
+> (5) **실제 Gazebo Harmonic(gz-sim 8 + DART)을 헤드리스로 돌린 보행·넘어짐 복구·미션 전체 검증**(`tools/gazebo_check.py`, `tools/fall_check.py`, `tools/mission_check.py`, §4.4, §4.10). 로봇의 gz 플러그인과 실제 제어기를 쓰고 실제 `plant.sdf`에서도 돌렸다. 렌더링(카메라 영상, GUI)과 ROS 노드·브리지는 없다.
+> (6) Gazebo 센서 렌더링(ogre2)으로 만든 점검 카메라 프레임을 실제 `gauge_reader` 노드 코드로 읽은 판독 검증(§5.1.5).
 > **GUI가 있는 Gazebo + ROS 2 전체 실행은 사용자의 Ubuntu PC에서 한다(주 대상은 Jetty).** 그 실측 수치는 아직 없다.
 > ROS/Gazebo API를 쓰는 코드는 실제 API 문서를 대조하며 읽어서 검증했고, 오래 유지된 보수적인 API 형태만 사용했다.
 > Gazebo 실측값을 채울 표 템플릿과 측정 절차는 [§8.4](#84-gazebo-실측-결과-기입용-템플릿과-측정-절차)에 있다.
@@ -60,34 +61,35 @@
 
 ### 1.3 결과 요약 — 요구사항 ↔ 구현 ↔ 핵심 수치
 
-수치는 모두 오프라인 평가 결과다(`docs/results/*.json`). Gazebo 실측이 아니다. 마지막 행(지도에 없는 장애물 회피)만 Gazebo 헤드리스 하네스 값이다(§7.8).
+수치는 대부분 오프라인 평가 결과다(`docs/results/*.json`). Gazebo GUI + ROS 2 실측이 아니다. M1-3 넘어짐 복구, 게이지 판독의 Gazebo 렌더 프레임, 데모 미션 전체, 지도에 없는 장애물 회피는 Gazebo Harmonic 헤드리스 값이다(§4.4, §5.1.5, §4.10.8, §7.8).
 
-| 요구사항 | 구현 (패키지 / 핵심 파일) | 핵심 수치 (오프라인) | 상태 |
+| 요구사항 | 구현 (패키지 / 핵심 파일) | 핵심 수치 | 상태 |
 |---|---|---|---|
 | M1-1 지형 인지: Depth로 Elevation Map 실시간 생성, 발 디딤 결정 | `module1_locomotion/elevation_map.py`, `foothold_planner.py`, `terrain_classifier.py`, 노드 `terrain_mapper` | 비가장자리 RMSE 0.20 cm(평지) ~ 1.73 cm(하행 계단). 지형 분류 7/7. 위험 디딤 비율(명목 → 계획): 계단 25.0 → 0.0 %, 잔해 40.7 → 8.8 %. 25k 점 통합 중앙값 3.86 ms | 구현·오프라인 검증 |
 | M1-2 MPC: 외란에도 안정 보행, 5초간 발 위치·토크 예측, 튜닝 | `mpc.py` (13상태 단일 강체, 10×0.05 s + 18×0.25 s = 5.0 s), 자체 ADMM QP `qp.py`, `controller.py`, 튜닝 도구 `tools/tune_locomotion.py` | 강체: 트롯 속도 RMS 오차 vx 0.0120 m/s. 넘어지지 않는 최대 충격량 횡 20 N·s, 전방 30 N·s. +20 % 하중 시 높이 오차 −53.1 mm → 관측기 사용 시 +2.4 mm. 풀이 시간 중앙값 10.85 ms, p95 14.71 ms, 30 ms 미만 100 %. MuJoCo 물리: trot 0.4 m/s·crawl 0.2 m/s·회전·+3 kg 탑재 모두 3/3 시드, 15 N·s 측면 밀기 2/3, 배관 + 단차 0/3. 자동 탐색: 채택 후보 없음(기본값 유지) | 구현·오프라인·물리 검증 (일부 시나리오 실패) |
-| M1-3 Fall Recovery | `fall_recovery.py` (DAMP → TUCK → [등 굴리기 ROCK] → SELF_RIGHT → PREPARE → STAND_UP → VERIFY, 순간이동 없는 물리 복구가 기본, 3회 실패하면 5 s 쉬고 다시 시도) | Gazebo 헤드리스(`tools/fall_check.py`, 9개 케이스 × 시드 10개): 89/90 자기 다리로 복구, 순간이동 0, 미션 중 넘어짐 10/10 복구 후 미션 계속. 배관 위에 등을 대고 누움 13/13, 경사로 턱에 걸침 6/7. MuJoCo: 옆 / 60 N·s / 등 / 100 N·s 각 3/3 첫 시도 | 물리 복구 검증(Gazebo·MuJoCo). 배관 위·경사로 턱에서는 30–80 s 걸림 |
+| M1-3 Fall Recovery | `fall_recovery.py` (DAMP → TUCK → [등 굴리기 ROCK] → SELF_RIGHT → PREPARE → STAND_UP → VERIFY, 배관 위에 누우면 SLIDE, 턱에 걸치면 BACK_OFF. 순간이동 없는 물리 복구가 기본, 3회 실패하면 5 s 쉬고 다시 시도) | Gazebo 헤드리스(`tools/fall_check.py`, 9개 케이스 × 시드 10개): 89/90 자기 다리로 복구, 순간이동 0, 미션 중 넘어짐 10/10 복구 후 미션 계속. 배관 위에 등을 대고 누움 13/13, 경사로 턱에 걸침 6/7. MuJoCo: 옆 / 60 N·s / 등 / 100 N·s 각 3/3 첫 시도 | 물리 복구 검증(Gazebo·MuJoCo). 배관 위·경사로 턱에서는 30–80 s 걸림 |
 | M1 시나리오: 미끄러운 철판 → 보행 전환 | `friction_map.py`(레이아웃 마찰 사전정보 → `/terrain/info` `slippery`), `slip_detector.py`(온라인 슬립 감지), `controller.py` 슬립 모드 | MuJoCo 물리, trot 명령 0.4 m/s: μ 0.15 철판 0/3 → 3/3, μ 0.2 철판 1/3 → 3/3 (넘어짐 13 → 0) | 구현·물리 검증 |
-| M2-1 게이지 판독 (오차 5 % 이내) | `gauge_reader.py`, `gauge_ocr.py`, `gauge_association.py` | 필수 조건 480프레임: 검출 100 %, 평균 0.111 %FS, p95 0.401 %FS, 최대 2.224 %FS, 5 %FS 이내 100 % | 목표 충족 (합성 영상) |
+| M2-1 게이지 판독 (오차 5 % 이내) | `gauge_reader.py`, `gauge_ocr.py`, `gauge_association.py` | 필수 조건 480프레임: 검출 100 %, 평균 0.111 %FS, p95 0.401 %FS, 최대 2.224 %FS, 5 %FS 이내 100 %. Gazebo 렌더 프레임 80장(게이지 8개 × 순찰 시점 10개): 검출 80/80, 평균 0.015 %FS, 최대 0.043 %FS, 상태 80/80 | 목표 충족 (합성 영상, Gazebo 렌더 프레임) |
 | M2-2 열화상 퓨전 | `thermal_fusion.py`, `synthetic_thermal.py` | 정밀도 1.000, 재현율 0.9845, ID 정확도 1.000. 검출별 평면 정합 오차 중앙값 0.645 px, p95 5.451 px | 구현·오프라인 검증 |
 | M2-3 Viewpoint 순찰 경로 | `viewpoint_planner.py` (판독성 점수 + Held-Karp + 지형 비용) | 폐회로 150.50 m(지형 비용으로 배관·잔해 우회, 비용 없이는 145.88 m). 배치 순서 대비 8.5 %, 무작위 평균 대비 45.83 % 짧음. 8/8 도달 | 구현·오프라인 검증 |
 | M3-1 기류·가스 확산 | `gas_model.py` (질량 보존 바람장, 돌풍, 이류-확산) | 누출원 옆 1468.8 ppm, 동쪽 출입구 최대 34.3 ppm. 10 Hz 1스텝 0.56 ms. 질량 수지 오차 3.1e-15 | 구현·오프라인 검증 |
 | M3-2 Source Seeking (경사 하강) | `source_seeking.py` | 40회 몬테카를로: 성공 100 %, 누출원 오차 평균 0.478 m, 평균 소요 115.5 s, 장애물 접촉 0 | 목표 충족 (성공 90 % 이상, 오차 1 m 미만) |
 | M3-3 RTH (배터리 20 %, 통신 음영 예측) | `rth_logic.py`, `battery_model.py`, `comm_model.py` | 배터리 19.99 %에서 트리거, 도킹 오차 0.113 m. 음영 지점 5.03 m 전(−56.1 dBm)에서 트리거, 음영 진입 없음. 에너지 여유 트리거 후 11.09 % 잔량으로 도착 | 구현·오프라인 검증 |
 | 통합 환경: 터빈룸 3D 맵 + 4족 URDF + 통합 실행 | `simulation/worlds/plant.sdf`, `urdf/spot.urdf.xacro`, `launch/bringup.launch.py`, `scripts/run_bringup.sh` | 복도 내부 48.56 × 3.55 m, 공장 외곽 25.19 × 18.65 m, 높이 7.3 m. 장애물 복도 5개·공장 9개. URDF 15.0 kg, 12 DOF | 구성 완료, Gazebo 구동은 Ubuntu에서 |
-| 관제 화면 연동 | `monitor_dashboard_node.py`, `simulation/web/`, 데모 HUD `demo_hud_node.py`, 추적 카메라 `follow_camera.py` | 오프라인 데모: 453.4 s 미션을 끝까지 진행해 8/8 판독 후 DOCKED (§7.6) | 데모로 검증 |
-| 키보드 조작 | `keyboard_teleop.py`, `teleop_keys.py` | DESIGN_SPEC §7 키맵 전체, Gazebo KeyPublisher 입력도 지원 | 구현·스텁 테스트 |
+| 데모 미션 전체 (도크 → 게이지 8개 → 가스 누출원 → 도킹) | `mission_logic.py`, `debris_crossing.py`, 검증 도구 `tools/mission_check.py`(미션에 참여하는 노드의 실제 코드를 ROS 없이 연결) | Gazebo 헤드리스, 시드 10–14: 5/5 완료(DOCKED, 게이지 8/8, 누출원 FOUND), 넘어짐 2회(실행당 0.4회) 모두 자가 복구, 순간이동 0, 평균 573 s (§4.10.8) | Gazebo 헤드리스 검증, Ubuntu 미확인 |
+| 관제 화면 연동 | `monitor_dashboard_node.py`, `simulation/web/`, 데모 HUD `demo_hud_node.py`, 추적 카메라 `follow_camera.py`, 점검 사진·보고서 `gauge_snapshot.py`·`inspection_report.py` | 오프라인 데모: 453.4 s 미션을 끝까지 진행해 8/8 판독 후 DOCKED (§7.6). 점검 보고서: Gazebo 렌더 프레임으로 게이지 8개 사진과 확정값 저장, 평균 오차 0.014 %FS (§7.9) | 데모로 검증 |
+| 키보드 조작 | `keyboard_teleop.py`, `teleop_keys.py` | DESIGN_SPEC §7 키맵 전체, Gazebo KeyPublisher 입력도 지원. 미션 키(`t` 등)는 수락될 때까지 다시 보내고 결과를 터미널에 표시 (§7.4) | 구현·스텁 테스트 |
 | 지도에 없는 장애물 회피 (추가 기능) | `dusan_common/obstacle_layer.py`, `mission_logic.py`, `rth_logic.py`, `source_seeking.py` | Gazebo 헤드리스 하네스(오프라인 평가 아님), stable 3 seed: 신규 박스 t·u·v·w 각 3/3, 대조군 r·x·z 오우회 0, 45 m 경로 오검출 0, 넘어짐 0 (§7.8) | 구현·Gazebo 헤드리스 검증, Ubuntu 미확인 |
 
 ![목표 대비 사용률](images/report_target_margins.png)
 
 *그림 1-1. 정량 목표가 있는 지표에서 측정값이 허용 한계의 몇 %인지 보여 준다. 게이지 평균 오차 기준(2 %FS)은 평가 스크립트의 내부 목표이고, 미션 요구는 5 %다. 원자료: `gauge_eval.json`, `locomotion_eval.json`, `gas_eval.json`.*
 
-### 1.4 검증 현황 (2026-10-12 릴리스 점검 + 2026-10-13 물리·Gazebo 검증과 최종 점검 + 2026-10-26 장애물 점검·MPC 최종 검증)
+### 1.4 검증 현황 (2026-10-12 릴리스 점검 + 2026-10-13 물리·Gazebo 검증과 최종 점검 + 2026-10-26 장애물 점검·MPC 최종 검증 + 2026-11-12 넘어짐 복구·미션 전체 검증)
 
 | 점검 | 결과 | 비고 |
 |---|---|---|
-| 전체 pytest | **984 passed, 12 skipped** (2026-10-26) | 릴리스 점검(10-12)은 715 passed, 물리 검증 단계 후 775, Gazebo 검증 단계 후 805, 10-14 최종 점검 879 passed였다. 이후 지도에 없는 장애물 회피, MPC 안정화(피벗·지지력 제한·지형 추정 테스트), 튜닝 기록 검사 강화, rclpy 로거 규칙 테스트가 더해졌다. Gazebo 3개를 동시에 돌리는 부하 중에는 gz push 타이밍 테스트 1개가 벽시계 지연으로 실패할 수 있다(부하 없이 3/3 통과). skip 12개(`pytest -rs`)는 심볼릭 링크 2개(Windows에서 실제 링크를 만들지 못함), `GZ_PYTHON`이 없을 때의 Gazebo 테스트 5개(폐루프 4 + 장애물 점검 1, 지정하면 이 PC에서 통과), 점검 venv에 없던 mujoco 2개와 xacro·urdf_parser_py 3개다 |
+| 전체 pytest | **1167 passed, 3 skipped** (2026-11-12, `GZ_PYTHON` 지정. Gazebo 폐루프·넘어짐 복구·미션 구간 테스트 포함) | skip 3개는 심볼릭 링크 2개와 `urdf_parser_py` 없음 1개다. 2026-10-26에는 984 passed, 12 skipped였고, 이후 넘어짐 물리 복구, 미션 전체·배관 건너기, 미션 키 전달·노드 예외 보호·저메모리 프로필, 점검 사진·보고서, HUD 테스트가 더해졌다. 릴리스 점검(10-12)은 715 passed, 물리 검증 단계 후 775, Gazebo 검증 단계 후 805, 10-14 최종 점검 879 passed였다. 이후 지도에 없는 장애물 회피, MPC 안정화(피벗·지지력 제한·지형 추정 테스트), 튜닝 기록 검사 강화, rclpy 로거 규칙 테스트가 더해졌다. Gazebo 3개를 동시에 돌리는 부하 중에는 gz push 타이밍 테스트 1개가 벽시계 지연으로 실패할 수 있다(부하 없이 3/3 통과). `GZ_PYTHON`을 지정하지 않으면 Gazebo 테스트는 건너뛴다(`pytest -rs`로 확인) |
 | MuJoCo 물리 검증 (`tools/physics_check.py`) | 필수 시나리오 11개 중 9개가 시드 0/1/2 모두 통과. (e) 배관 + 단차 0/3, (f) 측면 밀기 2/3 | 54개 작업, 작업 시간 합 약 23분. §4.7 |
 | 파라미터 탐색 (`tools/tune_locomotion.py`) | 2회 실행(21.3분, 23.9분, 12 워커). 채택 후보 없음, 기본값 유지 | §4.9 |
 | `py_compile` | .py 170개, 실패 0 (2026-10-13 최종 점검. 릴리스 점검 때 140개) | |
@@ -102,7 +104,9 @@
 | Gazebo 헤드리스 검증 (`tools/gazebo_check.py`, Harmonic) | 평지 시험 월드: stable 63/63, mpc 57/66(블라인드 지형 제외). 출발 직후 넘어짐(제어기 버그 ①)은 수정되어 저장소에 반영됐다. **지금 기본값(stable + trot, 깊이 맵)**: 기립·텔레옵 60 s·밀기·노드 15 s 늦게 시작 각 3/3, 도크 → 배관 우회 → 경사로 위 3/3, 배관을 넘는 같은 경로 2/3, 잔해 북쪽 통로로 복도 전체(도크 → 홀 문) 3/3, 잔해 앞 출발 통로 비켜 가기 2/6. 잔해 곧게·0.08 m 배관 곧게는 0/3 | §4.10 |
 | MPC 모드 최종 검증 (`gazebo_check.json`의 `mpc_final2`, 2026-10-26, 실측 MPC 지연) | 평지·정답 맵 27/27(stable 27/27). plant 깊이 맵 16/21(stable 16/21): q·r은 MPC가 낫고(3/3 대 0/3, 3/3 대 2/3), o·l·j는 못함(2/3 대 3/3, 1/3 대 3/3, 1/3 대 2/3). 기본값은 stable 유지. stable 회귀 `stable_regress2`는 10-13 기록과 33회 모두 같음 | §4.10.7 |
 | 지도에 없는 장애물 Gazebo 점검 (`tools/obstacle_check.py`, Harmonic) | stable: r t u v w x z × 시드 3개 21/21, 45 m 경로 y 3/3(10-26 최종 점검, 처음 1/1), 넘어짐 0. MPC: r t u v w x z 21/21, y 0/3 | §7.8.3. 결과 JSON은 커밋하지 않음 |
-| Gazebo 데모 미션 전체 (`tools/mission_check.py`, Harmonic, 2026-11-11) | 도크 → 계기판 8개 → 가스 탐색 → 귀환·도킹. 시드 0–4 **5/5 완료**(이전 코드 1/5), 넘어짐 실행당 0.6회(이전 6.4회), 순간이동 0. 시드 5–9 4/5(배관 위에 등을 대고 누운 1회 미완료) | §4.10.8. 결과 JSON은 커밋하지 않음 |
+| Gazebo 넘어짐 복구 (`tools/fall_check.py`, Harmonic) | 9개 케이스 × 시드 0–9: 89/90 자기 다리로 복구, 순간이동 0(`fall_check.json`). 배관 위 누움·경사로 턱 케이스를 더한 11개 케이스 × 시드 10–12: 33/33 | §4.4 |
+| Gazebo 데모 미션 전체 (`tools/mission_check.py`, Harmonic) | 도크 → 계기판 8개 → 가스 탐색 → 귀환·도킹. 지금 코드, 시드 10–14: **5/5 완료**, 넘어짐 2회(실행당 0.4회) 모두 자가 복구, 순간이동 0, 평균 573 s(`mission_check.json`). 보행 개선 전 코드는 시드 0–4에서 1/5 | §4.10.8 |
+| Gazebo 렌더 프레임 게이지 판독 (Harmonic ogre2, 실제 `gauge_reader` 노드 코드) | 800×600 80/80 검출, 평균 0.015 %FS, 최대 0.043 %FS. 640×480 렌더 80/80, 평균 0.017 %FS | §5.1.5. 결과 JSON은 커밋하지 않음 |
 | **Gazebo GUI + ROS 2 실행** | **미실행** (개발 PC에 ROS 없음) | Ubuntu PC에서 §8.4 절차로 측정 |
 
 ---
@@ -1216,6 +1220,8 @@ ROS 없이 연결해, 도크 출발 → 계기판 8개 → 가스 누출원 탐�
 | 이전 | 4/5 | 6 (1.2/회) | 4 | 0 | 평균 633 s |
 | **이후** | **5/5** | **2 (0.4/회)** | **0** | 0 | 평균 573 s |
 
+- 이후 결과는 `docs/results/mission_check.json`에 있다. 남은 넘어짐 2회(시드 13)는 C-OBS5 건너기 1회와 순찰 중 F-OBS3 끝 1회이고,
+  둘 다 스스로 일어나 미션을 이어 갔다. 완료한 실행은 모두 계기판 8/8, 누출원 FOUND, 도킹이었다.
 - C-OBS5 구간 실행(방향마다 시드 20개, 깊이 10 Hz): 넘어지지 않고 통과 서쪽 7/10·동쪽 5/10(넘어진 건너기 40 %) → 서쪽 16/20·동쪽
   16/20(20 %). 건너기 속도를 0.15 m/s로 낮추거나 crawl로 건너면 나아지지 않았다(9/20, 12/20).
 - 회귀: 키보드 운전 시나리오(`tools/gazebo_check.py`, 깊이 맵, 시드 0) 9/10(이전 8/10), 지도에 없는 박스(`tools/obstacle_check.py`)
@@ -1302,6 +1308,23 @@ flowchart TD
 ![hist](images/gauge_error_hist.png)
 
 *그림 5-1. 게이지 판독 평가: 조건별 오차, 예시 프레임, 조도·블러 스윕, 파이프라인 중간 결과(보정 → 타원 → 정류 → 극좌표 → 각 프로파일), 거리별 오차·OCR 판독률, 오차 히스토그램.*
+
+#### 5.1.5 Gazebo 렌더 프레임 판독
+
+합성 영상 대신 Gazebo가 그린 영상으로도 확인했다. `plant.sdf`에 순찰 뷰포인트의 점검 카메라 자세로 고정 카메라를 두고 Gazebo Harmonic
+센서 렌더링(ogre2, 월드 조명·그림자 포함)으로 프레임을 받았다. 시점은 게이지마다 정위치 1개와 미션 허용 오차 안의 흔들림
+9개(위치 ±0.15 m, yaw ±0.10 rad, roll·pitch ±2°, 높이 ±2 cm)다. 거리는 1.25–1.81 m, 입사각은 29° 이하다. 프레임은 실제 `gauge_reader` 노드
+코드(rclpy 스텁)에 오도메트리 자세와 함께 한 장씩 넣었다(시간 융합 없음).
+
+| 프레임 | 장수 | 검출 | 평균 %FS | p95 | 최대 | 상태 정답 |
+|---|---|---|---|---|---|---|
+| 800×600 (기본) | 80 | 80/80 | 0.015 | 0.030 | 0.043 | 80/80 |
+| 640×480 렌더 (저메모리 프로필 해상도) | 80 | 80/80 | 0.017 | 0.040 | 0.049 | 80/80 |
+| 640×480, 그림자 끔 (저메모리 프로필 그대로) | 40 | 40/40 | 0.018 (중앙값 0.015) | 0.035 | 0.040 | 40/40 |
+
+- 자세 힌트 없이(전체 프레임 탐색) 읽어도 800×600 80/80, 평균 0.015 %FS로 같았다.
+- 뷰포인트보다 먼 2.5–6.1 m에서는 51장 중 48장을 읽었고 최대 오차는 0.26 %FS였다.
+- 걷는 로봇의 흔들림, 카메라 노이즈, ROS 전송은 들어 있지 않다. 이 조건은 §5.1.4의 합성 영상 평가와 미션의 4 s 정지 판독이 맡는다.
 
 > [!NOTE]
 > 벤치마크 영상은 판독기가 보정하는 것과 같은 다이얼 디자인을 렌더링한다. 디지털 트윈에서는 이것이 실제 상황이다. 다만 Gazebo의 PBR 셰이딩, 로봇 그림자, 텍스처 필터링 차이는 측광 열화(기울기, 글레어, 감마, 블러, 노이즈)로만 근사했다. Gazebo 실측 오차는 이보다 클 수 있으므로 §8.4 표 8-2에 기록한다.
@@ -1669,9 +1692,13 @@ sequenceDiagram
   Note over I: mission_autostart:=true 이면 25 s 뒤 'start'
 ```
 
-주요 인자: `gui`, `headless_rendering`, `rviz`, `thermal_source`(gazebo | synthetic), `mission_autostart`, `autostart_delay`(25 s), `dashboard_port`(8080), `teleop_terminal`, `metrics`(true), `module_delay`(6 s), `demo`(false), `hud`(true), `follow_camera`('' = demo), `follow_offset`(-2.5,0.0,1.6). 전체 목록은 [USAGE §1](USAGE.md#run-bringup)에 있다.
+주요 인자: `gui`, `headless_rendering`, `rviz`, `thermal_source`(gazebo | synthetic), `mission_autostart`, `autostart_delay`(25 s), `dashboard_port`(8080), `teleop_terminal`, `metrics`(true), `module_delay`(6 s), `demo`(false), `hud`(true), `follow_camera`('' = demo), `follow_offset`(-2.5,0.0,1.6), `low_memory`(false), `respawn`(true). 전체 목록은 [USAGE §1](USAGE.md#run-bringup)에 있다.
 
-**데모 모드** (`bash scripts/run_demo.sh` = `demo:=true`): 미션 자동 시작에 두 가지를 더한다. `follow_camera`는 gz CLI로 GUI 카메라가 로봇 뒤 2.5 m, 위 1.6 m에서 따라가게 한다(`/gui/track`, 안 되면 Harmonic의 `/gui/follow`, 실패해도 launch는 계속). `demo_hud`는 점검 카메라 영상에 가스 농도(10 / 25 ppm 색 구분, 경보 시 깜빡이는 테두리), 배터리, 임무, 보행 상태를 겹쳐 `/demo/hud`(bgr8)와 `/demo/hud_rgb`(rgb8)로 발행하고, 브리지가 rgb8 사본을 Gazebo GUI의 "Robot HUD" 창(gz 토픽 `/demo/hud`)으로 보낸다. 한글은 Pillow + 한글 글꼴(`python3-pil`, `fonts-noto-cjk`)이 있을 때 쓰고, 없으면 영어로 쓴다. 누출 밸브의 가스 파티클은 초록색 반투명이다(Harmonic의 ogre2는 파티클 색 범위를 무시하고 재질 diffuse 색으로 칠하므로 재질 색을 초록으로 정함). 추적 카메라와 HUD 창은 개발 PC의 Harmonic GUI(작은 시험 월드)에서 확인했고, 로봇이 들어간 전체 bringup에서는 확인하지 못했다.
+**8 GB 노트북** (`low_memory:=true`, 스크립트는 `--low-memory`): 점검 카메라 640×480 5 Hz, 열화상 2 Hz, 그림자 끔(월드 사본), 카메라 패널을 뺀 GUI 배치, RViz 끔, HUD 3 Hz, `MALLOC_ARENA_MAX=2`와 BLAS 스레드 1개. 깊이 카메라는 보행 검증 조건인 10 Hz를 유지한다. 같은 PC에서 잰 Gazebo 서버 메모리는 약 140 MiB 줄었고(전용 840 → 775 MiB, 공유 GPU 240 → 165 MiB), GUI와 노드까지 합친 절감은 약 0.35–0.75 GB로 추정한다. 이 해상도·그림자 설정에서도 게이지 판독은 그대로다(§5.1.5).
+
+**노드 재시작** (`respawn:=true`): 상태를 잃어도 되는 노드(`mission_manager`, `cmd_vel_mux`, 대시보드, HUD, 브리지, 가스·통신·탐색·복귀 노드 등)는 죽으면 3 s 뒤 다시 뜬다. 다시 뜬 `mission_manager`는 IDLE에서 로봇을 세워 두고 `t`로 새로 시작한다. 배터리 시뮬레이터, `metrics_logger`, `odom_tf`는 재시작하면 충전량·기록 폴더·좌표 기준이 바뀌므로 재시작하지 않는다. module3 노드의 콜백도 예외를 로그로만 남기고 계속 돈다(NaN·잘못된 JSON 입력 무시).
+
+**데모 모드** (`bash scripts/run_demo.sh` = `demo:=true`): 미션 자동 시작에 두 가지를 더한다. `follow_camera`는 gz CLI로 GUI 카메라가 로봇 뒤 2.5 m, 위 1.6 m에서 따라가게 한다(`/gui/track`, 안 되면 Harmonic의 `/gui/follow`, 실패해도 launch는 계속). `demo_hud`는 점검 카메라 영상에 가스 농도(10 / 25 ppm 색 구분, 경보 시 깜빡이는 테두리), 배터리, 임무, 보행 상태를 겹쳐 `/demo/hud`(bgr8)와 `/demo/hud_rgb`(rgb8)로 발행하고, 브리지가 rgb8 사본을 Gazebo GUI의 "Robot HUD" 창(gz 토픽 `/demo/hud`)으로 보낸다. 한글은 Pillow + 한글 글꼴(`python3-pil`, `fonts-noto-cjk`)이 있을 때 쓰고, 없으면 영어로 쓴다. HUD 아래쪽에는 지금 하는 일("G04 계기판 판독 중 (6/8)" 등)이 문장으로 나오고, 판독 완료(값·상태와 점검 사진), 누출원 발견, 복귀 시작은 몇 초간 배너로, 넘어지면 복구 4단계(넘어짐 감지 → 자세 뒤집기 → 일어서기 → 복구 완료) 패널이, 도킹하면 결과 패널(판독 수·평균 오차, 누출원, 넘어짐/자가 복구, 소요 시간, 결과 폴더)이 뜬다. Gazebo GUI는 추적 오프셋을 로봇의 롤·피치까지 포함해 돌리므로, `follow_camera`는 로봇이 넘어지면(30° 초과 또는 넘어짐 보고) 카메라를 그 자리에 세우고 일어선 뒤 1 s 지나 다시 따라가게 한다(이 처리가 없으면 뒤집힌 로봇에서 카메라가 바닥 아래로 내려간다). 누출 밸브의 가스 파티클은 초록색 반투명이다(Harmonic의 ogre2는 파티클 색 범위를 무시하고 재질 diffuse 색으로 칠하므로 재질 색을 초록으로 정함). 추적 카메라와 HUD 창은 개발 PC의 Harmonic GUI(작은 시험 월드)에서 확인했고, 로봇이 들어간 전체 bringup에서는 확인하지 못했다.
 
 ### 7.2 미션 상태기계
 
@@ -1755,6 +1782,8 @@ sequenceDiagram
 
 모드는 두 가지다. hold(기본)는 키 반복이 끊기고 0.6 s 뒤 정지한다. latch는 누를 때마다 목표 속도가 단계적으로 바뀐다. 최대 속도는 배율 1.0에서 0.5 m/s, 0.3 m/s, 0.8 rad/s이고, 제어기가 보행별로 다시 제한한다. 상태 줄의 미션 상태는 `/mission/state`가 5 s 끊기면 `mission X(stale Ns)`로 바뀐다(§7.7).
 
+미션 키(`t p g h o`)는 확실히 전달되게 했다. `/mission/command`는 저장되지 않는 토픽이라 미션 관리자가 뜨기 전에 누른 키는 사라졌다. 이제 미션 관리자가 명령마다 번호를 매겨 `/mission/state`의 `cmd_seq`와 `recent_commands`(최근 5개, 수락 여부, 메시지)로 알리고, 텔레옵은 응답이 올 때까지 2 s 간격으로 최대 3번 다시 보낸다(미션 관리자가 아직 없으면 60 s까지 기다렸다가 보냄). 결과는 터미널에 `mission: 'start' accepted - ...` 또는 `REJECTED - <이유>`로 나온다. 순찰 계획이 오기 전에 누른 `start`는 최대 30 s(`start_plan_wait`) 계획을 기다린 뒤 출발한다. 텔레옵이 없으면 Gazebo 창에서 누른 미션 키를 미션 관리자가 직접 받는다(`gazebo_mission_keys`).
+
 ### 7.5 관제 화면 (오프라인 데모 캡처)
 
 아래 캡처는 **오프라인 대시보드 데모**(`python -m plant_simulation.dashboard_demo`)에서 찍은 것이다. Gazebo가 아니다. 웹 UI, 대시보드 서버, 집계기(`dashboard_state.py`), 미션 상태기계는 실제 코드다. 반면 로봇 움직임, 게이지 판독, 열 경보, 가스장, 카메라 영상은 데모의 간이 합성 모델이 만든 것이다(§7.6 참고). Gazebo로 실행하면 같은 화면이 실제 토픽으로 채워진다.
@@ -1813,6 +1842,7 @@ sequenceDiagram
 | 미션 관리자 콜백의 예외 하나로 노드가 죽어 `/mission/state`가 멈추고 `t`가 무반응 (Ubuntu 실행 보고, 2026-10-14) | 모든 콜백을 `node_utils.guarded`로 감쌌다. 예외는 로그(처음과 50회마다 Traceback)만 남기고 노드는 계속 돈다. `MissionLogic.step`이 3회 연속 실패하면 미션을 abort해서 `t`로 새로 시작할 수 있게 했다 |
 | 미션 관리자가 죽었는지 텔레옵 화면에서 알 수 없음 (2026-10-14) | `/mission/state`(0.5 s마다 재발행)가 5 s 끊기면 텔레옵 상태 줄에 `mission X(stale Ns)`를 표시한다. 그 상태에서 미션 키(`t p g h o`)를 누르면 받는 노드가 없다는 경고를 출력한다 |
 | 미션 관리자가 공장에 들어서면 죽음. `/mission/state`가 멈춰 대시보드에서 빨강, 미션 정지 (Ubuntu·Lyrical 실행 보고, 2026-10-26) | 원인: rclpy는 로그 호출 위치(파일·줄)마다 심각도를 하나만 허용하고, 바뀌면 `ValueError: Logger severity cannot be changed between calls`를 낸다. 미션 관리자는 모든 미션 이벤트를 한 줄에서 심각도만 바꿔 남겼고, info 이벤트 뒤 첫 warning(공장 입구)에서 죽었다. 수정: `_log_event`가 심각도마다 다른 줄에서 로그를 남기고, 그 틱의 명령을 모두 발행한 뒤에 로그를 쓴다. 재발 방지: `dusan_common/rclpy_logger_rules.py`의 `CallSiteRules`로 노드 스텁 테스트의 가짜 로거가 같은 규칙을 검사한다(plant 노드, 게이지 노드, M3 노드, `terrain_mapper`·`keyboard_teleop`). 회귀 테스트 `test_mission_manager_logs_events_of_every_level_without_dying` |
+| 8 GB 노트북에서 `t`를 눌러도 미션이 시작되지 않는 경우가 남음 (Ubuntu 실행 보고) | `/mission/command`는 저장되지 않는 토픽이라 미션 관리자가 뜨기 전이나 다시 뜨는 중에 누른 키는 사라지고, 사용자는 결과를 알 수 없었다. 수락 확인·재전송과 터미널 표시, 순찰 계획 대기, 텔레옵 없이 Gazebo 창 키, 노드 재시작을 넣었고(§7.4, §7.1), 메모리 부담을 줄이는 `low_memory` 프로필을 더했다. 실제 노트북에서의 확인은 남아 있다 |
 
 <a id="obstacle-avoidance"></a>
 ### 7.8 지도에 없는 장애물 회피 (2026-10-26)
@@ -2008,11 +2038,27 @@ MPC 모드, 시드 0·1·2 (2026-10-26, MPC 안정화 최종 코드, 실측 MPC 
 - Gazebo 확인은 헤드리스 하네스(렌더링 없는 광선 투사 깊이)다. Ubuntu의 렌더링된 깊이 카메라와 ROS 실행에서는 아직 확인하지 않았다.
 - MPC 모드에서 박스 회피 자체는 stable과 같지만(21/21), 45 m 경로 y는 경사로 부근에서 넘어져 0/3이다(§4.10.7). 긴 자율 경로는 stable을 권한다.
 
+### 7.9 점검 결과 저장 (점검 사진·보고서)
+
+임무가 계기 하나의 점검을 끝내면(`/inspection/target`이 그 계기에서 바뀌면) `gauge_reader`가 그 점검의 사진을 한 번
+`/inspection/gauge_snapshot`(JPEG base64 JSON)으로 보낸다. 사진은 신뢰도 상위 프레임 가운데 바늘 값이 최종 판독값과 맞는 프레임을 골라
+계기 확대 사진(검출 타원·바늘 표시)에 ID·값·단위·상태·신뢰도·시각을 적은 것이고, 전체 화면 사진도 함께 보낸다.
+`metrics_logger`는 이를 세션 폴더(`~/dusan_metrics/<세션>/gauges/`)에 저장하고, 임무가 확정한 값(`/mission/state`의 `results`)으로
+`inspection_report.json`과 한국어 단일 파일 `inspection_report.html`(사진 내장)을 쓴다. 계기마다 판독값, 참값, 오차 %FS, 상태 판정과
+실제 상태, 신뢰도, 판독 횟수, 시각, 사진이 들어가고 열화상·가스·임무 요약이 뒤에 붙는다. 결과가 들어올 때마다 중간본을 다시 쓰고
+DONE / DOCKED에서 최종본이 된다. 대시보드는 같은 폴더를 `/session/<파일>`로 제공해(세션 폴더 밖·숨김 파일·다른 확장자는 거부)
+계기 카드 썸네일과 **보고서 열기** 링크를 보여 준다(`/metrics/session`).
+
+- Gazebo 렌더 프레임(§5.1.5의 800×600 정위치·흔들림 시점)을 실제 `gauge_reader` 노드 코드 → `metrics_logger`의 기록기로 흘려 보고서를
+  만들면 8/8 판독, 평균 오차 0.014 %FS, 최대 0.027 %FS, 상태 8/8 정답(경고 G02·G06)이었다. 세션 폴더는 약 0.85 MB다.
+- 오프라인 데모(`dashboard_demo --headless`)에서도 미션 1회에 사진 8장과 최종 보고서가 만들어진다(데모 사진은 합성 다이얼).
+- 실제 ROS 2 실행에서는 아직 확인하지 않았다(노드는 rclpy 스텁 테스트).
+
 ---
 
 ## 8. 평가 지표 종합 분석
 
-> 아래 8.1~8.3은 **오프라인 평가값**이다(§8.3의 지도에 없는 장애물 행만 Gazebo 헤드리스 하네스 값). 보행은 강체 평가(§4.5)와 MuJoCo 물리 검증(§4.7, §4.8) 두 가지가 있다. 물리 검증은 관절 서보·접촉·미끄러짐을 포함하므로 지금 가진 값 중 "넘어짐 횟수"에 가장 가깝지만, Gazebo(DART 접촉, 렌더링, ROS 실행)에서는 수치가 달라질 수 있다. 8.4의 템플릿에 실측값을 채워 비교해야 한다.
+> 아래 8.1~8.3은 **오프라인 평가값**이다. Gazebo 헤드리스 값인 행(넘어짐 자가 복구, Gazebo 렌더 프레임 판독, 데모 미션 전체, 지도에 없는 장애물)은 그렇게 표시했다. 보행은 강체 평가(§4.5)와 MuJoCo 물리 검증(§4.7, §4.8) 두 가지가 있다. 물리 검증은 관절 서보·접촉·미끄러짐을 포함하므로 지금 가진 값 중 "넘어짐 횟수"에 가장 가깝지만, Gazebo(DART 접촉, 렌더링, ROS 실행)에서는 수치가 달라질 수 있다. 8.4의 템플릿에 실측값을 채워 비교해야 한다.
 
 ### 8.1 보행 안정성
 
@@ -2026,6 +2072,8 @@ MPC 모드, 시드 0·1·2 (2026-10-26, MPC 안정화 최종 코드, 실측 MPC 
 | 크롤 안정 여유 | duty 0.75: 최소 −17.2 mm(다리 교대 순간), 평균 33.8 mm. duty 0.80: 최소 1.0 mm, 평균 47.7 mm | duty 0.75는 교대 순간 여유가 구조적으로 0 근처이고 MuJoCo에서 넘어졌다. 기본값은 0.80 |
 | 실시간성 | 풀이 p95 14.71 ms, 최대 18.33 ms, 30 ms 미만 100 % | 20 Hz MPC 주기(50 ms) 안. Ubuntu PC의 OpenBLAS 사용 여부가 중요 |
 | 지형 위험 디딤 감소 | 계단 25.0 → 0.0 %, 하행 26.3 → 0.8 %, 배관 29.0 → 3.1 %, 잔해 40.7 → 8.8 % | 잔해에서 남은 8.8 %는 2~7 cm 블록이 촘촘해 0.10 m 탐색 반경 안에 완전히 안전한 칸이 없는 경우다 |
+| 넘어짐 자가 복구 (Gazebo 헤드리스) | 9개 케이스 89/90, 순간이동 0, 케이스 평균 복구 6.8–15.3 s. 배관 위 누움 13/13(평균 37 s), 경사로 턱 6/7(평균 58 s) | 오프라인 값이 아니라 Gazebo 하네스 값이다. 남은 실패는 경사로 가장자리 밖으로 떨어진 경우다(§4.4) |
+| 데모 미션 중 넘어짐 (Gazebo 헤드리스) | 시드 10–14 실행당 0.4회(C-OBS5 1, F-OBS3 끝 1), 모두 자가 복구 | C-OBS5 배관 건너기만 따로 돌린 구간 실행에서는 약 20 %가 넘어진다(§4.10.8) |
 
 **MuJoCo 물리 검증의 넘어짐·복구 집계** (`physics_check.json`. 필수 시나리오는 시드 0/1/2, best effort는 시드 0. "넘어짐"은 시뮬레이션 상태에서 센 넘어짐 구간 수: |roll| 또는 |pitch| > 55°, 또는 지면 위 몸통 높이 < 0.12 m가 0.1 s 이상 지속)
 
@@ -2048,6 +2096,7 @@ MPC 모드, 시드 0·1·2 (2026-10-26, MPC 안정화 최종 코드, 실측 MPC 
 | 지표 | 오프라인 값 | 해석 |
 |---|---|---|
 | 게이지 오차 (필수 480프레임) | 평균 0.111 %FS, p95 0.401 %FS, 최대 2.224 %FS, 5 %FS 이내 100 % | 요구(5 %)에 큰 여유. 최대 오차는 모션 블러 조건에서 나옴 |
+| 게이지 오차 (Gazebo 렌더 프레임) | 800×600 80/80 검출, 평균 0.015 %FS, 최대 0.043 %FS. 640×480 80/80, 평균 0.017 %FS | Gazebo가 그린 다이얼·조명에서도 같은 수준. 정지 프레임 한 장씩 읽은 값이다(§5.1.5) |
 | 조건별 평균 오차 | normal 0.02 · low light 0.11 · motion blur 0.28 · oblique 0.03 · noise 0.05 · combined 0.18 · occluded 0.05 %FS | 블러가 가장 어렵다. IMU 게이트와 4 s 정지 판독이 운용상의 대응이다 |
 | 검출 / 오검출 | 검출 100 % (가림 포함 99.81 %) / 배경 60프레임 중 0 | 거부 우선 설계: 스윕 전체에서 채택된 판독은 모두 5 %FS 이내 |
 | OCR | 정밀도 0.993 (146개 중 145개), 1.8 m 밖 판독 불가 | 레지스트리 우선 정책이 타당함 |
@@ -2067,6 +2116,7 @@ MPC 모드, 시드 0·1·2 (2026-10-26, MPC 안정화 최종 코드, 실측 MPC 
 | RTH 통신 음영 예측 | 음영 5.03 m 전(−56.1 dBm) 발동, 진입 없음 | "진입 예상 시" 요구를 사전 예측으로 충족 |
 | RTH 에너지 여유 | 22.83 %(20 % 임계 위)에서 발동, 11.09 %로 도착 | 거리가 멀면 20 % 규칙만으로는 부족한 경우를 보완 |
 | 통합 미션 (데모) | 8/8 점검 → 가스 탐색 → 귀환 → DOCKED, 사람 개입 0 | 상태기계와 관제·메트릭 연동 검증 (모듈 성능은 합성) |
+| 데모 미션 전체 (Gazebo 헤드리스) | 시드 10–14 5/5 완료(게이지 8/8, 누출원 FOUND, DOCKED), 순간이동 0, 평균 573 s | 실제 보행 물리 위에서 미션 노드 코드를 끝까지 돌린 값이다. 게이지 판독기는 정답 자세의 가시성으로 대신했다(§4.10.8) |
 | 지도에 없는 장애물 회피 (Gazebo 헤드리스, stable) | 박스 시나리오 t·u·v·w 각 3/3, 박스 최소 이격 0.61 m 이상, 대조군 대비 시간 1.16~1.24배. 45 m 경로 오검출 0 | 오프라인 값이 아니라 Gazebo 하네스 값이다. 막힌 복도는 정체 로직으로 건너뛰고 끝낸다(§7.8.3) |
 
 ### 8.4 Gazebo 실측 결과 기입용 템플릿과 측정 절차
@@ -2083,8 +2133,9 @@ bash scripts/check_install.sh                      # 마지막 줄 0 FAIL 확인
 
 # 1) 시나리오 A — 전체 미션 (3회 반복 권장, 회차마다 새 세션 폴더 생성)
 bash scripts/run_bringup.sh mission_autostart:=true
-#    GPU 없음: thermal_source:=synthetic   /  디스플레이 없음: gui:=false headless_rendering:=true
+#    GPU 없음: thermal_source:=synthetic   /  디스플레이 없음: gui:=false headless_rendering:=true   /  8 GB: --low-memory
 #    http://localhost:8080 에서 미션이 DOCKED가 될 때까지 기다린 뒤 Ctrl-C (summary.json 최종 기록)
+#    점검 사진과 보고서: <세션>/gauges/*.jpg, <세션>/inspection_report.html
 python3 tools/plot_metrics.py                      # 최신 세션 → <세션>/figures/*.png + summary.md
 
 # 2) 시나리오 B — 푸시/넘어짐/복구 (bringup, 자동 시작 없이)
@@ -2092,7 +2143,8 @@ bash scripts/run_bringup.sh
 ros2 topic pub --once /locomotion/command std_msgs/msg/String "{data: walk}"           # 제자리 트롯
 ros2 topic pub --once /locomotion/command std_msgs/msg/String "{data: 'push:0,50'}"     # 횡 50 N x 0.2 s
 #    회복(STAND/WALK 복귀) 확인 후 같은 명령을 5회 반복. 이어서 push:0,100 / push:0,150 / push:0,250,
-#    전방은 push:100,0 / push:200,0. 넘어진 뒤 자동 복구가 3회 실패하면 보조 리셋이 기록된다.
+#    전방은 push:100,0 / push:200,0. 자동 복구는 일어설 때까지 다시 시도한다(3회 실패하면 5 s 쉬고 recovery_retry).
+#    보조 리셋(순간이동)은 locomotion.yaml의 assisted_reset: true일 때만 쓰이고 기록된다.
 
 # 3) 시나리오 C — RTH 배터리 (순찰 중)
 ros2 topic pub --once /mission/command std_msgs/msg/String "{data: patrol}"
@@ -2280,12 +2332,12 @@ flowchart LR
 ## 10. 한계 및 향후 과제
 
 **검증 관련**
-1. **Gazebo GUI + ROS 2 전체 실행은 미검증.** 보행은 Gazebo Harmonic 헤드리스 하네스(§4.10)로 실제 gz-sim 접촉·서보·플러그인에서 확인했다. 실제 plant 월드에서 출발 직후 넘어짐(제어기 버그 ①)은 고쳐서 반영했고, 기본값(stable + trot)으로 복도 전체(잔해 북쪽 통로) 3/3이었다. 0.10 m 배관 넘기(2/3), 잔해 곧게(0/3), walk 회전, 벽을 향해 크게 도는 동작(잔해 앞 출발 2/6)이 남은 문제다. 다음은 Ubuntu에서 확인해야 한다: Jetty(gz-sim 10)에서의 같은 결과, 렌더링된 깊이 카메라 → 지형 맵, Fall Recovery, 평지에서 슬립 오감지가 없는지, Gazebo 렌더링에서의 게이지 판독 오차, gz 열화상 센서(per-visual 온도, mono16 수신), 성능(약 220k 시각 삼각형, 조명 25개, `/joint_states` 1 kHz). 첫 실행 전에 `gz sdf -k simulation/worlds/plant.sdf` 검사를 권장한다.
+1. **Gazebo GUI + ROS 2 전체 실행은 미검증.** 보행은 Gazebo Harmonic 헤드리스 하네스(§4.10)로 실제 gz-sim 접촉·서보·플러그인에서 확인했다. 실제 plant 월드에서 출발 직후 넘어짐(제어기 버그 ①)은 고쳐서 반영했고, 기본값(stable + trot)으로 복도 전체(잔해 북쪽 통로) 3/3이었다. 0.10 m 배관 넘기(2/3), 잔해 곧게(0/3), walk 회전, 벽을 향해 크게 도는 동작(잔해 앞 출발 2/6)이 남은 문제다. 넘어짐 물리 복구(§4.4)와 데모 미션 전체(§4.10.8)도 같은 헤드리스 하네스에서 확인했고, 게이지 판독은 헤드리스로 렌더링한 정지 프레임에서 확인했다(§5.1.5). 미션 중 C-OBS5 배관 건너기는 구간 실행에서 약 20 %가 넘어진다(넘어지면 일어나지만 배관 위에 누우면 30–55 s). 다음은 Ubuntu에서 확인해야 한다: Jetty(gz-sim 10)에서의 같은 결과, 렌더링된 깊이 카메라 → 지형 맵, ROS 지연이 있는 실제 실행에서의 넘어짐 복구와 미션 전체, 평지에서 슬립 오감지가 없는지, 걷는 로봇의 카메라 영상으로 한 게이지 판독, 8 GB 노트북에서의 메모리 사용량과 `t` 시작, gz 열화상 센서(per-visual 온도, mono16 수신), 성능(약 220k 시각 삼각형, 조명 25개, `/joint_states` 1 kHz). 첫 실행 전에 `gz sdf -k simulation/worlds/plant.sdf` 검사를 권장한다.
 2. 오프라인 데모의 게이지·열화상·MPC·가스 수치는 합성 모델 값이라 모듈 성능을 나타내지 않는다(§7.6).
 3. 모듈 문서의 수치는 2026-10-13에 `docs/results/*.json`과 다시 맞췄다. 평가를 다시 돌리면 모듈 문서도 함께 갱신해야 한다.
 
 **알고리즘 관련**
-4. **보행**: 위치 서보로 토크를 실현하므로 MPC 토크는 계획값이다(토크 피드포워드는 슬립 모드에서만 사용. MPC 토크를 관절에 바로 쓰는 선택형 토크 모드는 개발 중이고 결과는 없다). **MPC 모드는 기본값이 아니다**(§4.10.7): Gazebo 최종 검증에서 plant 깊이 맵 16/21로 stable과 같지만, 11.8° 경사로에서 MPC 풀이 지연에 민감하다(평균 18–28 ms 9/9, 고정 30 ms 8/9, 37–50 ms 3/9). 원인은 경사면에서 뒤 스윙발 착지가 늦어 대각 지지가 빠지는 것이고, 지연 보상과 착지 보장은 아직 구현하지 않았다. 벽에 붙은 갭 출구 출발(스크래치 xb)도 5/9(stable 8/9)다. MuJoCo 물리 검증에서 남은 실패는 (e) 걷는 도중 trot → crawl 전환(배관 + 단차 0/3), (f) 15 N·s 측면 밀기(2/3), 등으로 떨어졌을 때의 자가 복구, 계단·경사로(best effort)다(§4.7). 미끄러운 철판은 처리하지만 사전정보 없이 μ 0.15에 빠르게 들어가면 감지만으로는 2/3이고, μ 추정은 대략적이다(§4.8). 크롤에는 측방 위치 피드백이 없다(강체 평가에서 6 s 시점 측방 오프셋 0.119 m, 외부 루프가 보정). MPC는 Python/numpy라 C++ 구현에 비해 여유가 적다. 자동 파라미터 탐색은 강체 평가만 좋아지는 후보를 걸러 냈고 기본값을 바꾸지 않았다(§4.9).
+4. **보행**: 위치 서보로 토크를 실현하므로 MPC 토크는 계획값이다(토크 피드포워드는 슬립 모드에서만 사용. MPC 토크를 관절에 바로 쓰는 선택형 토크 모드는 개발 중이고 결과는 없다). **MPC 모드는 기본값이 아니다**(§4.10.7): Gazebo 최종 검증에서 plant 깊이 맵 16/21로 stable과 같지만, 11.8° 경사로에서 MPC 풀이 지연에 민감하다(평균 18–28 ms 9/9, 고정 30 ms 8/9, 37–50 ms 3/9). 원인은 경사면에서 뒤 스윙발 착지가 늦어 대각 지지가 빠지는 것이고, 지연 보상과 착지 보장은 아직 구현하지 않았다. 벽에 붙은 갭 출구 출발(스크래치 xb)도 5/9(stable 8/9)다. MuJoCo 물리 검증에서 남은 실패는 (e) 걷는 도중 trot → crawl 전환(배관 + 단차 0/3), (f) 15 N·s 측면 밀기(2/3), 계단·경사로(best effort)다(§4.7). 등으로 떨어졌을 때의 자가 복구는 등 굴리기 키프레임으로 MuJoCo 3/3, Gazebo 헤드리스 10/10이 됐다(§4.4). 경사로 가장자리 밖으로 떨어져 발 디딜 곳이 없으면 아직 일어서지 못할 수 있다. 미끄러운 철판은 처리하지만 사전정보 없이 μ 0.15에 빠르게 들어가면 감지만으로는 2/3이고, μ 추정은 대략적이다(§4.8). 크롤에는 측방 위치 피드백이 없다(강체 평가에서 6 s 시점 측방 오프셋 0.119 m, 외부 루프가 보정). MPC는 Python/numpy라 C++ 구현에 비해 여유가 적다. 자동 파라미터 탐색은 강체 평가만 좋아지는 후보를 걸러 냈고 기본값을 바꾸지 않았다(§4.9).
 5. **지형**: 2.5-D 맵이라 셀당 높이가 하나다. base 위 0.55 m 넘는 돌출부는 아래로 지나갈 수 있다고 가정한다. 높은 장애물의 윗면은 하한값이다. 접촉 센서가 없어서 착지 높이는 지면 추정값이다. 하행 계단에서 위험 디딤 0.8 %가 남는다.
 6. **게이지**: `gauge_design` 다이얼에 맞춘 모델 기반 판독기다. 다른 디자인에는 템플릿을 새로 만들어야 한다. 라벨이 4 px 미만이면 OCR이 안 된다.
 7. **열화상**: 프레임당 오버레이 평면이 하나다(박스는 검출별 평면). 합성 열화상은 물리 기반 복사 시뮬레이션이 아니다(다중 반사, 대기 감쇠 없음).
@@ -2305,7 +2357,7 @@ flowchart LR
 **통합 관련**
 16. **rclpy 로거 규칙**(§7.7): 호출 위치마다 심각도를 하나만 허용한다. 미션 관리자는 고쳤고, 노드 스텁 테스트가 이 규칙을 검사한다. 하지만 스텁이 없는 노드나 테스트가 닿지 않는 로그 경로는 Ubuntu에서만 드러날 수 있다.
 
-**향후 과제 우선순위**: ① §8.4 절차로 Ubuntu(Jetty) Gazebo 실측(기본값 stable + trot, 데모 모드 포함) 후 표 채우기 → ② 배관·잔해를 넘는 동작(장애물을 넘는 다리만 느린 스윙, 뒷다리가 넘을 때까지 walk 유지, 배관 위 회전 제한)과 walk·제자리 회전 안정화(§4.10) → ②-1 MPC 모드의 경사로 약점: 지연 보상, 경사 착지 보장, 경사 속도 제한(§4.10.7) → ③ 등으로 떨어졌을 때의 굴림 동작 → ④ 실측 기반 서보·자세 게인 재튜닝(`tools/tune_locomotion.py`, `tools/gazebo_check.py`) → ⑤ 상태 추정기(EKF) → ⑥ RL 정책 학습과 Sim2Sim(§9).
+**향후 과제 우선순위**: ① §8.4 절차로 Ubuntu(Jetty) Gazebo 실측(기본값 stable + trot, 데모 모드 포함) 후 표 채우기 → ② 배관·잔해를 넘는 동작(장애물을 넘는 다리만 느린 스윙, 뒷다리가 넘을 때까지 walk 유지, 배관 위 회전 제한)과 walk·제자리 회전 안정화(§4.10. 미션 경로의 배관 직각 건너기는 넣었고 C-OBS5에서 약 20 % 넘어짐이 남음) → ②-1 MPC 모드의 경사로 약점: 지연 보상, 경사 착지 보장, 경사 속도 제한(§4.10.7) → ③ 경사로 가장자리 밖으로 떨어진 자세의 복구(§4.4) → ④ 실측 기반 서보·자세 게인 재튜닝(`tools/tune_locomotion.py`, `tools/gazebo_check.py`) → ⑤ 상태 추정기(EKF) → ⑥ RL 정책 학습과 Sim2Sim(§9).
 
 ---
 
@@ -2334,14 +2386,14 @@ flowchart LR
 | 17 | 에셋 Map: 공장 내부, 복도 | `simulation/models/factory_hall`, `corridor` | §3.1 | ● |
 | 18 | 에셋 Object: 로봇, 팔레트 장애물, 가스 탱크 | `models/spot`, `pallet`, `gas_tank` | §3.1 | ● |
 | 19 | 에셋 Animation: 로봇개 이동/넘어짐 모션 | 애니메이션 클립 미사용. 모션은 `gait.py`, `fall_recovery.py`가 물리 시뮬레이션에서 생성 | §3.1 | ◐ |
-| 20 | M1 시나리오: 배관이 널린 바닥에 넘어지지 않고 진입 | 배관 장애물 4개(C-OBS1/5, F-OBS3/4), 스윙 정점 장애물 회피, foothold planner | §4.1.4, §4.5.6 (배관 위험 디딤 29.0 → 3.1 %). MuJoCo (e) 배관 + 단차 0/3 (§4.7) | ● (지형 인지) / ◐ (물리 보행) |
+| 20 | M1 시나리오: 배관이 널린 바닥에 넘어지지 않고 진입 | 배관 장애물 4개(C-OBS1/5, F-OBS3/4), 스윙 정점 장애물 회피, foothold planner | §4.1.4, §4.5.6 (배관 위험 디딤 29.0 → 3.1 %). MuJoCo (e) 배관 + 단차 0/3 (§4.7). Gazebo 헤드리스 데모 미션 5/5 완료, C-OBS5 건너기 구간 실행 약 20 % 넘어짐 (§4.10.8) | ● (지형 인지) / ◐ (물리 보행) |
 | 21 | M1: 좁은 계단, 미끄러운 철판, 장애물 → Trot/Crawl 전환 | `terrain_classifier.py`, `controller.py` gait:auto, 철판: `friction_map.py` + `slip_detector.py` + 슬립 모드 | §4.3, 분류 7/7. 철판 MuJoCo μ 0.15 / 0.2 모두 3/3 (§4.8) | ● (전환·철판) / ◐ (계단 물리 보행) |
 | 22 | M2 시나리오: 위험 구역 압력계 판독 + 과열 배관 탐지, 진동·조명 제약 극복 | `gauge_reader.py`, `thermal_fusion.py` | §5.1.3, §5.2 | ● |
 | 23 | M3 시나리오: 가스 농도 구배를 따라 누출원 탐지 (후각 네비게이션) | `source_seeking.py` | §6.2, §6.5 | ● |
 | 24 | 결과물: GitHub 구조 module1~3, simulation, docs | 저장소 루트 | §2.3 | ● |
 | 25 | [M1] 지형 인지 + Elevation Map 생성 코드 | `module1_locomotion/elevation_map.py`, `terrain_mapping_node.py` | §4.1 | ● |
 | 26 | [M1] MPC 보행 제어기 및 튜닝 코드 | `mpc.py`, `qp.py`, `controller.py`, `config/locomotion.yaml`, `tools/eval_locomotion.py`, 자동 탐색 `tools/tune_locomotion.py` | §4.2.6, §4.9 | ● |
-| 27 | [M1] Fall Recovery 시퀀스 코드 | `fall_recovery.py`, `gz_tools.py` | §4.4, §4.7 | ● (코드, MuJoCo에서 옆으로 넘어짐 6/6 복구) / ◐ (등으로 떨어짐, Gazebo) |
+| 27 | [M1] Fall Recovery 시퀀스 코드 | `fall_recovery.py`, `gz_tools.py`, `tools/fall_check.py` | §4.4, §4.7 | ● (Gazebo 헤드리스 89/90 물리 복구, MuJoCo 옆·등 각 3/3) / ◐ (Ubuntu GUI 실측) |
 | 28 | [M2] 아날로그 게이지 인식 (OCR/CV) | `gauge_reader.py`, `gauge_ocr.py` | §5.1 | ● |
 | 29 | [M2] 열화상 + 실화상 퓨전 시각화 | `thermal_fusion.py` → `/inspection/thermal_fusion` | §5.2 | ● |
 | 30 | [M2] 최적 순찰 경로 (Viewpoint) | `viewpoint_planner.py`, `patrol_planner_node.py` | §5.3 | ● |
@@ -2360,7 +2412,7 @@ flowchart LR
 | 43 | 모델링: 로봇개 1, 공장기계 1 | Spot 1, 기계 2 | §3.3 | ● |
 | 44 | M1-1 라이다/Depth로 Elevation Map 실시간 생성, 발 디딤 결정 | 깊이 카메라 기반 (라이다 페이로드는 외형만) | §4.1, 재구성 11.35 ms | ● |
 | 45 | M1-2 외란(무게중심 변화 등)에도 안정, 5초간 발 위치·토크 예측, 튜닝 | `mpc.py` 5.0 s, `/mpc/footholds`, `/mpc/predicted_torques`, `tools/tune_locomotion.py` | §4.2, §4.5, §4.7 (MuJoCo +3 kg 3/3, 15 N·s 밀기 2/3), §4.9 | ● / ◐ (물리 밀기) |
-| 46 | M1-3 넘어졌을 때 자동 복구 시퀀스 | `fall_recovery.py` | §4.4, §4.7 | ● (옆으로 넘어짐, MuJoCo) / ◐ (등으로 떨어짐, Gazebo) |
+| 46 | M1-3 넘어졌을 때 자동 복구 시퀀스 | `fall_recovery.py` | §4.4, §4.7 | ● (옆·등·밀기·벽·경사로, Gazebo 헤드리스·MuJoCo) / ◐ (경사로 가장자리 밖, Ubuntu GUI 실측) |
 | 47 | M2-1 흔들림·저조도에서 검출, 바늘 각도 → 수치 텍스트 (오차 5 % 이내) | `gauge_reader.py`, 오버레이 텍스트 | §5.1.4, 5 %FS 이내 100 % | ● |
 | 48 | M2-2 열화상 + RGB 정합, 이음매 과열 여부 시각화 | `thermal_fusion.py` | §5.2.3 | ● |
 | 49 | M2-3 계기판 인식이 쉬운 Viewpoint 경유 최적 경로 | `viewpoint_planner.py` | §5.3.3 | ● |
@@ -2371,8 +2423,8 @@ flowchart LR
 | 54 | 결과 예시: 로봇 시점 계기판 인식 + 수치 오버레이 | `/inspection/gauge_overlay`, `gauge_examples.png` | §5.1.4, 그림 7-3 | ● |
 | 55 | 결과 예시: 열화상 퓨전 점검 화면 | `thermal_fusion_example.png` | §5.2.3 | ● |
 | 56 | 결과 예시: 가스 누출원 추적 경로 시각화 | `gas_seek_paths.png`, `/gas/seek_path` | §6.5 | ● |
-| 57 | 관제: 로봇 위치·상태 실시간, 점검 결과(수치, 과열), 가스 농도 맵 | `simulation/web/*`, `monitor_dashboard_node.py` | §7.5 | ● |
-| 58 | 보고서: 알고리즘 흐름도, 코드 설명, 테스트 결과(넘어짐 횟수, 인식 오차율) 그래프·표, 통합 과정·분석 | 이 문서 (Mermaid 흐름도, 표, 그림) | §4~§8 (넘어짐 횟수: MuJoCo 집계 §8.1) | ● / ◐ (Gazebo 넘어짐 횟수는 표 8-1, 8-4) |
+| 57 | 관제: 로봇 위치·상태 실시간, 점검 결과(수치, 과열), 가스 농도 맵 | `simulation/web/*`, `monitor_dashboard_node.py`, 점검 사진·보고서 `inspection_report.py` | §7.5, §7.9 | ● |
+| 58 | 보고서: 알고리즘 흐름도, 코드 설명, 테스트 결과(넘어짐 횟수, 인식 오차율) 그래프·표, 통합 과정·분석 | 이 문서 (Mermaid 흐름도, 표, 그림) | §4~§8 (넘어짐 횟수: MuJoCo 집계 §8.1, Gazebo 헤드리스 복구·미션 중 넘어짐 §4.4·§4.10.8) | ● / ◐ (Ubuntu Gazebo 넘어짐 횟수는 표 8-1, 8-4) |
 | 59 | 제약: 시뮬레이션 기반, Ubuntu 권장, Python 주 언어 | Ubuntu 26.04 / 24.04, Python 3.12 | §2.4 | ● |
 | 60 | 사용자 추가: 키보드 조작 | `keyboard_teleop.py`, `scripts/run_teleop.sh` | §7.4 | ● |
 | 61 | 사용자 추가: ROS2 + Gazebo 사용 | 모든 패키지, launch | §2 | ● |
@@ -2468,7 +2520,7 @@ flowchart LR
 **오프라인 (Windows 또는 Linux, ROS 불필요, 저장소 루트)**
 
 ```bash
-python -m pytest -q                      # 전체 테스트 (2026-10-26: 984 passed, 12 skipped. skip 이유는 -rs, §1.4)
+python -m pytest -q                      # 전체 테스트 (2026-11-12, GZ_PYTHON 지정: 1167 passed, 3 skipped. skip 이유는 -rs, §1.4)
 python tools/eval_locomotion.py          # → docs/results/locomotion_eval.json, docs/images/loco_*.png
 python tools/eval_terrain.py             # → terrain_eval.json, terrain_*.png
 python tools/eval_gauge.py               # → gauge_eval.json, gauge_*.png (멀티코어)
@@ -2491,6 +2543,9 @@ python tools/gazebo_check.py --figures-only                                     
 python tools/obstacle_check.py                                   # 지도에 없는 장애물: stable, r t u v w x z, 시드 0–2 (§7.8.3, 결과는 <임시>/obstacle_check)
 python tools/obstacle_check.py --scenarios y --seeds 0 1 2       # 45 m 경로 오검출 확인
 python tools/obstacle_check.py --modes mpc --scenarios r t u v w x z y   # MPC 모드 (§7.8.3)
+python tools/fall_check.py --cases side back trot roll push wall ramp_walk ramp_push mission --seeds 0 1 2 3 4 5 6 7 8 9   # → fall_check.json (§4.4)
+python tools/fall_check.py --cases pipe_back ramp_edge --seeds 10 11 12 --no-save                   # 배관 위 누움, 경사로 턱 (§4.4)
+python tools/mission_check.py --seeds 10 11 12 13 14 --save      # 데모 미션 전체 → mission_check.json (§4.10.8, 실행당 벽시계 약 20분)
 # 오프라인 대시보드 데모 (Linux: PYTHONPATH=dusan_common:simulation, Windows PowerShell: $env:PYTHONPATH="dusan_common;simulation")
 PYTHONPATH=dusan_common:simulation python -m plant_simulation.dashboard_demo                 # http://localhost:8080
 PYTHONPATH=dusan_common:simulation python -m plant_simulation.dashboard_demo --headless --metrics-dir /tmp/dusan_metrics
@@ -2507,6 +2562,7 @@ bash scripts/install_deps.sh --add-ros-repo && bash scripts/build.sh && bash scr
 bash scripts/run_bringup.sh [rviz:=true] [thermal_source:=synthetic] [mission_autostart:=true]
 bash scripts/run_teleop.sh                                   # 별도 터미널
 bash scripts/run_demo.sh                                     # 데모: 자동 미션 + 추적 카메라 + HUD (§7.1)
+bash scripts/run_demo.sh --low-memory                        # 8 GB 노트북 (§7.1)
 ros2 topic pub --once /mission/command std_msgs/msg/String "{data: start}"
 python3 tools/plot_metrics.py ~/dusan_metrics/<세션>
 ```
