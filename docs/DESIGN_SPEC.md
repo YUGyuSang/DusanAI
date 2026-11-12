@@ -161,6 +161,8 @@ backwards (all legs). Nominal stand height 0.34 m. Spawn: straight legs at floor
 | /thermal_camera/image | sensor_msgs/msg/Image | /thermal_camera/image | GZ→ROS |
 | /spot/joint/<j>/cmd_pos (×12) | std_msgs/msg/Float64 | same | ROS→GZ |
 | /demo/hud_rgb | sensor_msgs/msg/Image | /demo/hud | ROS→GZ |
+| /keyboard/keypress | std_msgs/msg/Int32 | /keyboard/keypress | GZ→ROS |
+| /gui/camera/pose | geometry_msgs/msg/Pose | /gui/camera/pose | GZ→ROS |
 
   **Clock relay:** gz publishes `/clock` on every 1 ms physics step (1000 msg/s). With
   `clock_relay:=true` (default) `sim.launch.py` remaps the bridge's ROS output `/clock` to
@@ -198,7 +200,8 @@ All JSON payloads are `std_msgs/String` produced with `dusan_common.ros_helpers.
 | /terrain/info | String JSON | terrain_mapper | locomotion_controller, dashboard | `{roughness, max_step, slope_deg, class: flat|rough|stairs|slope|obstacle|unknown|slippery, recommended_gait: trot|crawl, ahead_clear}` + friction prior of the layout plates / `friction_zones`: `slippery` (bool), `friction_mu` (lowest μ of the overlapping zones or null), `friction_zones` (ids), `friction_distance` (m ahead, 0 on the zone, null if none); `slippery` replaces flat / slope / unknown only (module1 TERRAIN_AND_TELEOP.md §5.1) |
 | /cmd_vel/teleop | Twist | keyboard_teleop | cmd_vel_mux | |
 | /teleop/active | std_msgs/Bool | keyboard_teleop | mux, mission | true while manual override |
-| /keyboard/keypress | std_msgs/Int32 | gz KeyPublisher (optional bridge) | keyboard_teleop, mission_manager (mission keys only while no teleop runs) | Qt key codes |
+| /keyboard/keypress | std_msgs/Int32 | gz KeyPublisher (optional bridge) | keyboard_teleop, mission_manager (mission keys only while no teleop runs), follow_camera (`C` 67, `Z` 90 only) | Qt key codes |
+| /gui/camera/pose | geometry_msgs/Pose | gz GUI CameraTracking (bridge) | follow_camera (when the gz-transport python bindings are missing) | 3D-view camera world pose, 50 Hz while subscribed |
 
 ### Inspection (module2)
 | topic | type | pub | sub | notes |
@@ -435,13 +438,37 @@ def max_height_along(emap, p0_xy, p1_xy) -> float   # swing apex helper (NaN-saf
   `demo_hud.HudStory` turns `/mission/state`, `/locomotion/state`, `/metrics/session` and
   `/inspection/gauge_snapshot` into the banners / robot-down panel / result panel, wall-clock hold times,
   nothing announced for the state found at start-up),
-  `follow_camera.py` (waits for Gazebo, the robot and the GUI with the gz CLI, then sends a
-  `gz.msgs.CameraTrack` FOLLOW on the GUI topic `/gui/track`, falls back to the Harmonic
-  `/gui/follow` service; fall guard (needs rclpy, `--no-fall-guard` to disable): the GUI turns
-  `follow_offset` with the full robot attitude, so while |roll| or |pitch| > 30 deg or the robot reports
-  a fall the camera is held (follow_pgain 0.0002, offset levelled with Rx(roll)^T Ry(pitch)^T) and
-  released 1 s after the robot is upright with `recovery_state` NORMAL; published through the gz-transport
-  python bindings when installed, else `gz topic -p`; always exits 0). mission_manager plans with the terrain cost layer
+  `follow_camera.py` + ROS-free `follow_camera_logic.py` (waits for Gazebo, the robot and the GUI with the gz
+  CLI, then sends a `gz.msgs.CameraTrack` FOLLOW on the GUI topic `/gui/track` with BOTH gains: gz-gui
+  CameraTracking (gz-gui 8/9/10, same code) hands the message's `follow_pgain` to the camera's look-at slerp and
+  its `track_pgain` to the POSITION gain (look 0.05, position 0.02 per rendered frame; a gain <= 1e-5 is
+  ignored by the GUI); falls back to the Harmonic `/gui/follow` service.  With rclpy it then runs the camera
+  director (`CameraDirector`, inputs `/odom`, `/locomotion/state`, `/keyboard/keypress`, `/gui/camera/pose`,
+  `/gui/currently_tracked`): (1) mouse-kept view - the GUI pulls a camera moved with the mouse back to the
+  offset, so a camera step the follow law cannot explain (> 0.06 m, or > 0.09 m within 0.35 s; residual of
+  camera motion vs. robot pose x offset with the position gain; GUI-lag candidates -0.2..0.2 s, a pose
+  after our newest one extrapolated, the candidate learnt from the 0.35 s residual sum while the robot
+  turns) holds the position (`USE_LAST`, `track_pgain` 2e-5, look-at kept) and 0.4 s after the camera
+  stops, the camera where the user left it (follow-law motion before the hold took effect taken out)
+  relative to the robot (heading averaged over a trot period + low-passed roll/pitch frame, 1-12 m)
+  becomes the view; less than 0.15 m of unexplained motion -> previous view back.  A chosen view (mouse or
+  `c`) is sent as view + trail: the follow law trails a robot walking at v by v / k (k = fps x
+  -ln(1 - gain), least squares over followed camera samples; 0.4 m/s at 30 fps: 0.67 m), so the offset
+  carries the trail of the robot's horizontal velocity (last 0.6 s) and is re-sent when it changes by
+  0.15 m (at most every 0.5 s, gz CLI 2 s; not while the robot is tilted / down): the camera stays at the
+  view walking and standing.  The default view is sent without trail (it drops back while walking, as
+  before); (2) fall guard: while |roll| or |pitch| > 30 deg or
+  the robot reports a fall the camera is held (`track_pgain` 2e-5, offset levelled with Rx(roll)^T Ry(pitch)^T)
+  and released 1 s after the robot is upright with `recovery_state` NORMAL, with the user's view (only camera
+  motion the hold cannot explain counts as the user's - the hold still creeps towards a robot that slides
+  / turns while recovering - and only with `follow_mouse`); (3) keys in the Gazebo window: `c` = gz TRACK (camera stays,
+  looks at the robot) / `c` again = FOLLOW from the camera pose of that moment, `z` = default view; (4)
+  Esc / right-click Free Look / Track in the GUI (seen on `/gui/currently_tracked`) -> nothing is sent until
+  `c`, `z` or right-click Follow; every other update is `USE_LAST`, which cannot switch a stopped camera
+  back on; (5) walls: the default view only is pulled 0.3 m in front of the building walls of
+  `world_layout.yaml` (corridor, hall, partition; 2-D segments).  Transport: gz-transport python bindings
+  (15/14/13) when installed, else `gz topic -p` + the bridged `/gui/camera/pose` + a `gz topic -e` poll of
+  `/gui/currently_tracked` (every 2.5 s in TRIPOD / PASSIVE, 10 s while following: each one starts the gz CLI); options `--no-mouse`, `--no-walls`, `--no-fall-guard`, `--once`; always exits 0). mission_manager plans with the terrain cost layer
   (section 2) and avoids novel obstacles (below: steps (a)–(d), patrol legs validated against detected obstacles).
   mission_manager robustness: every callback is wrapped by `plant_simulation.node_utils.guarded` (exception logged
   with traceback on the 1st and every 50th failure, the node keeps spinning); 3 consecutive `MissionLogic.step`
@@ -466,7 +493,10 @@ def max_height_along(emap, p0_xy, p1_xy) -> float   # swing apex helper (NaN-saf
   `simulation/launch/bringup.launch.py` (everything; args `gui`, `rviz`, `thermal_source`,
   `mission_autostart`, `dashboard_port`, `demo` (false: true = mission_autostart + follow camera +
   HUD, `scripts/run_demo.sh`), `hud` (true), `follow_camera` ('' = demo, only with gui),
-  `follow_offset` (-2.5,0.0,1.6), `low_memory` (false: true = inspection camera 640×480 @ 5 Hz, thermal 2 Hz,
+  `follow_offset` (-2.5,0.0,1.6), `follow_mouse` (true: keep a view set with the mouse; false = the GUI pulls
+  the camera back, also after a fall; c / z and the fall hold stay), `follow_walls` (true: default view kept
+  in front of the building walls),
+  `low_memory` (false: true = inspection camera 640×480 @ 5 Hz, thermal 2 Hz,
   depth stays 10 Hz, shadows off via a world copy, `gui_lean.config`, no RViz, HUD 3 Hz, `MALLOC_ARENA_MAX=2`,
   one BLAS thread; scripts: `--low-memory`), single overrides `inspection_rate` `inspection_width`
   `inspection_height` `depth_rate` `thermal_rate` `shadows` `gui_config` `hud_rate` ('' = profile value),
@@ -567,6 +597,8 @@ the memory / input keys (`OBSTACLE_MEMORY_KEYS`) + `obstacle_rebuild_period`; va
  p patrol   g gas seek   h return home   t start full mission   o pause/resume
  b   : battery test -> 19 %          n : battery 100 %
  ESC / Ctrl-C : quit
+ Gazebo window only (plant_simulation follow_camera, not teleop): c follow camera stays here /
+   follows again from the current view, z follow camera default view
 ```
 
 ## 8. Evaluation outputs (for docs/REPORT.md)

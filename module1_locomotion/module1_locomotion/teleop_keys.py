@@ -80,6 +80,7 @@ HELP_TEXT = """\
 |  (same keys work with focus on the Gazebo window via KeyPublisher)     |
 |  (in the Gazebo window space may ALSO pause / resume the simulation)   |
 |  (an E-STOP released on the dashboard also clears the teleop E-STOP)   |
+|  Gazebo window only: c camera stays / follows again, z camera default  |
 +------------------------------------------------------------------------+"""
 
 ESTOP_LOCAL_TRUST = 0.5   # [s] after a SPACE the teleop's own E-STOP flag decides the next SPACE (the

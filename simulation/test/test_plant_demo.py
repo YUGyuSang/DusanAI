@@ -240,10 +240,11 @@ def test_follow_camera_messages():
     assert fc.parse_offset("-2.5,0,1.6") == (-2.5, 0.0, 1.6) == fc.parse_offset(" -2.5  0 1.6 ")
     with pytest.raises(ValueError):
         fc.parse_offset("1,2")
-    msg = fc.track_message("spot", (-2.5, 0.0, 1.6), 0.02)
+    msg = fc.track_message("spot", (-2.5, 0.0, 1.6), 0.05, 0.02)
+    # follow_pgain = look-at gain, track_pgain = position gain (gz-gui CameraTracking hands them over crossed)
     assert msg == ('track_mode: FOLLOW, follow_target: {name: "spot"}, follow_offset: {x: -2.5, y: 0, z: 1.6}, '
-                   'follow_pgain: 0.02')
-    cmd = fc.track_command("gz", "spot", (-2.5, 0.0, 1.6), 0.02)
+                   'follow_pgain: 0.05, track_pgain: 0.02')
+    cmd = fc.track_command("gz", fc.follow_request("spot", (-2.5, 0.0, 1.6), 0.05, 0.02))
     assert cmd[:7] == ["gz", "topic", "-t", "/gui/track", "-m", "gz.msgs.CameraTrack", "-p"] and cmd[7] == msg
     follow, offset = fc.follow_service_commands("gz", "spot", (-2.5, 0.0, 1.6))
     assert follow[follow.index("-s") + 1] == "/gui/follow" and follow[-1] == 'data: "spot"'
@@ -350,12 +351,13 @@ def test_follow_camera_main_never_fails(monkeypatch, capsys):
 
     class Rec(fc.FollowCamera):
         def main(self):
-            seen.update(target=self.target, world=self.world, offset=self.offset, pgain=self.pgain)
+            seen.update(target=self.target, world=self.world, offset=self.offset, pos_gain=self.pos_gain,
+                        look_gain=self.look_gain)
             return 0
     monkeypatch.setattr(fc, "FollowCamera", Rec)
-    assert fc.main(["--gz", "gz", "--target", "robo", "--world", "w", "--offset=-3,0.5,2", "--pgain", "0.05",
-                    "--ros-args", "-r", "__node:=x"]) == 0
-    assert seen == {"target": "robo", "world": "w", "offset": (-3.0, 0.5, 2.0), "pgain": 0.05}
+    assert fc.main(["--gz", "gz", "--target", "robo", "--world", "w", "--offset=-3,0.5,2", "--pos-gain", "0.05",
+                    "--look-gain", "0.1", "--ros-args", "-r", "__node:=x"]) == 0
+    assert seen == {"target": "robo", "world": "w", "offset": (-3.0, 0.5, 2.0), "pos_gain": 0.05, "look_gain": 0.1}
 
 
 # ============================================================================
@@ -395,6 +397,9 @@ def test_bringup_demo_mode(tmp_path):
     assert args[args.index("--target") + 1] == lay["robot_name"]
     assert args[args.index("--world") + 1] == lay["world_name"]
     assert "--offset=-2.5,0.0,1.6" in args
+    assert args[args.index("--layout") + 1].endswith(os.path.join("config", "world_layout.yaml"))
+    assert "--no-mouse" not in args and "--no-walls" not in args          # mouse view + walls on by default
+    assert cfg["follow_mouse"] == "true" and cfg["follow_walls"] == "true"
     logs = [a.kwargs.get("msg", "") for a in actions if isinstance(a, stubs["__classes__"]["LogInfo"])]
     assert any("DEMO" in m for m in logs)
     # demo without a GUI: nothing to follow with
@@ -412,6 +417,11 @@ def test_bringup_follow_and_hud_switches(tmp_path):
     assert tl.param_dicts(n["mission_manager"])[-1]["autostart"] is False       # follow alone is not a demo
     actions, _ = tl.run_setup("bringup.launch.py", stubs, {"demo": "true", "follow_camera": "false"})
     assert "follow_camera" not in tl.nodes(actions, stubs["__classes__"])
+    # fall back to the old fixed follow camera / no wall handling
+    actions, _ = tl.run_setup("bringup.launch.py", stubs, {"demo": "true", "follow_mouse": "false",
+                                                           "follow_walls": "false", "layout_file": "/x/lay.yaml"})
+    fa = tl.nodes(actions, stubs["__classes__"])["follow_camera"].arguments
+    assert "--no-mouse" in fa and "--no-walls" in fa and fa[fa.index("--layout") + 1] == "/x/lay.yaml"
 
 
 def test_bringup_layout_names_fallback(tmp_path):
@@ -440,7 +450,8 @@ def test_gui_config_follow_target_and_hud_panel():
     assert ct[0].findtext("follow_target") == lay["robot_name"]
     off = tuple(float(v) for v in ct[0].findtext("follow_offset").split())
     assert off == pytest.approx(fc.FOLLOW_DEFAULTS["offset"])
-    assert float(ct[0].findtext("follow_pgain")) == pytest.approx(fc.FOLLOW_DEFAULTS["pgain"])
+    # the plugin's follow_pgain is the look-at gain (CameraTracking passes it to the camera's track gain)
+    assert float(ct[0].findtext("follow_pgain")) == pytest.approx(fc.FOLLOW_DEFAULTS["look_gain"])
     # bringup's follow_offset default is the same offset
     m = tl.load_launch_module("bringup.launch.py", tl._stubs(None))
     decl = {a.name: a.default for a in m.generate_launch_description().entities

@@ -18,7 +18,10 @@ Starts
   * plant_simulation demo_hud (hud:=true, default): robot camera + gas ppm / battery / mission overlay on
     /demo/hud (bgr8) and /demo/hud_rgb (rgb8, bridged to the Gazebo GUI panel "Robot HUD")
   * plant_simulation follow_camera (follow_camera:=true, default = demo, only with gui:=true):
-    the Gazebo GUI camera follows the robot from behind / above (gz topic /gui/track)
+    the Gazebo GUI camera follows the robot from behind / above (gz topic /gui/track); a view set
+    with the mouse in the 3D view is kept (follow_mouse), keys c / z in the Gazebo window switch
+    following off / on and reset the view, the default view keeps in front of the building walls
+    (follow_walls)
 
 Demo mode (demo:=true, scripts/run_demo.sh) = the reference video: mission_autostart (corridor ->
 factory -> gauges -> gas leak search -> return to the dock), follow camera and HUD on.
@@ -46,6 +49,7 @@ Arguments (defaults)
   layout_file ('')  map_yaml ('')  module_delay (6.0)  metrics (true)
   teleop_terminal (none: none|xterm|gnome-terminal|konsole|gz)  headless_rendering (false)
   demo (false)  hud (true)  follow_camera ('' = demo)  follow_offset (-2.5,0.0,1.6)
+  follow_mouse (true)  follow_walls (true)
   low_memory (false)  respawn (true)  inspection_rate inspection_width inspection_height depth_rate
   thermal_rate shadows gui_config hud_rate ('' = profile default)
 """
@@ -222,8 +226,14 @@ def _launch_setup(context, *args, **kwargs):
     if follow:
         world_name, robot_name = _layout_names(layout_file or os.path.join(share, "config", "world_layout.yaml"))
         offset = ",".join(lc("follow_offset").replace(",", " ").split()) or "-2.5,0.0,1.6"
+        fargs = ["--target", robot_name, "--world", world_name, f"--offset={offset}",
+                 "--layout", layout_file or os.path.join(share, "config", "world_layout.yaml")]
+        if not _truthy(lc("follow_mouse") or "true"):
+            fargs.append("--no-mouse")          # the old fixed follow: the GUI pulls a moved camera back
+        if not _truthy(lc("follow_walls") or "true"):
+            fargs.append("--no-walls")
         actions.append(Node(package=PKG, executable="follow_camera", name="follow_camera", output="screen",
-                            arguments=["--target", robot_name, "--world", world_name, f"--offset={offset}"]))
+                            arguments=fargs))
     if rviz and not low:
         rviz_cfg = os.path.join(share, "rviz", "plant.rviz")
         actions.append(Node(package="rviz2", executable="rviz2", name="rviz2", output="screen",
@@ -280,5 +290,11 @@ def generate_launch_description():
                               description="Gazebo GUI camera follows the robot ('' = same as demo)"),
         DeclareLaunchArgument("follow_offset", default_value="-2.5,0.0,1.6",
                               description="follow camera offset x,y,z in the robot frame, m (behind / above)"),
+        DeclareLaunchArgument("follow_mouse", default_value="true",
+                              description="keep a view set with the mouse in the 3D view (false = the GUI "
+                                          "pulls the camera back to follow_offset, also after a fall; keys "
+                                          "c / z and the fall hold stay)"),
+        DeclareLaunchArgument("follow_walls", default_value="true",
+                              description="pull the default follow view in front of the building walls"),
     ]
     return LaunchDescription(args + [OpaqueFunction(function=_launch_setup)])

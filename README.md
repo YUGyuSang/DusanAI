@@ -115,6 +115,9 @@ RAM 8 GB 노트북에서는 `--low-memory`를 붙입니다(`bash scripts/run_dem
 | `+` `-` | 속도 배율 ±0.1 (처음 0.5) | `m` | 수동 오버라이드 |
 | `1` / `2` | 서기 / 앉기 | `v` | 보행 모드 stable ↔ MPC |
 | `3` / `4` / `5` | trot(기본) / crawl / auto | `r` / `0` | 자가 복구 / 자세 리셋 |
+| `c` (Gazebo 창) | 추적 카메라 고정 ↔ 지금 시점에서 다시 따라가기 | `z` (Gazebo 창) | 추적 카메라 기본 시점 |
+
+데모 중 Gazebo 3D 화면에서 마우스(휠, 가운데 버튼 또는 `Shift`+왼쪽 드래그)로 바꾼 시점은 손을 떼면 새 추적 시점으로 유지됩니다([USAGE: 추적 카메라 시점 바꾸기](docs/USAGE.md#follow-camera)).
 
 자주 쓰는 옵션: `rviz:=true`(RViz), `thermal_source:=synthetic`(합성 열화상), `gui:=false headless_rendering:=true`(화면 없이). 예: `bash scripts/run_bringup.sh rviz:=true`
 

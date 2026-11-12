@@ -98,6 +98,16 @@
   gz_type_name: "gz.msgs.Int32"
   direction: GZ_TO_ROS
 
+# ---------------------------------------------------------------- Gazebo GUI camera pose (CameraTracking)
+# The GUI publishes its 3D-view camera world pose at 50 Hz while subscribed.  plant_simulation
+# follow_camera compares it with the robot pose to keep a view the user sets with the mouse
+# (it reads the gz topic directly when the gz-transport python bindings are installed).
+- ros_topic_name: "/gui/camera/pose"
+  gz_topic_name: "/gui/camera/pose"
+  ros_type_name: "geometry_msgs/msg/Pose"
+  gz_type_name: "gz.msgs.Pose"
+  direction: GZ_TO_ROS
+
 # ---------------------------------------------------------------- demo HUD -> Gazebo GUI panel "Robot HUD"
 # plant_simulation demo_hud publishes the HUD as bgr8 on /demo/hud (ROS tools)
 # and an rgb8 copy on /demo/hud_rgb: gz-gui's ImageDisplay cannot decode BGR.
