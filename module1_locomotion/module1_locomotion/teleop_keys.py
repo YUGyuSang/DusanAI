@@ -78,6 +78,7 @@ HELP_TEXT = """\
 |  b battery test -> 19 %          n battery 100 %                       |
 |  ?  help                         ESC / Ctrl-C : quit                   |
 |  (same keys work with focus on the Gazebo window via KeyPublisher)     |
+|  (in the Gazebo window space ALSO pauses / resumes the simulation)     |
 +------------------------------------------------------------------------+"""
 
 

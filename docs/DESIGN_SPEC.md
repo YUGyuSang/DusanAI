@@ -244,7 +244,7 @@ All JSON payloads are `std_msgs/String` produced with `dusan_common.ros_helpers.
 | /nav/plan | nav_msgs/Path | mission_manager & return_to_home | rth (comm prediction), dashboard | path currently being followed |
 | /cmd_vel_mux/active | String | cmd_vel_mux | dashboard | name of the selected source |
 | /mission/command | String | teleop, dashboard | mission_manager, return_to_home | `start` `patrol` `seek` `rth` `pause` `resume` `abort` `dock` |
-| /mission/state | String JSON | mission_manager | dashboard, metrics, demo_hud | `{state: IDLE|PATROL|INSPECTING|SEEK|RTH|DOCKED|MANUAL|PAUSED|DONE, target, completed:[ids], pending:[ids], gas_alarm, message}` + `results` (`{<gauge id>: confirmed reading {value, unit, status, confidence, t, n_readings} or {status: missed, reason}}`), `cmd_seq` (number of `/mission/command` messages received), `recent_commands` (last 5 `{seq, cmd, accepted, message}`: keyboard_teleop acknowledgement) + `obstacle` object (see below) |
+| /mission/state | String JSON | mission_manager | dashboard, metrics, demo_hud | `{state: IDLE|PATROL|INSPECTING|SEEK|RTH|DOCKED|MANUAL|PAUSED|DONE, target, completed:[ids], pending:[ids], gas_alarm, message}` + `results` (`{<gauge id>: confirmed reading {value, unit, status, confidence, t, n_readings} or {status: missed, reason}}`), `cmd_seq` (number of `/mission/command` messages received), `recent_commands` (last 5 `{seq, cmd, accepted, message}`: keyboard_teleop acknowledgement) + `obstacle` object (see below) + `hold_reason` (why the mission does not drive the robot, '' = it does: e-stop, robot fallen / getting up, no /locomotion/state, waiting for /odom, obstacle ahead, paused, manual override) |
 | /twin/markers | MarkerArray | monitor_dashboard | rviz | gauge status labels, hot spots, leak estimate |
 | /metrics/session | String JSON (latched) | metrics_logger | dashboard, demo_hud | `{session_dir, session, report, report_json, report_final, report_written, gauges:{<id>:{image, image_full, stamp, value, unit, status, wall}}}`: metrics session directory and its files relative to it (`gauges/<id>_<t>.jpg`, `inspection_report.html`); republished after every photo / report write. The dashboard serves them same-origin under `/session/<file>` (only for a `session_dir` inside its `metrics_root`, default `~/dusan_metrics`) and adds `image_url` / `image_full_url` per gauge and a `report` link (+ `dir`: the session directory with the home directory as `~`) to its snapshot |
 | /demo/hud | Image (bgr8) | demo_hud | rqt_image_view, ros2 bag | robot camera (`/inspection_camera/image`) + gas ppm bar (10 / 25 ppm colours, blinking alarm frame), battery, current mission step in words (target gauge, step n/8, RTH reason), locomotion state, sim time; banners for a few seconds after a gauge result (value, status, inspection photo of `/inspection/gauge_snapshot`), a skipped gauge, the gas source found, an RTH start; robot-down panel from `/locomotion/state` `recovery_state` (4 steps: fall detected, self-righting, standing up, recovered); result panel at the dock (gauges, mean error vs. layout truth, gas, falls / self-recoveries, duration, `/metrics/session` directory); 640×480 at `rate` 5 Hz |
@@ -259,7 +259,8 @@ re-sent for 1.5 s counts as false (mux `flag_timeout`, mission_manager
 
 **`obstacle` object** (novel-obstacle status, `ObstacleAvoider.status()`, in `/mission/state` and `/safety/status`):
 `{enabled, source: elevation|traversability, frames, rejected, confirmed (cells), free_travel (m, null when nothing
-ahead), speed_scale, detour: left|right|null, detours, replans, holding, last (latest decision text), errors}`.
+ahead), speed_scale, detour: left|right|null, detours, replans, holding, last (latest decision text), errors,
+suspended (robot down: frames not fused), fall_forgotten (cells forgotten after falls)}`.
 `detours` / `replans` are per goal; `replans` counts obstacle-triggered global re-plans only (the mission's stuck
 re-plans stay in its own counters). No new topic exists for novel obstacles: the detour is visible on `/nav/plan`.
 
@@ -441,7 +442,13 @@ def max_height_along(emap, p0_xy, p1_xy) -> float   # swing apex helper (NaN-saf
   `gazebo_mission_keys` (true): `/keyboard/keypress` mission keys are taken directly while no `/teleop/active`
   heartbeat arrived for 2 s (debounced 0.6 s). module3 nodes wrap every callback the same way
   (`module3_gas_safety.node_common.guarded`; NaN / non-object inputs ignored). A FALLEN robot during a mission gets `recover` every
-  `recover_after` (20 s); after STAND the mission re-plans from the current pose.
+  `recover_after` (20 s; not from the last FALLEN of a /locomotion/state stream that stopped > `loco_state_timeout` 3 s);
+  after STAND the mission re-plans from the current pose. A fall during INSPECTING holds the dwell and repeats the
+  inspection (re-approach, align, dwell); a gas alarm while down starts SEEK once the robot stands. The obstacle
+  memories (mission, return_to_home, source_seeker) fuse no frame while the robot is down (mode FALLEN / RECOVERING or
+  recovery_state not NORMAL) and forget the cells first seen from 2 s before the fall when it stands up
+  (`ObstacleMemory.set_upright`). A robot standing up inside a pipe-crossing zone turned away from the crossing turns in
+  place first (`crossing_realign_tol`). `/mission/state` `hold_reason`: why the mission does not drive ('' = it does).
   mission_manager logging: mission events `(level, text)` are logged through `_log_event` (one rclpy call
   site per severity: `warn`/`alarm` → warning, `error` → error, else info) AFTER the tick's commands
   (`/locomotion/command`, `/inspection/target`, `/gas/seek/enable`, `/nav/plan`, `/cmd_vel/patrol`,

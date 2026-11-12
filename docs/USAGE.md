@@ -222,7 +222,7 @@ bash scripts/run_bringup.sh teleop_terminal:=gz      # ③ 터미널 없이 Gaze
 | `a` / `d` (← / →) | 좌회전 / 우회전 | `/cmd_vel/teleop` |
 | `q` / `e` | 왼쪽 / 오른쪽 게걸음 | `/cmd_vel/teleop` |
 | `x` | 정지 (속도 0) | `/cmd_vel/teleop` |
-| `space` | 비상정지 토글 (`estop` ↔ `release`) | `/locomotion/command` |
+| `space` | 비상정지 토글 (`estop` ↔ `release`). Gazebo 창에서는 Gazebo 자체 단축키(시뮬레이션 일시정지/재생)이기도 하므로 비상정지는 텔레옵 터미널이나 대시보드에서 하세요 | `/locomotion/command` |
 | `+` / `-` (`=` / `_`) | 속도 배율 ±0.1 (0.1–1.0, 처음 0.5) | — |
 | `m` | 수동 오버라이드 토글. 켜 두면 텔레옵이 최우선이고, 키를 놓으면 그 자리에 섬 | `/teleop/active` |
 | `1` / `2` | 서기 `stand` / 앉기 `sit` | `/locomotion/command` |
@@ -278,6 +278,9 @@ bash scripts/run_bringup.sh teleop_terminal:=gz      # ③ 터미널 없이 Gaze
 - **계기판 판독 결과** 탭: 계기판 8개 카드(판독값, 상태, 범위 막대, 실제값·오차 %FS, 점검 사진 썸네일), 계기 카메라·열화상 카메라 영상 · **임무 보고서** 탭: 결과 요약, 조치가 필요한 항목, 계기판 요약 표
 - 카드의 판독값은 임무가 그 계기 점검을 마칠 때 확정한 값입니다. 썸네일을 누르면 그때의 카메라 전체 화면 사진이, 탭 오른쪽 **보고서 열기**를 누르면 점검 보고서(아래 10.3)가 새 탭에 열립니다. 둘 다 `metrics_logger`가 실행 중일 때만 나옵니다(bringup 기본값)
 - **운영 제어**, **로봇 · 전원**(배터리, 보행 상태, 속도, 넘어짐/자가 복구, 통신, 자동 복귀), **경보**(가스 농도·추이·누출원 추적, 열화상 지점), **최근 이벤트**
+- 임무가 로봇을 움직이지 않고 있으면 **임무** 카드의 단계 옆에 `정지 사유`가 나옵니다(`/mission/state`의 `hold_reason`).
+  예: `순찰 · 정지 대기 · 정지 사유: 넘어짐 (충격 완화)`, `비상정지 중 - '비상정지 해제' 필요`, `앞에 장애물 (0.1 m)`,
+  `/locomotion/state 12 s째 없음 (보행 제어기 중단?)`. 데모 HUD 아래 줄에도 `· 정지: 넘어짐`처럼 붙습니다. 자세한 대처는 [Q8-1](#faq-q8-1).
 - 넘어지면 **로봇 · 전원** 제목 옆에 자가 복구 단계 배지(`◆ 넘어짐 감지 · 1/4` → `▲ 자세 뒤집기 · 2/4` → `▲ 일어서기 · 3/4` → `✓ 복구 완료 · 4/4`)가 나옵니다.
   보조 리셋(위치 재설정)으로 일어난 경우는 `▲ 보조 리셋으로 복귀`로 따로 표시하고 횟수를 "넘어짐 / 자가 복구" 옆에 붙입니다.
 - 전체 임무를 마치고 충전소에 도착하면 임무 상태 띠 아래에 **임무 결과** 줄이 나옵니다. 계기 판독 수, 평균 오차, 이상 항목,
@@ -592,6 +595,8 @@ python tools/generate_world.py                        # world_layout.yaml을 고
 - physics_check는 `--out <파일>.json --no-figures`, gazebo_check·fall_check는 `--no-save`를 붙이면 저장소의 결과 파일을 덮어쓰지 않습니다. obstacle_check·mission_check는 `--out`에만 씁니다
   (mission_check는 `--save`일 때만 `docs/results/mission_check.json`).
   mission_check의 구간 실행: `--leg K --legs N`(순찰 계획의 K번째 구간부터 N개), `--spawn=x,y,yaw --goal=x,y`(임의 구간).
+  `--push nav:2.5 --push after_stand:1.0`을 붙이면 걷는 중에 로봇을 일부러 넘어뜨리고, 일어선 1 s 뒤 한 번 더 넘어뜨립니다(연속 두 번).
+  이때 구간 판정은 모든 목표 도착 + 넘어짐마다 자가 복구 + 순간이동 0 + 멈춤 없음이고, 결과의 `resumed`에 일어선 뒤 다시 0.5 m 움직이기까지 걸린 시간이 나옵니다.
 - fall_check는 케이스·시드마다 순간이동 없이 일어났는지, 복구 시간, 시도 횟수, 거친 단계를 출력합니다(케이스 목록은 `--help`).
   mission_check는 실행마다 완료 여부(DOCKED + 게이지 8/8 + 누출원 FOUND + 순간이동 0), 넘어진 위치와 구역, 멈춤을 출력하며
   전체 미션 한 번에 벽시계 약 20분이 걸립니다(동시에 최대 `--jobs`개). 저장한 결과는 `python tools/fall_check.py --summary-only`,
@@ -691,6 +696,7 @@ Gazebo 창 오른쪽 아래 World stats나 `ros2 topic hz /clock`(≈ 200 × RTF
   처음부터 다시 시도하며, 일어설 때까지 반복합니다. 진행 단계는 HUD 가운데 패널과 대시보드 **로봇 · 전원**의 배지에 나옵니다.
   순간이동(`gz` set_pose) 보조 리셋은 기본으로 꺼져 있고 `locomotion.yaml`의 `assisted_reset: true`로 켤 수 있습니다(3회 실패 뒤 현재 위치에 똑바로 놓음).
   미션 중 20 s(`recover_after`, `mission.yaml`) 넘게 넘어져 있으면 미션 관리자가 `recover`를 보내고, 일어서면 경로를 다시 계획해 이어 갑니다.
+  일어선 뒤에도 서 있기만 하면 [Q8-1](#faq-q8-1)을 보세요.
 - **수동 복구**: 대시보드 **복구**, 텔레옵 `r`, 또는 `ros2 topic pub --once /locomotion/command std_msgs/msg/String "{data: recover}"`.
   자세를 강제로 리셋하려면 텔레옵 `0`(`reset_pose`).
 - **자주 넘어진다면**
@@ -699,6 +705,44 @@ Gazebo 창 오른쪽 아래 World stats나 `ros2 topic hz /clock`(≈ 200 × RTF
   3. 배관(C-OBS1)과 잔해(C-OBS3)는 [운전 요령](#teleop)대로 돌아가세요. 배관을 꼭 넘어야 하면 수직으로 다가가 `w`만 누르고, 네 다리가 다 넘을 때까지 방향키를 쓰지 마세요.
      곧게 넘기만 할 때는 `4`(crawl)에 `locomotion.yaml`의 `stable_walk_period: 1.8`, `stable_walk_max_vx: 0.15`가 더 잘 넘습니다. 넘은 뒤에는 바로 `3`으로 돌아오세요.
   4. 튜닝 파라미터는 `module1_locomotion/config/locomotion.yaml`과 [module1 README §5 튜닝 가이드](../module1_locomotion/README.md#5-튜닝-가이드)에 있습니다.
+
+<a id="faq-q8-1"></a>
+### Q8-1. 넘어졌다 일어선 뒤 순찰을 이어 가지 않는다 (대시보드는 '순찰'인데 로봇이 서 있음)
+
+넘어진 뒤 미션은 이렇게 움직입니다. 연속으로 두 번, 세 번 넘어져도 같습니다.
+
+- 넘어져 있는 동안(FALLEN, RECOVERING)은 `순찰 · 정지 대기`로 기다리고, 다시 STAND가 되면 그 자리에서 경로를 다시 계획해 0.1–0.2 s 안에 출발합니다.
+- 점검(정지 판독) 중에 넘어지면 그 계기판을 건너뛰지 않습니다. 일어선 뒤 다시 다가가 방향을 맞추고 판독을 처음부터 다시 합니다.
+  넘어져 있는 동안 가스 경보가 울리면 일어선 뒤에 누출원 추적을 시작합니다.
+- 넘어지는 동안 깊이 카메라가 본 것(바닥을 비스듬히 본 면, 자기 다리)은 장애물로 쓰지 않습니다. 넘어진 동안은 장애물 지도를 갱신하지 않고,
+  넘어지기 직전 2 s부터 새로 생긴 장애물 칸은 일어설 때 지웁니다(일어선 뒤 1 s 동안도 갱신하지 않음). 전에는 이 가짜 장애물이 경로를 막아
+  로봇이 `순찰 · 이동` 상태로 최대 60 s(`obstacle_forget_time`) 서 있다가 계기판을 건너뛰었습니다.
+- 배관(C-OBS5 등)을 넘다가 넘어져 배관 옆에서 다른 방향을 보고 일어서면, 먼저 제자리에서 배관을 넘는 방향으로 돈 뒤 넘습니다
+  (`crossing_realign_tol`, 기본 0.6 rad. 일어선 직후 첫 건너기는 0.2 rad). 전에는 배관을 따라 직진해 다시 넘어지거나 벽에 막혀 제자리걸음을 했습니다.
+
+그래도 서 있으면 대시보드 **임무** 카드의 `정지 사유`(또는 HUD 아래 줄의 `· 정지:`)를 봅니다.
+
+| 정지 사유 | 뜻 | 할 일 |
+|---|---|---|
+| `넘어짐 (…)` / `일어서는 중 (…)` | 자가 복구 중 | 기다립니다. 20 s 넘게 넘어져 있으면 미션이 `recover`를 보냅니다 |
+| `비상정지 중 - '비상정지 해제' 필요` | E-STOP이 걸려 있음(대시보드 **비상정지**, 텔레옵 `space`). 이때는 **복구**·**서기**도 무시됩니다 | 대시보드 **비상정지 해제** 또는 텔레옵 터미널 `space` |
+| `/locomotion/state N s째 없음 (보행 제어기 중단?)` | `locomotion_controller`가 죽었거나 멈춤(자동 재시작 안 됨). 로그에 `process has died`나 `controller step failed` | bringup을 다시 띄웁니다. 이 상태의 FALLEN으로는 `recover`를 보내지 않습니다 |
+| `/odom 대기 중` | 위치가 1 s 넘게 안 들어옴 | `ros2 topic hz /odom` |
+| `앞에 장애물 (x m)` | 장애물 회피가 멈춰 세움 | [Q11](#faq-obstacle). 재계획·후진 뒤에도 막히면 그 계기판을 건너뜁니다 |
+| `일시정지` / `수동 조작 (텔레옵)` | `o` / `m` | 같은 키를 다시 누릅니다 |
+| (사유 없음, 시뮬레이션 시간도 멈춤) | Gazebo가 일시정지됨. Gazebo 창에 포커스가 있을 때 `space`를 누르면 일시정지될 수 있습니다 | Gazebo 창 왼쪽 아래 ▶ 또는 `space` |
+
+멈춘 상태 그대로 다른 터미널에서 아래를 실행하면 원인을 가를 수 있습니다.
+
+```bash
+ros2 topic hz /clock                                    # 0이면 Gazebo 일시정지
+ros2 topic hz /locomotion/state                         # 약 20 Hz가 정상, 0이면 보행 제어기 중단
+ros2 node list | grep -E "locomotion_controller|mission_manager|cmd_vel_mux"
+ros2 topic echo /locomotion/state --field data --once   # mode, recovery_state, recovery_attempts
+ros2 topic echo /mission/state --field data --once --qos-durability transient_local   # state, phase, hold_reason, message, obstacle
+ros2 topic echo /cmd_vel_mux/active --once --qos-durability transient_local   # teleop이면 수동 조작/비상정지 중인 텔레옵
+ros2 topic echo /cmd_vel/patrol --once; ros2 topic echo /cmd_vel --once
+```
 
 <a id="faq-q9"></a>
 ### Q9. 노드가 아무것도 안 한다 / 미션이 시작되지 않는다
