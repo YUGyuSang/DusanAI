@@ -489,4 +489,5 @@ class MissionStackOperator:
             c = S.select(t)
             self.trace.append((round(t, 2), round(gtp[0], 3), round(gtp[1], 3), round(float(gt[0][2]), 3),
                                round(gtp[2], 3), round(float(gt[1][0]), 3), round(float(gt[1][1]), 3), S.m.base,
-                               S.m.phase, S.mux_src, round(c[0], 3), round(c[1], 3), round(c[2], 3), mode, rec))
+                               S.m.phase, S.mux_src, round(c[0], 3), round(c[1], 3), round(c[2], 3), mode, rec,
+                               int(S.m.obstacles.memory.confirmed_count)))

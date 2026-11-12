@@ -51,6 +51,15 @@ robot walking, ``after_stand`` DELAY s after it stood up again (two in a row),
 ``inspect`` DELAY s into an inspection.  A segment run with pushes passes when
 every goal is reached, every fall was recovered without a teleport and the
 mission did not stand still (stall) - "does the patrol carry on after falls".
+
+``--phantom-legs`` adds what the Ubuntu depth camera sees while the body tips /
+lies / self-rights and this ray cast does not (its own shanks, smeared returns):
+a shank-high ring 0.44 .. 0.74 m around base_link (+-1.2 rad of the heading) in
+every depth frame while the robot is down or tilted > 25 deg.  ``standups`` in
+the result: per stand-up the mission's confirmed obstacle cells at -0.2 / +0.1 /
++1.5 / +3 / +10 s and the zero-command time while navigating in the 30 s after it - the phantoms
+must not come back from terrain_mapper's map (``--no-map-fall-guard``: the
+mapper without its fall guard, for the comparison).
 """
 from __future__ import annotations
 
@@ -450,6 +459,10 @@ def run_one(a) -> dict:
     cfg = HarnessConfig(terrain="plant", spawn=(sx, sy, sz, syaw), params=params, map_source=a.map,
                         perception_depth=True, seed=seed, out_dir=a.build_dir, verbose=False, lite_log=True)
     h = GzHarness(cfg)
+    if a.phantom_legs:
+        h.depth_extra = phantom_legs(L)
+    if a.no_map_fall_guard and h.mapper is not None:
+        h.mapper.fall_guard.enabled = False
     op = MissionStackOperator(S, t_start=T_START + SC.CMD_SHIFT * seed, start_cmd=start_cmd,
                               phase=(0.037 * seed) % 0.1)
     pusher = Pusher(a.push or [], seed) if a.push else None
@@ -525,6 +538,12 @@ def run_one(a) -> dict:
         "gauge_log": S.gauge_log, "seek_track": S.seek_log[::10], "frames": op.frames,
         "wait_timeouts": h.wait_timeouts, "pushes": pusher.log if pusher is not None else [],
         "resumed": resumed_after_falls(op.trace, rec_events),
+        "standups": standup_obstacles(op.trace),
+        "phantom_legs": bool(a.phantom_legs),
+        "map_fall_guard": (None if h.mapper is None else
+                           {"enabled": bool(h.mapper.fall_guard.enabled), "restores": h.mapper.fall_guard.restores,
+                            "restored_cells": h.mapper.fall_guard.restored_cells,
+                            "dropped_frames": h.mapper.fall_guard.dropped_frames}),
     }
     if a.spawn:
         arrived = [g for g in full_order if g in m.completed or
@@ -569,6 +588,60 @@ def resumed_after_falls(trace, rec_events, moved: float = 0.5, window: float = 3
                     math.hypot(r[1] - start[1], r[2] - start[2]) >= moved), None)
         out.append({"t": round(t0, 2), "resume_s": None if hit is None else round(float(hit[0]) - t0, 2),
                     "mission": f"{start[7]}/{start[8]}"})
+    return out
+
+
+PHANTOM_TILT = math.radians(25.0)   # [rad] body roll / pitch from which the camera sees phantoms
+
+
+def phantom_legs(layout, height: float = 0.30):
+    """``GzHarness.depth_extra`` for ``--phantom-legs``: camera-link points of a
+    ring ``height`` m above the floor, 0.44 .. 0.74 m around base_link, +-1.2 rad
+    of its heading, while the robot is down (robot_down) or tilted > 25 deg."""
+    from dusan_common.obstacle_layer import robot_down
+    from module1_locomotion.pointcloud_utils import world_to_camera_points
+    rr, aa = np.meshgrid(np.arange(0.44, 0.75, 0.02), np.linspace(-1.2, 1.2, 49))
+    rr, aa = rr.ravel(), aa.ravel()
+
+    def fn(t, h):
+        with h._lock:
+            odom = h._odom
+        if odom is None:
+            return None
+        x, y, _z = (float(v) for v in odom[1])
+        roll, pitch, yaw = (float(v) for v in odom[2])
+        down = robot_down(h.ctrl.mode, h.ctrl.recovery.state)
+        if not down and abs(roll) < PHANTOM_TILT and abs(pitch) < PHANTOM_TILT:
+            return None
+        pw = np.column_stack([x + rr * np.cos(yaw + aa), y + rr * np.sin(yaw + aa),
+                              np.full(rr.size, float(layout.floor_z(x, y)) + height)])
+        return world_to_camera_points(pw, (*odom[1], *odom[2]), "depth_camera")
+    return fn
+
+
+def standup_obstacles(trace, offsets=(-0.2, 0.1, 1.5, 3.0, 10.0), window: float = 30.0) -> list:
+    """Per stand-up in the 10 Hz mission trace (robot down -> up, robot_down of
+    columns 13 / 14): confirmed obstacle cells of the mission (column 15) at the
+    ``offsets`` and the seconds of zero command while the mission navigates (phase
+    navigate / backup / self) within ``window`` s - 'do the phantoms of the fall come
+    back and stop it'."""
+    from dusan_common.obstacle_layer import robot_down
+    rows = [r for r in trace if len(r) > 15]
+    out = []
+    for i in range(1, len(rows)):
+        if not (robot_down(rows[i - 1][13], rows[i - 1][14]) and not robot_down(rows[i][13], rows[i][14])):
+            continue
+        t_up = float(rows[i][0])
+
+        def at(dt):
+            r = min(rows, key=lambda q: abs(float(q[0]) - (t_up + dt)))
+            return int(r[15]) if abs(float(r[0]) - (t_up + dt)) <= 0.2 else None
+        seg = [r for r in rows[i:] if float(r[0]) <= t_up + window]
+        zero = sum(1 for r in seg if r[8] in ("navigate", "backup", "self")
+                   and max(abs(float(r[10])), abs(float(r[11])), abs(float(r[12]))) < 1e-6)
+        out.append({"t": round(t_up, 2), "confirmed": {f"{dt:+g}": at(dt) for dt in offsets},
+                    "max_after": max((int(r[15]) for r in seg if float(r[0]) >= t_up + 1.5), default=None),
+                    "zero_cmd_s": round(0.1 * zero, 1)})
     return out
 
 
@@ -621,6 +694,8 @@ def run_all(a) -> dict:
                    a.patrol_params, "--map", a.map, "--stop-down-s", str(a.stop_down_s), "--result", res_path,
                    "--leg", str(a.leg or 1), "--legs", str(a.legs or 0), "--progress"]
             cmd += [f"--push={p}" for p in (a.push or [])]
+            cmd += ["--phantom-legs"] if a.phantom_legs else []
+            cmd += ["--no-map-fall-guard"] if a.no_map_fall_guard else []
             if a.spawn:
                 cmd += [f"--spawn={a.spawn}"] + [f"--goal={g}" for g in (a.goal or [])]
             if a.save_npz:
@@ -646,6 +721,7 @@ def run_all(a) -> dict:
     rs = [runs[k] for k in sorted(runs, key=int)]
     return {"config": {"seeds": [int(s) for s in a.seeds], "leg": int(a.leg or 1), "legs": int(a.legs or 0),
                        "spawn": a.spawn or None, "goals": list(a.goal or []) or None, "push": a.push or None,
+                       "phantom_legs": bool(a.phantom_legs), "map_fall_guard": not a.no_map_fall_guard,
                        "params": json.loads(a.params or "{}"), "mission_params": json.loads(a.mission_params or "{}"),
                        "map": a.map, "duration": a.duration},
             "summary": summarize(rs), "runs": runs, "created": time.strftime("%Y-%m-%d %H:%M:%S")}
@@ -691,6 +767,10 @@ def main(argv=None) -> int:
     ap.add_argument("--goal", action="append", default=None, help="route segment goal x,y[,yaw] (repeatable)")
     ap.add_argument("--push", action="append", default=None,
                     help="knock the robot over: nav:DELAY | after_stand:DELAY | inspect:DELAY (repeatable, in order)")
+    ap.add_argument("--phantom-legs", action="store_true",
+                    help="depth frames of a tipped / lying robot see a shank-high ring around it (Ubuntu renders the legs)")
+    ap.add_argument("--no-map-fall-guard", action="store_true",
+                    help="terrain_mapper without its fall guard (comparison)")
     ap.add_argument("--params", default="{}", help="JSON locomotion controller parameter overrides")
     ap.add_argument("--mission-params", default="{}", help="JSON mission_manager parameter overrides")
     ap.add_argument("--rth-params", default="{}")
