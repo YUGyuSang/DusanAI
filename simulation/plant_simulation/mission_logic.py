@@ -144,6 +144,10 @@ MISSION_DEFAULTS = {
     "rth_ack_timeout": 8.0,        # s without rth_active after our own 'rth' -> self RTH
     "rth_release_grace": 2.0,      # s after rth_active drops before deciding docked/idle
     "teleop_active_timeout": 1.5,  # s without a /teleop/active message -> manual override released (0 = latched)
+    "mux_active_timeout": 2.0,     # s: /cmd_vel_mux/active (republished every 0.5 s) older than this is not
+                                   #   trusted; 'teleop' selected while the mission drives -> hold_reason, no
+                                   #   stuck counting (0 = ignore the mux)
+    "mux_blocked_warn": 3.0,       # s of 'teleop' on the mux while the mission drives before one warning
     "safety_timeout": 3.0,         # s, /safety/status older than this is not trusted (docked flag)
     "self_rth_fallback": True,
     "dock_tolerance": 0.35,
@@ -349,6 +353,10 @@ class MissionLogic:
         self._rth_fall_t = None
         self.teleop_active = False
         self._teleop_t = None          # time of the last /teleop/active true (heartbeat)
+        self.mux_source = None         # /cmd_vel_mux/active (teleop | rth | seek | patrol | none)
+        self.mux_t = None
+        self._mux_blocked_since = None  # mission driving while the mux selects teleop (zero stream ...)
+        self._mux_warned = False
         self.loco_mode = None
         self.loco_recovery = None      # /locomotion/state recovery_state (FAILED: module1 gave up)
         self.loco_t = None             # time of the last /locomotion/state
@@ -502,6 +510,41 @@ class MissionLogic:
             self._out.state_changed = True
             if not self.paused:
                 self._unfreeze(t)
+
+    def on_mux_active(self, source, t):
+        """/cmd_vel_mux/active: the source whose command reaches /cmd_vel.  A
+        fresh teleop command (driving keys, or the zero stream of a teleop
+        E-STOP) wins over /cmd_vel/patrol without the manual-override flag, so
+        the mission would drive into nothing: reported as hold_reason, the
+        stuck logic does not count it."""
+        self.mux_source = str(source or "").strip().lower() or None
+        self.mux_t = float(t)
+
+    def _mux_blocked(self, t):
+        """'teleop' while /cmd_vel_mux/active (fresh) says the teleop has the
+        robot, else None."""
+        timeout = float(self.p.get("mux_active_timeout", 0.0) or 0.0)
+        if timeout <= 0.0 or self.mux_t is None or t is None or self.mux_source != "teleop":
+            return None
+        age = float(t) - self.mux_t
+        return self.mux_source if -1e-6 <= age <= timeout else None
+
+    def _watch_mux(self, t):
+        """One warning when the mux keeps the teleop selected while the mission
+        drives (a teleop E-STOP left engaged, a held key)."""
+        driving = self._active() and self._loco_ready() and self.base in ("PATROL", "INSPECTING", "SEEK", "RTH")
+        if not (driving and self._mux_blocked(t)):
+            if self._mux_warned:
+                self._emit("info", "cmd_vel_mux no longer selects the teleop - the mission drives the robot again")
+            self._mux_blocked_since = None
+            self._mux_warned = False
+            return
+        if self._mux_blocked_since is None or t < self._mux_blocked_since:
+            self._mux_blocked_since = t
+        if not self._mux_warned and t - self._mux_blocked_since >= float(self.p.get("mux_blocked_warn", 3.0)):
+            self._mux_warned = True
+            self._emit("warn", "cmd_vel_mux keeps 'teleop' selected - the mission's commands do not reach the "
+                               "robot (teleop E-STOP still engaged? a held key?) - SPACE in the teleop terminal")
 
     def on_locomotion_state(self, d, t):
         if isinstance(d, dict) and d.get("mode"):
@@ -660,6 +703,7 @@ class MissionLogic:
         self._update_gas(t)
         self._check_rth(t)
         self._watch_loco_stream(t)
+        self._watch_mux(t)
         self._watch_fallen(t)
 
         if self._active():
@@ -750,6 +794,8 @@ class MissionLogic:
         why = self._loco_block()
         if why:
             return why
+        if self._mux_blocked(t):
+            return "teleop has priority on /cmd_vel (teleop E-STOP or a driving key) - SPACE in the teleop terminal"
         if self.phase in ("navigate", "self") and self.pp.active and self.obstacles.enabled \
                 and self.obstacles.scale <= 0.0:
             ft = self.obstacles.free_travel
@@ -1549,7 +1595,8 @@ class MissionLogic:
             vx, vy, wz = self.crossing.govern(x, y, yaw, (vx, vy, wz), self.pp.remaining_path())
         self._out.cmd_vel = (vx, vy, wz)
         # progress / stuck detection
-        if self._prog_ref is None:
+        if self._prog_ref is None or self._mux_blocked(t):
+            # (the teleop has the robot: standing still is not the route's fault - no stuck count)
             self._reset_progress()
         moved = math.hypot(x - self._prog_ref[0], y - self._prog_ref[1])
         turned = abs(wrap_angle(yaw - self._prog_ref[2]))

@@ -795,12 +795,16 @@ HOLD_REASONS = ["e-stop engaged - 'release' needed (SPACE in the teleop terminal
                 "sitting - 'stand' sent", "locomotion SIT",
                 "no /locomotion/state for 12 s (locomotion_controller down?)",
                 "waiting for /odom", "waiting for the robot to stand (SIT)", "obstacle ahead (0.1 m)", "obstacle ahead",
-                "paused", "manual override (teleop)"]
+                "paused", "manual override (teleop)",
+                "teleop has priority on /cmd_vel (teleop E-STOP or a driving key) - SPACE in the teleop terminal"]
 FALL_EVENTS = ["no /locomotion/state for 3 s - is locomotion_controller running? (last mode FALLEN)",
                "/locomotion/state received again",
                "stood up again - 12 obstacle cells seen while falling forgotten",
                "locomotion ready again (STAND) - re-planning the way home",
-               "locomotion not ready (ESTOP) - holding"]
+               "locomotion not ready (ESTOP) - holding",
+               "cmd_vel_mux keeps 'teleop' selected - the mission's commands do not reach the robot (teleop E-STOP "
+               "still engaged? a held key?) - SPACE in the teleop terminal",
+               "cmd_vel_mux no longer selects the teleop - the mission drives the robot again"]
 
 
 @pytest.mark.skipif(__import__("shutil").which("node") is None, reason="node.js not installed")
@@ -817,6 +821,8 @@ def test_i18n_hold_reasons_and_fall_events():
                                                         "received", "forgotten", "holding", "teleop)")), (src, ko)
     app = open(os.path.join(WEB_DIR, "app.js"), encoding="utf-8").read()
     assert "m.hold_reason" in app and "정지 사유" in app
+    # MANUAL: the operator drives - no '정지 사유: 수동 조작' next to the phase (review of fix/resume)
+    assert 'showPhase && st !== "MANUAL" && m.hold_reason' in app
 
 
 def test_hud_names_the_hold_reason():

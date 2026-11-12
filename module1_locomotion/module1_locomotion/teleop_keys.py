@@ -78,8 +78,12 @@ HELP_TEXT = """\
 |  b battery test -> 19 %          n battery 100 %                       |
 |  ?  help                         ESC / Ctrl-C : quit                   |
 |  (same keys work with focus on the Gazebo window via KeyPublisher)     |
-|  (in the Gazebo window space ALSO pauses / resumes the simulation)     |
+|  (in the Gazebo window space may ALSO pause / resume the simulation)   |
+|  (an E-STOP released on the dashboard also clears the teleop E-STOP)   |
 +------------------------------------------------------------------------+"""
+
+ESTOP_LOCAL_TRUST = 0.5   # [s] after a SPACE the teleop's own E-STOP flag decides the next SPACE (the
+                          #     controller's /locomotion/state still shows the old mode for a few messages)
 
 
 def qt_key_to_token(code: int) -> Optional[str]:
@@ -213,6 +217,9 @@ class TeleopState:
         self.estop = False
         self.manual_override = False
         self.mission_state: Optional[str] = None
+        self.loco_mode: Optional[str] = None      # controller mode from /locomotion/state (E-STOP sync)
+        self._estop_seen = False                  # the controller reported ESTOP since our SPACE
+        self._estop_key_t = -math.inf             # time of the last SPACE
         self._paused_local = False
         self._dir = {a: 0 for a in AXES}          # hold: direction of the last press
         self._t = {a: -math.inf for a in AXES}    # hold: time of the last press
@@ -257,8 +264,15 @@ class TeleopState:
             self.zero()
             return [Event("info", "stop")]
         if kind == "estop":
+            # SPACE toggles the E-STOP of the CONTROLLER: an E-STOP engaged elsewhere (dashboard,
+            # ros2 topic pub) is released by SPACE instead of being engaged a second time
             self.zero()
-            self.estop = not self.estop
+            engaged = self.estop
+            if now - self._estop_key_t > ESTOP_LOCAL_TRUST:
+                engaged = engaged or self.loco_mode == "ESTOP"
+            self.estop = not engaged
+            self._estop_seen = False
+            self._estop_key_t = now
             cmd = "estop" if self.estop else "release"
             return [Event("estop", self.estop), Event("locomotion", cmd)]
         if kind == "scale":
@@ -287,6 +301,34 @@ class TeleopState:
         if kind == "quit":
             return [Event("quit")]
         return []
+
+    def on_loco_mode(self, mode: Optional[str], now: float) -> List[Event]:
+        """Controller mode from /locomotion/state: keeps the teleop E-STOP flag
+        in step with the controller.  While the flag is set the teleop streams
+        zero velocity, which wins the cmd_vel mux over the mission; an E-STOP
+        released somewhere else (dashboard '비상정지 해제', ``ros2 topic pub
+        /locomotion/command ... release``) must clear it, or the controller
+        walks again while /cmd_vel stays zero for good and the mission believes
+        it drives (robot standing, mission 'PATROL').  The flag is cleared only
+        after the controller confirmed the E-STOP and then left it, so a SPACE
+        that the controller has not processed yet is never undone."""
+        m = str(mode).strip().upper() if mode else None
+        if not m:
+            return []
+        self.loco_mode = m
+        if not self.estop:
+            return []
+        if m == "ESTOP":
+            self._estop_seen = True
+            return []
+        if not self._estop_seen:
+            return []
+        self.estop = False
+        self._estop_seen = False
+        self.zero()
+        return [Event("estop", False),
+                Event("info", f"E-STOP released outside the teleop (locomotion {m}) - teleop E-STOP flag cleared, "
+                              "the mission drives again")]
 
     # ---------------------------------------------------------------- output
     def velocity(self, now: float) -> Tuple[float, float, float]:

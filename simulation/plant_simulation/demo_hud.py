@@ -319,6 +319,7 @@ HOLD_REASONS = (
     ("waiting for /odom", ("위치 정보 대기", "waiting for odometry")),
     ("waiting for the robot", ("일어서기 대기", "waiting to stand")),
     ("obstacle ahead", ("앞에 장애물", "obstacle ahead")),
+    ("teleop has priority", ("텔레옵이 제어 중 (비상정지?)", "teleop has priority")),
     ("paused", ("일시정지", "paused")),
     ("manual override", ("수동 조작", "manual override")),
     ("locomotion", ("보행 준비 안 됨", "locomotion not ready")),

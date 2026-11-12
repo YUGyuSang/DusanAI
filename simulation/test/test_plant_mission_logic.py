@@ -567,6 +567,44 @@ def test_hold_reason_says_why_the_robot_stands_still():
     assert m2.hold_reason() in ("", "obstacle ahead") and not any("no /locomotion" in e[1] for e in sim2.events)
 
 
+def test_teleop_priority_on_the_mux_is_reported_and_not_counted_as_stuck():
+    """Review of fix/resume (stub stack r10): a teleop E-STOP left engaged after the
+    controller was released elsewhere keeps the teleop streaming zero velocity - the mux
+    selects 'teleop', the robot stands, the mission said 'PATROL · navigate' with an
+    empty hold_reason and its stuck logic skipped one gauge after the other.  Now
+    /cmd_vel_mux/active 'teleop' while the mission drives is the hold_reason, warned
+    once, and not counted as stuck; back on 'patrol' the mission drives on."""
+    m = make()
+    sim = Sim(m)
+    m.command("patrol", 0.0)
+    feed = {"mode": "STAND", "recovery_state": "NORMAL"}
+    mux = {"src": "patrol", "n": 0}
+
+    def hook(s):
+        s.m.on_locomotion_state(dict(feed), s.t)
+        mux["n"] += 1
+        if mux["n"] % 5 == 0:                                    # /cmd_vel_mux/active at 2 Hz
+            s.m.on_mux_active(mux["src"], s.t)
+    assert sim.run(30, hook=hook, until=lambda s: s.m.phase == "navigate")
+    sim.run(1.0, hook=hook)
+    assert m.hold_reason() == ""
+    mux["src"] = "teleop"                                        # zero stream of a stuck teleop E-STOP
+    sim.cmd_allowed = False                                      # the mux passes the teleop's zeros
+    sim.run(60.0, hook=hook)
+    assert m.base == "PATROL" and m.phase == "navigate" and m.missed == []
+    assert m.state_dict(sim.t)["hold_reason"].startswith("teleop has priority")
+    assert not any("stuck" in e[1] for e in sim.events)
+    assert sum("keeps 'teleop' selected" in e[1] for e in sim.events) == 1
+    m.mux_t = sim.t - 10.0                                       # a stale mux report (mux gone): not trusted
+    assert not m.hold_reason(sim.t).startswith("teleop")
+    mux["src"] = "patrol"
+    sim.cmd_allowed = True
+    x0, y0 = sim.x, sim.y
+    sim.run(10.0, hook=hook)
+    assert math.hypot(sim.x - x0, sim.y - y0) > 1.0 and m.hold_reason() == ""
+    assert sum("no longer selects the teleop" in e[1] for e in sim.events) == 1
+
+
 def test_robot_staying_down_gets_recover_requests():
     m = make()
     sim = Sim(m)

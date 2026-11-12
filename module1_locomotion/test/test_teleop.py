@@ -124,6 +124,34 @@ def test_estop_toggle():
     assert not st.streaming(0.3)
 
 
+def test_estop_released_elsewhere_clears_the_teleop_estop():
+    """Review of fix/resume (stub stack r10): SPACE engaged the E-STOP, the dashboard /
+    `ros2 topic pub ... release` released the controller - the teleop kept its flag and
+    streamed zero velocity for good (mux 'teleop'), the robot stood while the mission said
+    PATROL.  The flag now follows the controller once it confirmed the E-STOP."""
+    st = TeleopState()
+    st.on_loco_mode("WALK", 0.0)
+    assert kinds(st.handle_key(" ", 1.0)) == [("estop", True), ("locomotion", "estop")]
+    assert st.on_loco_mode("WALK", 1.05) == [] and st.estop        # not processed yet: never undone
+    assert st.on_loco_mode("ESTOP", 1.1) == [] and st.estop
+    ev = st.on_loco_mode("STAND", 9.0)                             # released on the dashboard
+    assert kinds(ev)[0] == ("estop", False) and ev[1].kind == "info" and "released outside" in ev[1].value
+    assert not st.estop and not st.streaming(9.0)
+    assert st.on_loco_mode("WALK", 9.1) == []
+    # an E-STOP engaged on the dashboard: SPACE releases it instead of engaging it a second time
+    st.on_loco_mode("ESTOP", 20.0)
+    assert not st.estop
+    assert kinds(st.handle_key(" ", 21.0)) == [("estop", False), ("locomotion", "release")]
+    # the controller still reports ESTOP right after our own release: a quick second SPACE engages
+    assert kinds(st.handle_key(" ", 21.2)) == [("estop", True), ("locomotion", "estop")]
+    # FALLEN / RECOVERING are not ESTOP: a SPACE during a recovery engages, the flag stays until confirmed
+    st2 = TeleopState()
+    st2.on_loco_mode("RECOVERING", 0.0)
+    assert kinds(st2.handle_key(" ", 1.0))[0] == ("estop", True)
+    assert st2.on_loco_mode("RECOVERING", 1.05) == [] and st2.estop
+    assert st2.on_loco_mode(None, 1.1) == [] and st2.estop
+
+
 def test_locomotion_mission_battery_keys():
     st = TeleopState(TeleopConfig(battery_test_level=19.0, battery_full_level=100.0))
     expected = {"1": "stand", "2": "sit", "3": "gait:trot", "4": "gait:crawl", "5": "gait:auto",
@@ -371,6 +399,45 @@ def test_keyboard_teleop_node_with_fake_ros(monkeypatch):
     # shutdown path: zero twist + override released
     node.stop_robot()
     assert cmd.msgs[-1].linear.x == 0.0 and active.msgs[-1].data is False
+
+
+def test_keyboard_teleop_node_follows_an_estop_release_from_the_dashboard(monkeypatch):
+    """Node level: SPACE in the Gazebo window (KeyPublisher) -> E-STOP, zero stream on
+    /cmd_vel/teleop; the controller is released by the dashboard -> /locomotion/state
+    leaves ESTOP -> the teleop stops streaming (one zero, then silence: the mux falls back
+    to the mission)."""
+    import json
+    helpers = _fake_ros_helpers()
+    helpers.FakeRosEnv(monkeypatch, overrides={"use_terminal": False})
+    node_mod = importlib.import_module("module1_locomotion.keyboard_teleop")
+    clock = types.SimpleNamespace(t=500.0)
+    monkeypatch.setattr(node_mod, "time", types.SimpleNamespace(monotonic=lambda: clock.t,
+                                                                sleep=lambda s: None))
+    node = node_mod.KeyboardTeleop()
+    Int32 = node_mod.Int32
+    String = node_mod.String
+    loco = lambda mode: node.subs["/locomotion/state"][1](String(data=json.dumps({"mode": mode})))  # noqa: E731
+    cmd = node.pubs["/cmd_vel/teleop"]
+
+    def ticks(seconds):
+        for _ in range(int(round(seconds / 0.02))):
+            clock.t += 0.02
+            node.tick(clock.t)
+    loco("WALK")
+    node.subs["/keyboard/keypress"][1](Int32(data=0x20))
+    assert node.pubs["/locomotion/command"].msgs[-1].data == "estop" and node.state.estop
+    ticks(0.04)
+    loco("WALK")                                       # controller has not processed it yet
+    ticks(0.5)
+    loco("ESTOP")
+    ticks(1.0)
+    n = len(cmd.msgs)
+    assert n >= 25 and all(m.linear.x == 0.0 for m in cmd.msgs)   # 20 Hz zero stream = mux priority
+    loco("STAND")                                      # dashboard '비상정지 해제'
+    assert not node.state.estop
+    ticks(1.0)
+    assert len(cmd.msgs) == n + 1 and cmd.msgs[-1].linear.x == 0.0   # one zero, then silence
+    assert node.pubs["/locomotion/command"].msgs[-1].data == "estop"  # nothing sent by the sync itself
 
 
 def test_rclpy_init_without_signal_handlers(monkeypatch):

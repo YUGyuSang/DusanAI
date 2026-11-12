@@ -997,7 +997,8 @@
     // the phase belongs to a moving mission (stale while paused / finished)
     const showPhase = st !== "PAUSED" && !fin;
     // why the mission does not drive (e-stop, fallen, no /locomotion/state, obstacle ...): next to the phase
-    const hold = showPhase && m.hold_reason ? "정지 사유: " + KO.event(m.hold_reason, "mission") : "";
+    // (not under MANUAL: the badge already says the operator drives - '정지' would be wrong there)
+    const hold = showPhase && st !== "MANUAL" && m.hold_reason ? "정지 사유: " + KO.event(m.hold_reason, "mission") : "";
     setText("missionPhase", showPhase ? [m.mode ? lbl("mode", m.mode) : "", m.phase ? lbl("phase", m.phase) : "", hold].filter(Boolean).join(" · ") : "");
     $("missionPhase").title = [m.mode, m.phase, m.hold_reason].filter(Boolean).join(" · ");
     const tgt = m.target || (st === "SEEK" ? "누출원" : st === "RTH" ? "충전소" : fin ? "완료" : "—");

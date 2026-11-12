@@ -17,7 +17,9 @@ Publishes
   /battery/set_level   std_msgs/Float32      percent (19 = RTH test, 100 = full)
 Subscribes
   /keyboard/keypress   std_msgs/Int32        Qt key codes (Gazebo KeyPublisher, optional)
-  /locomotion/state    std_msgs/String JSON  mode / gait for the status line
+  /locomotion/state    std_msgs/String JSON  mode / gait for the status line; E-STOP sync (an
+                                             E-STOP released elsewhere clears the teleop E-STOP,
+                                             SPACE releases one engaged elsewhere)
   /battery/state       sensor_msgs/BatteryState
   /mission/state       std_msgs/String JSON
 
@@ -233,6 +235,11 @@ class KeyboardTeleop(Node):
             if d.get("gait_auto"):
                 gait = f"{gait}(auto)"
             self.loco_gait = gait
+            # E-STOP released on the dashboard / by ros2 topic pub: drop the teleop's zero stream too
+            with self.lock:
+                events = self.state.on_loco_mode(d.get("mode"), time.monotonic())
+            for ev in events:
+                self._apply(ev)
 
     def _on_battery(self, msg: BatteryState):
         p = float(msg.percentage)

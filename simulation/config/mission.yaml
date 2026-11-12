@@ -128,6 +128,9 @@ mission_manager:
     rth_ack_timeout: 8.0          # s without /safety/rth_active after our 'rth' -> drive home ourselves
     rth_release_grace: 2.0        # s
     teleop_active_timeout: 1.5    # s without /teleop/active (2 Hz heartbeat) -> MANUAL released (0 = latched)
+    mux_active_timeout: 2.0       # s: /cmd_vel_mux/active older than this is not trusted; 'teleop' selected while the
+                                  #   mission drives -> hold_reason 'teleop has priority', no stuck count (0 = ignore)
+    mux_blocked_warn: 3.0         # s of 'teleop' on the mux while the mission drives before one warning
     safety_timeout: 3.0           # s, older /safety/status is not trusted for the docked flag
     self_rth_fallback: true
     dock_tolerance: 0.35          # m
