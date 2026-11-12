@@ -25,9 +25,17 @@ the same code in gz-gui 8 Harmonic, 9 Ionic and 10 Jetty):
 So the view a user sets with the mouse is kept the way older Gazebo (Fortress) did it: the
 CameraDirector below notices the mouse (the camera moves in a way the follow law cannot explain),
 holds the camera's position (position gain ~0, still looking at the robot) while the user moves it,
-and once the camera has been still for a moment makes the camera pose relative to the robot the
-new follow offset.  The fall guard holds / releases with that view; keys switch follow on / off
-and reset the view; the default view is pulled in front of the building walls.
+and once the camera has been still for a moment makes the camera pose where the user left it,
+relative to the robot, the new view.  The fall guard holds / releases with that view; keys switch
+follow on / off and reset the view; the default view is pulled in front of the building walls.
+
+Why a view is not simply sent as the offset: with a position gain g per rendered frame the follow
+law trails a robot walking at v by about v / k, k = fps * -ln(1 - g) (0.4 m/s at 30 fps: 0.67 m,
+at 15 fps: 1.3 m); a camera the user left behind a walking robot would glide out by that again
+(and every further adjustment a bit more).  So a chosen view is sent as view + v / k (robot's
+horizontal velocity, k learnt from the camera samples) and re-sent when that changes: the camera
+stays at the view while the robot walks and while it stands.  The default view is sent as it is
+(it drops back a little while the robot walks, the look of the demo videos).
 """
 import bisect
 import math
@@ -41,7 +49,9 @@ HOLD_GAIN = 0.00002                   # position gain while held: > 1e-5 (smalle
 MIN_GUI_GAIN = 0.00001                # CameraTracking takes a gain only when it is above this
 QT_KEY_C, QT_KEY_Z = 0x43, 0x5A       # Gazebo KeyPublisher: Qt key codes (upper-case ASCII)
 TRACK_MODES = {0: "NONE", 1: "TRACK", 2: "FOLLOW", 3: "FOLLOW_FREE_LOOK", 4: "FOLLOW_LOOK_AT", 5: "USE_LAST"}
-DELAYS = (0.0, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.2)   # s: candidate lag of the GUI's robot pose behind ours
+# s: candidate lag of the GUI's robot pose behind ours; negative = our pose (/odom through the bridge,
+# odom_tf and rclpy) is the late one (extrapolated).  0.0 first: the start value before any learning.
+DELAYS = (0.0, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.2, -0.05, -0.1, -0.15, -0.2)
 
 CAMERA_DEFAULTS = {
     "look_gain": LOOK_GAIN,
@@ -65,6 +75,11 @@ CAMERA_DEFAULTS = {
     "release_hold": 1.0,            # ... with recovery_state NORMAL for this long [s] -> follow again
     "hold_update": 1.0,             # s between levelled-offset refreshes while holding
     "hold_min_change": 0.25,        # m change of the levelled offset worth a refresh
+    # a chosen view (mouse / 'c'): offset = view + the follow law's trail behind the walking robot
+    "trail": True,                  # False: send the chosen view as it is (it drifts out while walking)
+    "trail_min_change": 0.15,       # m change of the trail worth a send ...
+    "trail_interval": 0.5,          # ... at most this often [s] (gz-transport); the gz CLI: 2 s
+    "trail_span": 0.6,              # s of robot poses for its velocity (one trot period and more)
     # walls (default view only)
     "avoid_walls": True,
     "wall_margin": 0.3,             # m kept between the camera and a wall
@@ -104,6 +119,18 @@ def q_rot(q, v):
 def q_inv_rot(q, v):
     w, x, y, z = q
     return q_rot((w, -x, -y, -z), v)
+
+
+def q_mul(a, b):
+    """Hamilton product a * b of (w, x, y, z) quaternions (b first, then a)."""
+    aw, ax, ay, az = a
+    bw, bx, by, bz = b
+    return (aw * bw - ax * bx - ay * by - az * bz, aw * bx + ax * bw + ay * bz - az * by,
+            aw * by - ax * bz + ay * bw + az * bx, aw * bz + ax * by - ay * bx + az * bw)
+
+
+def wrap_angle(a):
+    return (a + math.pi) % (2.0 * math.pi) - math.pi
 
 
 def q_normalize(q):
@@ -243,10 +270,14 @@ def tracked_matches(info, req, tol=1e-3):
 
 # ---------------------------------------------------------------- robot pose buffer
 class PoseBuffer:
-    """Recent robot poses (t, p, q) for interpolation at t - delay."""
+    """Recent robot poses (t, p, q) for interpolation at t - delay; a time after the newest pose is
+    extrapolated (x, y and yaw, at most `extrapolate` s, with the rates of the last `rate_span` s - most
+    of a trot period, so the gait's wobble is hardly extrapolated: our /odom can be later than the GUI's
+    robot pose)."""
 
-    def __init__(self, keep=1.0):
+    def __init__(self, keep=1.0, extrapolate=0.25, rate_span=0.3):
         self.t, self.p, self.q, self.keep = [], [], [], float(keep)
+        self.extrapolate, self.rate_span = float(extrapolate), float(rate_span)
 
     def add(self, t, p, q):
         if self.t and t <= self.t[-1]:
@@ -268,11 +299,69 @@ class PoseBuffer:
         if i <= 0:
             return self.p[0], self.q[0]
         if i >= len(self.t):
-            return self.p[-1], self.q[-1]
+            return self._ahead(t)
         t0, t1 = self.t[i - 1], self.t[i]
         w = (t - t0) / (t1 - t0) if t1 > t0 else 0.0
         p = tuple(a + w * (b - a) for a, b in zip(self.p[i - 1], self.p[i]))
         return p, slerp(self.q[i - 1], self.q[i], w)
+
+    def _ahead(self, t):
+        t1, p1, q1 = self.t[-1], self.p[-1], self.q[-1]
+        dt = min(t - t1, self.extrapolate)
+        j = bisect.bisect_right(self.t, t1 - self.rate_span) - 1
+        if j < 0 and t1 - self.t[0] >= 0.1:
+            j = 0
+        if dt <= 0.0 or j < 0:
+            return p1, q1
+        span = t1 - self.t[j]
+        vx, vy = (p1[0] - self.p[j][0]) / span, (p1[1] - self.p[j][1]) / span
+        sp = math.hypot(vx, vy)
+        if sp > 3.0:                          # a respawn / teleport, not motion
+            return p1, q1
+        w = wrap_angle(yaw_of(q1) - yaw_of(self.q[j])) / span
+        w = min(max(w, -3.0), 3.0)
+        return (p1[0] + vx * dt, p1[1] + vy * dt, p1[2]), q_normalize(q_mul(yaw_quat(w * dt), q1))
+
+    def velocity(self, t, span=1.0):
+        """Least-squares velocity of the poses within span s up to t (the trot's bounce / sway averages
+        out), or None with less than 0.3 s of poses."""
+        i1 = bisect.bisect_right(self.t, t)
+        i0 = bisect.bisect_left(self.t, t - span)
+        if i1 - i0 < 3 or self.t[i1 - 1] - self.t[i0] < 0.3:
+            return None
+        ts = self.t[i0:i1]
+        tm = sum(ts) / len(ts)
+        den = sum((x - tm) ** 2 for x in ts)
+        out = []
+        for k in range(3):
+            ps = [p[k] for p in self.p[i0:i1]]
+            pm = sum(ps) / len(ps)
+            out.append(sum((x - tm) * (y - pm) for x, y in zip(ts, ps)) / den)
+        return tuple(out)
+
+    def yaw_rate(self, t, span=0.3):
+        """|yaw rate| [rad/s] over the last span s up to t (0 without poses)."""
+        if len(self.t) < 2:
+            return 0.0
+        t1 = min(t, self.t[-1])
+        t0 = max(t1 - span, self.t[0])
+        if t1 - t0 < 0.1:
+            return 0.0
+        return abs(wrap_angle(yaw_of(self.at(t1)[1]) - yaw_of(self.at(t0)[1]))) / (t1 - t0)
+
+    def mean_yaw(self, t, half=0.2):
+        """Yaw at t averaged over [t - half, t + half] (one trot period: the gait's yaw wobble is not a
+        heading change); the plain yaw at t when that window is not fully recorded yet."""
+        rp = self.at(t)
+        if rp is None:
+            return None
+        yc = yaw_of(rp[1])
+        if not self.t or t - half < self.t[0] or t + half > self.t[-1]:
+            return yc
+        i0, i1 = bisect.bisect_left(self.t, t - half), bisect.bisect_right(self.t, t + half)
+        if i1 - i0 < 3:
+            return yc
+        return yc + sum(wrap_angle(yaw_of(q) - yc) for q in self.q[i0:i1]) / (i1 - i0)
 
 
 # ---------------------------------------------------------------- mouse detection
@@ -288,14 +377,22 @@ class MouseDetector:
     residual (r, window sum) when |r| > trigger or the sum of r within `window` s > window_sum."""
 
     def __init__(self, offset, gain, fps_max=120.0, delays=DELAYS, trigger=0.06, window=0.35, window_sum=0.09,
-                 max_gap=0.3, delay_tau=3.0, keep=1.0):
+                 max_gap=0.3, delay_tau=3.0, keep=1.5, fps_guess=30.0, rate_tau=20.0):
         self.fps_max, self.delays = float(fps_max), tuple(delays)
         self.trigger, self.window, self.window_sum = float(trigger), float(window), float(window_sum)
         self.max_gap, self.delay_tau = float(max_gap), float(delay_tau)
         self.err = [0.01] * len(self.delays)
         self.robot = PoseBuffer(keep)
         self.prev, self.buf = None, []
+        self._cand = [[] for _ in self.delays]       # per delay candidate: residuals within `window`
+        self._csum = [(0.0, 0.0, 0.0)] * len(self.delays)
+        # follow rate k [1/s] of the GUI's position law (camera += (target - camera) * g per rendered frame
+        # ~ dc/dt = k (target - camera), k = fps * -ln(1 - g)): least squares over followed samples
+        self.fps_guess, self.rate_tau = float(fps_guess), float(rate_tau)
+        self.rate_sxy = self.rate_sxx = 0.0
+        self.rate_t, self.rate_pending = None, []
         self.set_follow(offset, gain)
+        self.rate_gain = self.gain               # the gain the GUI follows with (not a hold gain)
 
     @property
     def delay(self):
@@ -309,6 +406,45 @@ class MouseDetector:
         """Forget the previous sample (after a send, a gap, a state change)."""
         self.prev = None if t is None else (t, tuple(cam))
         self.buf = []
+        self._cand = [[] for _ in self.delays]
+        self._csum = [(0.0, 0.0, 0.0)] * len(self.delays)
+
+    def rate(self):
+        """Estimated follow rate k [1/s] of the follow gain (a guess of fps_guess frames/s until the robot
+        has walked a little: only a camera trailing a moving target tells the rate)."""
+        g = min(max(self.rate_gain, 1e-6), 0.999)
+        prior = self.fps_guess * -math.log(1.0 - g)
+        w0 = 0.05                                # m^2 s: worth ~1-2 s of walking samples
+        return (self.rate_sxy + prior * w0) / (self.rate_sxx + w0)
+
+    def fps_estimate(self):
+        """Rendered frames per second implied by the follow rate."""
+        g = min(max(self.rate_gain, 1e-6), 0.999)
+        return self.rate() / -math.log(1.0 - g)
+
+    def _rate_sample(self, t, t0, c0, d, delay):
+        """Queue one followed sample for the rate fit (committed once no mouse showed up after it)."""
+        tm = 0.5 * (t + t0)                    # the frames in between saw the target of about this moment
+        rp = self.robot.at(tm - delay)
+        if rp is None or not (MIN_GUI_GAIN * 10 < self.gain < 0.5):
+            return
+        if self.gain != self.rate_gain:           # another follow gain (--pos-gain): start over
+            self.rate_gain, self.rate_sxy, self.rate_sxx, self.rate_pending = self.gain, 0.0, 0.0, []
+        p, q = rp
+        u = sub(add(p, q_rot(q, self.offset)), c0)
+        uu = u[0] ** 2 + u[1] ** 2 + u[2] ** 2
+        if uu > 0.0025:                         # |u| > 5 cm: a camera trailing the target
+            self.rate_pending.append((t, d[0] * u[0] + d[1] * u[1] + d[2] * u[2], uu * (t - t0)))
+
+    def _rate_commit(self, t, hold_back=0.5):
+        while self.rate_pending and self.rate_pending[0][0] <= t - hold_back:
+            ts, xy, xx = self.rate_pending.pop(0)
+            if self.rate_t is not None:
+                f = math.exp(-max(ts - self.rate_t, 0.0) / self.rate_tau)
+                self.rate_sxy, self.rate_sxx = self.rate_sxy * f, self.rate_sxx * f
+            self.rate_t = ts
+            self.rate_sxy += xy
+            self.rate_sxx += xx
 
     def add_robot(self, t, p, q):
         self.robot.add(t, p, q)
@@ -316,7 +452,7 @@ class MouseDetector:
     def robot_at(self, t):
         return self.robot.at(t - self.delay)
 
-    def _resid(self, t, t0, c0, d, delay, offset=None, gain=None, amin=None):
+    def _resid(self, t, t0, c0, d, delay, offset=None, gain=None, amin=None, min_dt=0.0, fps=None):
         rp = self.robot.at(t - delay)
         if rp is None:
             return None
@@ -326,18 +462,27 @@ class MouseDetector:
         L2 = u[0] ** 2 + u[1] ** 2 + u[2] ** 2
         a = 0.0
         if L2 > 1e-10:
-            n = math.ceil(max(t - t0, 0.0) * self.fps_max) + 1
+            n = math.ceil(max(t - t0, min_dt) * (self.fps_max if fps is None else fps)) + 1
             amax = 1.0 - (1.0 - g) ** n
             a = min(max((d[0] * u[0] + d[1] * u[1] + d[2] * u[2]) / L2, g if amin is None else amin), amax)
         return (d[0] - a * u[0], d[1] - a * u[1], d[2] - a * u[2])
 
-    def unexplained(self, t0, c0, t, cam, offset, gain):
-        """Camera motion between two samples that a follow law with this offset and AT MOST this gain
-        cannot explain (no lower bound: a held camera that does not move explains itself)."""
-        if not (0.0 < t - t0 <= self.max_gap):
-            return 0.0
-        r = self._resid(t, t0, c0, sub(cam, c0), self.delay, offset, gain, 0.0)
-        return 0.0 if r is None else norm(r)
+    def explain(self, t0, c0, t, cam, offset, gain, max_gap=None):
+        """Split the camera motion between two samples into (not explained, explained) by a follow law
+        with this offset and AT MOST this gain (no lower bound: a held camera that does not move
+        explains itself); None when the samples are too far apart (or out of order) to tell."""
+        gap = self.max_gap if max_gap is None else float(max_gap)
+        if not (0.0 <= t - t0 <= gap):
+            return None
+        d = sub(cam, c0)
+        # samples queued while a blocking `gz topic -p` ran arrive with one time stamp: allow them some frames;
+        # frames: as many as the learnt frame rate gives (over a gap, fps_max would let the follow law take
+        # up a zoom towards a walking robot, which points the way the camera trails)
+        fps = min(max(1.25 * self.fps_estimate(), 10.0), self.fps_max)
+        r = self._resid(t, t0, c0, d, self.delay, offset, gain, 0.0, min_dt=0.0 if t > t0 else 0.1, fps=fps)
+        if r is None:
+            return None
+        return r, sub(d, r)
 
     def update(self, t, cam):
         cam = tuple(float(v) for v in cam)
@@ -354,16 +499,33 @@ class MouseDetector:
             return None
         j = min(range(len(self.delays)), key=lambda k: self.err[k])
         r = res[j]
-        k = 1.0 - math.exp(-0.02 / self.delay_tau)        # learn the delay on every sample before a trigger
+        # Learn the delay from the residual summed over `window` (what the trigger looks at; per sample the
+        # trot's sway dominates) and only while the robot turns: that is where a wrong delay shows
+        # (sideways, the follow law cannot take it up) and makes false triggers; walking straight, the
+        # sway's ~0.45 s period makes a delay 0.4 s off look about as good, wrong in the next turn.
+        sums = []
         for i, ri in enumerate(res):
-            self.err[i] += k * (min(norm(ri), 0.05) - self.err[i])
+            cb, cs = self._cand[i], add(self._csum[i], ri)
+            cb.append((t, ri))
+            while cb and cb[0][0] <= t - self.window:
+                cs = sub(cs, cb.pop(0)[1])
+            self._csum[i] = cs
+            sums.append(min(norm(cs), 0.2))
+        if self.robot.yaw_rate(t) > 0.2 and max(sums) - min(sums) > 0.005:
+            k = 1.0 - math.exp(-0.02 / self.delay_tau)
+            for i, si in enumerate(sums):
+                self.err[i] += k * (si - self.err[i])
         self.buf.append((t, r))
         while self.buf and self.buf[0][0] <= t - self.window:
             self.buf.pop(0)
         s = (sum(b[1][0] for b in self.buf), sum(b[1][1] for b in self.buf), sum(b[1][2] for b in self.buf))
         if norm(r) > self.trigger or norm(s) > self.window_sum:
             self.buf = []
+            self.rate_pending = []                 # maybe the mouse already: not the follow law
             return r, s
+        if norm(r) < 0.01:
+            self._rate_sample(t, t0, c0, d, self.delays[j])
+        self._rate_commit(t)
         return None
 
 
@@ -517,10 +679,11 @@ class CameraDirector:
     States
       FOLLOW  the GUI follows the robot with the current view (robot-frame offset)
       ADJUST  the user moves the camera with the mouse: position held (position gain hold_gain, still
-              looking at the robot); camera still for `quiet` s -> that camera pose relative to the
-              robot is the new view (or, if hardly anything moved, the old view comes back)
+              looking at the robot); camera still for `quiet` s -> where the user left the camera,
+              relative to the robot, is the new view (sent with the follow law's trail, module doc),
+              or, if hardly anything moved, the old view comes back
       FALL    robot down: camera held (levelled offset, hold gain); upright again -> follow the view
-              (a camera the user moved meanwhile becomes the view)
+              (a camera the USER moved meanwhile becomes the view - only with the mouse view on)
       TRIPOD  key 'c': the camera stays where it is and keeps looking at the robot (gz TRACK mode);
               'c' again follows from the camera pose of that moment
       PASSIVE the user took the camera over in the GUI (Esc, right-click Free Look / Track / another
@@ -552,7 +715,7 @@ class CameraDirector:
         self.mute_until = float(t0) + float(c["start_mute"])
         self.pending = None                   # (request, t_sent) waiting for its echo
         self.last_send_t = -math.inf
-        self.last_wall_t = -math.inf
+        self.last_auto_t = -math.inf          # last walls / trail send
         self.cam = None                       # (t, pos) newest camera sample
         self.level = None                     # (t, roll, pitch) low-passed trunk attitude (gait sway removed)
         self.att = (0.0, 0.0, False)          # roll, pitch, down from /locomotion/state
@@ -595,21 +758,48 @@ class CameraDirector:
             self.mute_until = now + self.cfg["cli_settle"]
         return via
 
-    def _relative(self, t, cam, heading_only=False):
-        """Camera position relative to the robot as a follow offset: in the frame of the robot's heading and
-        its low-passed roll / pitch (the GUI turns the offset with the full attitude, so the gait sway
-        of the moment must not be frozen into the view; a slope the robot stands on is kept), or in the
-        heading frame only (after a fall)."""
+    def _frame(self, t, heading_only=False, smooth=False):
+        """(robot position, view frame) at t: the frame of the robot's heading and its low-passed roll /
+        pitch (the GUI turns the offset with the full attitude, so the gait sway of the moment must not
+        be frozen into the view; a slope the robot stands on is kept), or the heading frame only (after
+        a fall).  smooth: heading averaged over one trot period around t."""
         rp = self.det.robot_at(t)
         if rp is None:
             return None
         p, q = rp
         yaw = yaw_of(q)
+        if smooth:
+            m = self.det.robot.mean_yaw(t - self.det.delay)
+            yaw = yaw if m is None else m
         if heading_only or self.level is None:
-            frame = yaw_quat(yaw)
-        else:
-            frame = quat_rpy(self.level[1], self.level[2], yaw)
-        o = q_inv_rot(frame, sub(cam, p))
+            return p, yaw_quat(yaw)
+        return p, quat_rpy(self.level[1], self.level[2], yaw)
+
+    def _rel(self, t, cam, heading_only=False, smooth=False):
+        """Camera position relative to the robot in the view frame (not clamped)."""
+        f = self._frame(t, heading_only, smooth)
+        return None if f is None else q_inv_rot(f[1], sub(cam, f[0]))
+
+    def _trail(self, t, heading_only=False):
+        """How far the follow law trails the robot's current translation, in the view frame: v / k (the
+        steady state of camera += (target - camera) * gain per frame behind a target moving at v; zero
+        for a standing robot).  Turning is left out: a turn ends after a few seconds; so is the height (a
+        fall / getting up is no walk; a ramp's climb is small)."""
+        v = self.det.robot.velocity(t - self.det.delay, self.cfg["trail_span"])
+        if v is None or math.hypot(v[0], v[1]) > 1.5:      # too few poses / a respawn (teleport): no walk
+            return (0.0, 0.0, 0.0)
+        v = (v[0], v[1], 0.0)
+        k = max(self.det.rate(), 0.05)
+        f = self._frame(t, heading_only)
+        if f is None:
+            return (0.0, 0.0, 0.0)
+        return q_inv_rot(f[1], tuple(c / k for c in v))
+
+    def _relative(self, t, cam, heading_only=False, smooth=False):
+        """_rel as a view (clamped to the view limits)."""
+        o = self._rel(t, cam, heading_only, smooth)
+        if o is None:
+            return None
         c = self.cfg
         return clamp_offset(o, c["min_dist"], c["max_dist"], c["min_z"])
 
@@ -623,10 +813,20 @@ class CameraDirector:
         k = 1.0 - math.exp(-(t - self.level[0]) / tau)
         self.level = (t, self.level[1] + k * (roll - self.level[1]), self.level[2] + k * (pitch - self.level[2]))
 
-    def _follow_offset(self):
-        """Offset to send for following the view now: the view, pulled in front of walls if it is the
-        default view."""
-        if not (self.walls and self.view_auto):
+    def _follow_offset(self, t):
+        """Offset to send for following the view now.  A view the user chose: the view + the follow law's
+        trail behind the robot's current translation (module doc), so the camera is at the view while
+        the robot walks and while it stands.  The default view as before (it drops back a little while
+        the robot walks, the look of the demo videos), pulled in front of walls."""
+        c = self.cfg
+        if not self.view_auto:
+            if not c["trail"]:
+                return self.view
+            tr = self._trail(t)
+            if norm(tr) < 0.05:                   # standing: exactly the view
+                return self.view
+            return clamp_offset(add(self.view, tr), c["min_dist"], c["max_dist"], c["min_z"])
+        if not self.walls:
             return self.view
         lt = self.det.robot.latest()
         if lt is None:
@@ -647,14 +847,14 @@ class CameraDirector:
     def _enter_follow(self, t, mode="USE_LAST", why=""):
         if self.guard.holding:                # robot (still) down: follow = hold until it is up
             self.state = "FALL"
-            self.adj = {"ref": None, "pre": 0.0}
+            self.adj = self._fall_book()
             off = self._hold_offset()
             self.hold_off, self.hold_t = off, t
             return self._send(self._req(mode, off, self.cfg["hold_gain"]), t, why)
         self.state = "FOLLOW"
         self.adj = None
-        off = self._follow_offset()
-        self.last_wall_t = t
+        off = self._follow_offset(t)
+        self.last_auto_t = t
         return self._send(self._req(mode, off, self.cfg["pos_gain"]), t, why)
 
     def _passive(self, t, info):
@@ -670,12 +870,23 @@ class CameraDirector:
     def on_robot(self, t, p, q):
         self.det.add_robot(t, p, q)
         self._track_level(t, q_normalize(q))
-        if (self.state == "FOLLOW" and self.walls and self.view_auto and t >= self.mute_until
-                and t - self.last_wall_t >= (self.cfg["wall_interval"] if self.fast else 1.0)):
-            off = self._follow_offset()
-            if norm(sub(off, self.eff)) > self.cfg["wall_min_change"] or (off == self.view and off != self.eff):
-                self.last_wall_t = t
-                self._send(self._req("USE_LAST", off, self.cfg["pos_gain"]), t, "walls")
+        c = self.cfg
+        if self.state != "FOLLOW" or t < self.mute_until:
+            return
+        if self.view_auto and self.walls:
+            interval, change, why = (c["wall_interval"] if self.fast else 1.0), c["wall_min_change"], "walls"
+        elif not self.view_auto and c["trail"]:
+            roll, pitch, _ = rpy_of(q_normalize(q))
+            if self.att[2] or max(abs(roll), abs(pitch)) > math.radians(c["tilt_release_deg"]):
+                return                            # stumbling / falling: the fall guard takes over
+            interval, change, why = (c["trail_interval"] if self.fast else 2.0), c["trail_min_change"], "trail"
+        else:
+            return
+        if t - self.last_auto_t >= interval:
+            off = self._follow_offset(t)
+            if norm(sub(off, self.eff)) > change or (off == self.view and off != self.eff):
+                self.last_auto_t = t
+                self._send(self._req("USE_LAST", off, c["pos_gain"]), t, why)
 
     def on_camera(self, t, pos):
         pos = tuple(float(v) for v in pos)
@@ -683,26 +894,48 @@ class CameraDirector:
             return
         self.cam = (t, pos)
         if self.state == "FOLLOW":
-            if not self.cfg["adjust"]:
-                return
             if t < self.mute_until:
                 self.det.restart(t, pos)
                 return
-            hit = self.det.update(t, pos)
-            if hit is not None:
+            hit = self.det.update(t, pos)        # also learns the follow rate (the trail of a 'c' view)
+            if hit is not None and self.cfg["adjust"]:
                 self._start_adjust(t, pos, hit)
         elif self.state == "ADJUST":
             self._adjust_sample(t, pos)
         elif self.state == "FALL":
-            a = self.adj
-            if a is not None and a["ref"] is None and t >= self.mute_until:
-                a["ref"] = pos
+            self._fall_sample(t, pos)
+
+    @staticmethod
+    def _fall_book():
+        return {"ref": None, "path": 0.0, "last": None, "t_last": None}
+
+    def _fall_sample(self, t, pos):
+        """While the camera is held for a fall: add up the camera motion the hold cannot explain (the
+        user's).  The hold gain still creeps the camera towards a robot that slides / turns while it
+        recovers (minutes: decimetres), which is not the user moving it."""
+        a = self.adj
+        if a is None:
+            return
+        if t < self.mute_until + 0.1:         # the hold (or its refresh) is maybe not applied yet
+            a["last"] = None
+            return
+        c = self.cfg
+        if a["ref"] is None:
+            a["ref"] = pos
+        if a["last"] is not None and self.hold_off is not None:
+            x = self.det.explain(a["t_last"], a["last"], t, pos, self.hold_off, c["hold_gain"])
+            if x is not None and norm(x[0]) > c["still_tol"]:
+                a["path"] += norm(x[0])
+        a["last"], a["t_last"] = pos, t
 
     def _start_adjust(self, t, pos, hit):
         r, s = hit
         off = self._relative(t, pos) or self.eff
         self.adj = {"t0": t, "pre": max(norm(r), norm(s)), "ref": None, "last": pos, "last_move": t,
-                    "start_eff": self.eff, "t_last": t, "path": 0.0}
+                    "start_eff": self.eff, "t_last": t, "path": 0.0, "hold_off": off,
+                    # where the user left the camera: the last camera move the follow law cannot explain,
+                    # minus what the follow law added before the hold took effect
+                    "user_t": t, "user_pos": pos, "follow": (0.0, 0.0, 0.0), "trig_pos": pos}
         self.state = "ADJUST"
         self.stats["holds"] += 1
         self._send(self._req("USE_LAST", off, self.cfg["hold_gain"]), t, "mouse")
@@ -712,10 +945,18 @@ class CameraDirector:
         c = self.cfg
         if norm(sub(pos, a["last"])) > c["still_tol"]:
             a["last_move"] = t
-        if t < self.mute_until or a["ref"] is None:
+        held = not (t < self.mute_until or a["ref"] is None)
+        off, gain = (a["hold_off"], c["hold_gain"]) if held else (a["start_eff"], c["pos_gain"])
+        # a blocking `gz topic -p` leaves a gap of up to ~1 s in the samples: still split it
+        x = self.det.explain(a["t_last"], a["last"], t, pos, off, gain, max_gap=2.5)
+        r, e = x if x is not None else (sub(pos, a["last"]), (0.0, 0.0, 0.0))
+        a["follow"] = add(a["follow"], e)
+        if norm(r) > c["still_tol"]:
+            a["user_t"], a["user_pos"] = t, sub(pos, a["follow"])
+        if not held and 0.0 < t - a["t_last"] <= self.det.max_gap:
             # the hold is (maybe) still on its way and the follow law may still move the camera: count
             # only what it cannot explain as the user's - a quick orbit can end before the hold arrives
-            a["path"] += self.det.unexplained(a["t_last"], a["last"], t, pos, a["start_eff"], c["pos_gain"])
+            a["path"] += norm(r)
         a["last"], a["t_last"] = pos, t
         if t < self.mute_until:
             a["last_move"] = max(a["last_move"], t)
@@ -728,22 +969,34 @@ class CameraDirector:
         if t - a["last_move"] >= c["quiet"] or t - a["t0"] >= c["max_hold"]:
             self._end_adjust(t, pos)
 
+    def _adjusted_view(self, a, pos):
+        """The view after an ADJUST: where the user left the camera, relative to the robot (sent with the
+        trail, _follow_offset); None when the camera hardly moved (or no robot pose)."""
+        c = self.cfg
+        moved = norm(sub(pos, a["ref"])) if a["ref"] is not None and pos is not None else 0.0
+        # what the user moved it in all (also inside a gap left by a blocking `gz topic -p`)
+        net = norm(sub(a["user_pos"], a["trig_pos"]))
+        if a["pre"] + a["path"] < c["big_step"] and moved < c["commit_min"] and net < c["commit_min"]:
+            return None
+        return self._relative(a["user_t"], a["user_pos"], smooth=True)
+
     def _end_adjust(self, t, pos, lost=False):
         a = self.adj
         c = self.cfg
-        moved = norm(sub(pos, a["ref"])) if a["ref"] is not None else 0.0
-        new = None if lost else self._relative(t, pos)
-        if new is None or (a["pre"] + a["path"] < c["big_step"] and moved < c["commit_min"]):
+        new = None if lost else self._adjusted_view(a, pos)
+        if new is None:
+            moved = norm(sub(pos, a["ref"])) if a["ref"] is not None else 0.0
             self.stats["reverted"] += 1
             self.state, self.adj = "FOLLOW", None
-            self._send(self._req("USE_LAST", a["start_eff"], c["pos_gain"]), t, "revert")
+            self._send(self._req("USE_LAST", self._follow_offset(t), c["pos_gain"]), t, "revert")
             self.log(f"[follow_camera] camera hardly moved ({a['pre'] + a['path'] + moved:.2f} m"
                      + (", no camera pose" if lost else "") + ") - previous view kept")
             return
         self.view, self.view_auto = new, False
         self.stats["adopted"] += 1
         self.state, self.adj = "FOLLOW", None
-        self._send(self._req("USE_LAST", new, c["pos_gain"]), t, "adopt")
+        self.last_auto_t = t
+        self._send(self._req("USE_LAST", self._follow_offset(t), c["pos_gain"]), t, "adopt")
         self.log(f"[follow_camera] view kept: camera {describe_view(new)} of the robot "
                  "('z' = default view, 'c' = camera stays / follows again)")
 
@@ -760,10 +1013,16 @@ class CameraDirector:
         c = self.cfg
         act = self.guard.update(t, roll, pitch, down) if c["fall_guard"] else None
         if act == "hold" and self.state in ("FOLLOW", "ADJUST"):
-            pre = self.adj["pre"] if self.state == "ADJUST" and self.adj else 0.0
-            ref = self.adj["ref"] if self.state == "ADJUST" and self.adj else None
+            if self.state == "ADJUST" and self.adj:
+                # the user was setting a view when the robot fell: take it over now (the robot was still
+                # up when the user moved the camera), the camera is held from here on
+                new = self._adjusted_view(self.adj, self.cam[1] if self.cam else None)
+                if new is not None:
+                    self.view, self.view_auto = new, False
+                    self.stats["adopted"] += 1
+                    self.log(f"[follow_camera] view kept: camera {describe_view(new)} of the robot")
             self.state = "FALL"
-            self.adj = {"ref": ref, "pre": pre}
+            self.adj = self._fall_book()
             off = self._hold_offset()
             self.hold_off, self.hold_t = off, t
             self._send(self._req("USE_LAST", off, c["hold_gain"]), t, "fall")
@@ -771,16 +1030,22 @@ class CameraDirector:
             self.log("[follow_camera] robot falling" + (f" ({state})" if state else "")
                      + " - camera held, still looking at it")
         elif act == "release" and self.state == "FALL":
-            a = self.adj or {"ref": None, "pre": 0.0}
+            a = self.adj or self._fall_book()
             msg = "robot upright again - following"
-            if self.cam is not None and a["ref"] is not None:
+            chosen = not self.view_auto
+            if c["adjust"] and self.cam is not None and a["ref"] is not None:
+                # only a camera the USER moved while it was held becomes the view (the hold's creep
+                # towards a robot that slid / turned while recovering is not counted)
                 moved = norm(sub(self.cam[1], a["ref"]))
-                if moved >= c["commit_min"] or a["pre"] >= c["big_step"]:
+                if a["path"] >= c["big_step"] and moved >= c["commit_min"]:
                     new = self._relative(self.cam[0], self.cam[1], heading_only=True)
                     if new is not None:
                         self.view, self.view_auto = new, False
                         self.stats["adopted"] += 1
-                        msg += f" from the view you set ({describe_view(new)})"
+                        msg += f" from the view you set while it was down ({describe_view(new)})"
+                        chosen = False
+            if chosen:
+                msg += f" with the view you chose ({describe_view(self.view)})"
             self._enter_follow(t, "USE_LAST", "release")
             self.log("[follow_camera] " + msg)
         elif self.state == "FALL" and self.guard.holding and t - self.hold_t >= c["hold_update"]:

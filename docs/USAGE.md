@@ -58,7 +58,7 @@ bash scripts/run_demo.sh --low-memory                          # 8 GB 노트북 
 | `hud` | `true` | HUD 노드 `demo_hud` (`/demo/hud`, Gazebo "Robot HUD" 창) |
 | `follow_camera` | `''` (= `demo`) | Gazebo GUI 추적 카메라. `gui:=false`면 켜지지 않음 |
 | `follow_offset` | `-2.5,0.0,1.6` | 로봇 기준 추적 카메라 기본 위치 (m, 뒤/옆/위). `z` 키로 돌아가는 시점 |
-| `follow_mouse` | `true` | 3D 화면에서 마우스로 바꾼 시점을 추적 시점으로 유지. `false`면 예전처럼 GUI가 카메라를 기본 위치로 되돌림 |
+| `follow_mouse` | `true` | 3D 화면에서 마우스로 바꾼 시점을 추적 시점으로 유지. `false`면 마우스로 옮긴 카메라를 받아들이지 않음(GUI가 기본 위치로 되돌리고, 넘어졌다 일어날 때도 기본 시점). 키 `c`·`z`와 넘어짐 처리는 그대로 |
 | `follow_walls` | `true` | 기본 시점일 때 카메라를 복도·공장 벽 안쪽으로 당겨 로봇이 가리지 않게 함 (마우스나 `c`로 정한 시점은 건드리지 않음) |
 | `low_memory` | `false` | 8 GB 노트북용 저메모리 설정 ([9. 저사양 PC 옵션](#low-spec)) |
 | `respawn` | `true` | 죽은 노드를 3 s 뒤 다시 띄움 (상태를 잃어도 되는 노드만, [Q9](#faq-q9)) |
@@ -106,12 +106,18 @@ bash scripts/run_demo.sh thermal_source:=synthetic         # 다른 bringup 인�
    - 휠: 가까이 / 멀리 (커서가 가리키는 곳 쪽으로 움직임)
    - 가운데 버튼 드래그 또는 `Shift`+왼쪽 드래그: 로봇 주위로 돌기. **로봇이나 로봇 바로 옆 바닥을 누르고** 끌어야 로봇을 중심으로 돕니다(하늘이나 먼 벽을 누르면 크게 휘돕니다).
    - 왼쪽 드래그: 카메라 평행 이동, 오른쪽 드래그: 가까이 / 멀리
-2. **손을 떼고 약 0.5초 기다리기**: 조작하는 동안 카메라는 그 자리에 머물러 로봇을 계속 바라보고, 손을 떼고 0.4초가 지나면 지금 보이는 시점이 새 추적 시점이 됩니다.
-   이후 로봇을 계속 따라가며 되돌아가지 않습니다. 로봇이 넘어졌다 일어나도 이 시점으로 돌아옵니다. 로그에 `view kept: camera ... of the robot`이 나옵니다.
+2. **손을 떼고 약 0.5초 기다리기**: 조작하는 동안 카메라는 그 자리에 머물러 로봇을 계속 바라보고, 손을 떼고 0.4초가 지나면 **손을 뗀 순간 보이던 시점**이 새 추적 시점이 됩니다. 로그에 `view kept: camera ... of the robot`이 나옵니다.
+   - 조작하는 동안 로봇이 걸어서 멀어졌으면, 카메라가 1–3초에 걸쳐 그 시점까지 따라붙습니다.
+   - 이 시점은 로봇이 걷는 동안에도, 게이지 앞에 멈췄다가 다시 걸을 때도 유지됩니다. GUI 카메라는 걷는 로봇보다 조금 뒤처지는데(초당 0.4 m로 걸을 때 30 fps에서 약 0.7 m, 15 fps에서 약 1.3 m), `follow_camera`가 로봇 속도로 그만큼을 계산해 미리 더해 보냅니다. 속도가 바뀔 때마다 다시 보내므로, 걷기 시작하거나 멈춘 직후 1–2초 동안은 카메라가 조금 출렁일 수 있습니다.
+   - 기본 시점(처음 시점, `z`)은 예전처럼 걷는 동안 조금 뒤로 처졌다가 멈추면 돌아옵니다.
+   - 로봇이 넘어졌다 일어나도 이 시점으로 돌아옵니다. 넘어져 있는 동안 마우스로 옮긴 경우에만 그 위치가 새 시점이 됩니다.
    아주 천천히 끌면(초당 몇 도) 카메라가 끌려 돌아가며 버팁니다. 그때는 한 번에 크게 움직이세요. 몇 cm만 살짝 건드린 것은 무시됩니다.
 3. **카메라를 원하는 곳에 세워 두기**: Gazebo 창에서 `c`를 누르면 카메라가 그 자리에 서서 로봇만 계속 바라봅니다(삼각대처럼).
    이 상태에서는 마우스로 옮겨도 끌려가지 않습니다. 원하는 곳에 둔 뒤 `c`를 다시 누르면 **그 시점에서** 로봇을 따라갑니다.
 4. **처음 시점으로**: Gazebo 창에서 `z` (뒤 2.5 m, 위 1.6 m, 벽 피하기 다시 켜짐).
+5. **로봇이 벽에 가려 보이지 않을 때**: 로봇이나 그 옆 바닥을 누를 수 없으니 회전 드래그 대신 다음 중 하나를 씁니다.
+   - `z`: 기본 시점으로 돌아가며, 기본 시점은 복도·공장 벽 안쪽으로 당겨집니다.
+   - `c`(카메라 고정) → 휠로 가까이 가거나 왼쪽 드래그로 옮겨 로봇이 보이게 하기 → `c`(그 시점에서 따라가기).
 
 | 키 (Gazebo 창, 3D 화면을 한 번 클릭한 뒤) | 동작 |
 |---|---|
@@ -122,7 +128,7 @@ bash scripts/run_demo.sh thermal_source:=synthetic         # 다른 bringup 인�
 - Esc나 로봇 우클릭 메뉴(Free Look, Track 등)로 카메라를 가져가면 `follow_camera`는 손을 떼고 아무것도 보내지 않습니다(넘어져도). `c`, `z`, 또는 로봇 우클릭 → **Follow**로 다시 따라갑니다.
 - `c`, `z`는 Gazebo 창 전용입니다. 텔레옵 터미널의 키 표에는 없고, 텔레옵·미션 키와 겹치지 않습니다.
 - Robot HUD 창 위에서 드래그하면 3D 화면으로 전달되지 않습니다. HUD 밖을 누르세요.
-- 예전처럼 고정된 추적 카메라를 쓰려면 `follow_mouse:=false`, 벽 피하기를 끄려면 `follow_walls:=false`.
+- 마우스로 옮긴 카메라를 받아들이지 않게 하려면 `follow_mouse:=false`입니다. GUI가 기본 위치로 되돌리고, 넘어졌다 일어날 때도 기본 시점으로 갑니다. 키 `c`, `z`와 넘어짐 처리는 그대로입니다. 벽 피하기를 끄려면 `follow_walls:=false`.
 - HUD는 `ros2 run rqt_image_view rqt_image_view /demo/hud`로도 볼 수 있습니다(`install_deps.sh --desktop`).
 - 데모 중에도 `bash scripts/run_teleop.sh`를 띄우고 `m`(수동 오버라이드)을 누르면 직접 조작할 수 있습니다.
 
@@ -771,5 +777,9 @@ Gazebo 창 오른쪽 아래 World stats나 `ros2 topic hz /clock`(≈ 200 × RTF
 - 마우스를 놓은 뒤 `view kept: camera ... of the robot`이 나와야 합니다. 안 나오면 `ros2 topic hz /gui/camera/pose`(브리지)와 `ros2 topic hz /odom`이 들어오는지 확인합니다.
   아주 천천히 끈 드래그는 감지되지 않을 수 있으니 크게 한 번 움직이거나, `c`(고정) → 마우스로 옮기기 → `c`(그 시점에서 따라가기)를 쓰세요.
 - 손대지 않았는데 카메라가 잠깐(0.5–1 s) 멈췄다가 다시 따라가면 로그에 `camera hardly moved ... previous view kept`가 찍힙니다(시점은 그대로).
-  손대지 않았는데 `view kept`가 찍히거나 멈춤이 잦으면 `follow_mouse:=false`로 예전 고정 추적으로 되돌리고(키 `c`, `z`와 넘어짐 처리는 그대로) 로그를 남겨 주세요.
-- `the gz-transport bindings get no answer from the GUI`가 나오면 다른 버전의 Python 바인딩이 설치된 것입니다. 자동으로 `gz topic -p`로 바뀌므로 동작은 같고 메시지마다 0.3–0.7 s 늦습니다.
+  손대지 않았는데 `view kept`나 `robot upright again - following from the view you set while it was down`이 찍히거나 멈춤이 잦으면 `follow_mouse:=false`로 마우스 시점을 끄고(키 `c`, `z`와 넘어짐 처리는 그대로) 로그를 남겨 주세요.
+- 정한 시점이 로봇이 걸을 때와 설 때 크게(0.5 m 넘게) 달라지면 로그의 `trail` 송신이 있는지 봅니다. GUI의 프레임 속도는 로봇이 몇 초 걸은 뒤에야 알 수 있으므로, 데모 시작 직후 첫 조작에서는 조금 어긋날 수 있습니다. 다시 한 번 조작하면 맞습니다.
+- `camera control on: ... (via gz topic -p)`이면 gz-transport Python 바인딩이 없는 것입니다. `python3 -c "import gz.transport15, gz.msgs12.cameratrack_pb2"`로 확인하고, 없으면 Jetty용 gz-transport Python 바인딩 패키지(OSRF apt 저장소의 `python3-gz-transport15` 등)를 설치하세요.
+  바인딩 없이도 동작하지만 메시지마다 0.3–0.7 s 늦습니다. 손을 뗀 뒤 카메라가 잠깐 뒤로 끌려갔다가 1–2초 안에 손을 뗀 시점으로 돌아옵니다. Esc·우클릭 Follow를 알아채는 데 최대 10 s 걸리고, `gz` 명령을 띄울 때마다 CPU를 씁니다.
+  어색하면 `c`(고정) → 마우스로 옮기기 → `c`(그 시점에서 따라가기)를 쓰세요.
+- `the gz-transport bindings get no answer from the GUI`가 나오면 다른 버전의 Python 바인딩이 설치된 것입니다. 자동으로 `gz topic -p`로 바뀌며, 그 뒤는 바로 위 항목과 같습니다.

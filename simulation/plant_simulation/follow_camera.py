@@ -24,8 +24,10 @@ Then (needs rclpy, which the ROS launch provides) it stays up as the camera "dir
 4. mouse: the GUI pulls a camera moved with the mouse back to the follow offset, so the director
    watches /gui/camera/pose against the robot pose (/odom): a camera move the follow law cannot
    explain is the mouse -> the camera position is held (still looking at the robot) while the user
-   orbits / zooms / pans, and 0.4 s after the mouse stops that camera pose relative to the robot
-   becomes the new follow offset: the camera keeps following from the view the user set;
+   orbits / zooms / pans, and 0.4 s after the mouse stops the camera pose where the user left it,
+   relative to the robot, becomes the view.  It is sent with the follow law's trail behind the
+   walking robot (v / k, k learnt from the camera), re-sent when the robot's speed changes, so the
+   camera stays at that view while the robot walks and while it stands;
 5. fall guard: the GUI applies the offset with the robot's full attitude (a robot on its back would
    pull the camera under the floor), so while |roll| or |pitch| > --tilt-hold or the robot reports
    a fall the camera is held (position gain ~0, offset levelled), and --release-hold s after the robot
@@ -41,8 +43,8 @@ Then (needs rclpy, which the ROS launch provides) it stays up as the camera "dir
 Transport: gz-transport python bindings when installed (gz.transport15 / 14 / 13: /gui/track,
 /gui/camera/pose, /gui/currently_tracked without CLI start-up), else `gz topic -p` for sends
 (~0.3-0.7 s each), the bridged ROS /gui/camera/pose (geometry_msgs/Pose) for the camera and a
-`gz topic -e` poll of /gui/currently_tracked every few seconds.  Without rclpy, or with --once,
-it exits after step 3 as before.
+`gz topic -e` poll of /gui/currently_tracked every 2.5 s ('c' / Esc states) or 10 s (following).
+Without rclpy, or with --once, it exits after step 3 as before.
 
 The program never fails the launch: every error is logged and it exits 0.
 """
@@ -73,7 +75,8 @@ FOLLOW_DEFAULTS = {
     "mouse": True,                  # keep a view set with the mouse
     "walls": True,                  # pull the default view in front of the building walls
     "odom_topic": "/odom",          # robot pose in the world frame (odom_tf)
-    "tracked_poll": 2.5,            # s between `gz topic -e` polls of /gui/currently_tracked (no bindings)
+    "tracked_poll": 2.5,            # s between `gz topic -e` polls of /gui/currently_tracked (no bindings;
+                                    # 4x that while simply following)
 }
 GUARD_KEYS = ("tilt_hold_deg", "tilt_release_deg", "release_hold", "hold_gain", "hold_update", "hold_min_change")
 LOCOMOTION_STATE_TOPIC = "/locomotion/state"
@@ -213,10 +216,12 @@ class CliTrackedPoller:
     """/gui/currently_tracked through `gz topic -e -n 1` every `period` s (no bindings).  threaded=True
     polls in a daemon thread (a poll takes 0.3-1 s and must not stall the camera loop); else maybe_poll()
     runs it in the caller (tests).  Events carry the time the poll STARTED, so a status sampled before
-    one of our sends is recognised as old."""
+    one of our sends is recognised as old.  period_fn() (optional) gives the period of the moment: every
+    poll starts the gz CLI (Ruby, ~0.3-1 s CPU), so it polls often only while it matters."""
 
-    def __init__(self, gz, runner, clock, period=2.5, threaded=True):
+    def __init__(self, gz, runner, clock, period=2.5, threaded=True, period_fn=None):
         self.gz, self.run, self.clock, self.period = gz, runner, clock, float(period)
+        self.period_fn = period_fn
         self.events = collections.deque(maxlen=50)
         self.threaded = bool(threaded)
         self._stop = threading.Event()
@@ -229,9 +234,15 @@ class CliTrackedPoller:
         if rc == 0 and (out or "").strip():
             self.events.append(("tracked", t, parse_tracked(out)))
 
+    def current_period(self):
+        try:
+            return float(self.period_fn()) if self.period_fn is not None else self.period
+        except Exception:
+            return self.period
+
     def maybe_poll(self, now):
         if not self.threaded and now >= self._next:
-            self._next = now + self.period
+            self._next = now + self.current_period()
             self.poll_once()
 
     def start(self):
@@ -240,11 +251,13 @@ class CliTrackedPoller:
 
         def loop():
             while not self._stop.is_set():
+                t0 = self.clock()
                 try:
                     self.poll_once()
                 except Exception:
                     pass
-                self._stop.wait(self.period)
+                while not self._stop.is_set() and self.clock() - t0 < self.current_period():
+                    self._stop.wait(0.25)
         self._thread = threading.Thread(target=loop, name="follow_camera_tracked", daemon=True)
         self._thread.start()
         return self
@@ -481,8 +494,19 @@ class FollowCamera:
         if self.director is not None:
             self.director.fast = False
         if self.poller is None:
-            self.poller = CliTrackedPoller(self.gz, self.run, self.clock, self.tracked_poll,
-                                           threaded=self.threaded).start()
+            self.poller = self._make_poller()
+
+    def _poll_period(self):
+        """Often while 'c' / Esc / right-click decide what the GUI camera does (TRIPOD, PASSIVE), seldom
+        while following (Esc then only stops our messages from mattering: USE_LAST cannot switch it on)."""
+        d = self.director
+        if d is None or d.state in ("TRIPOD", "PASSIVE"):
+            return self.tracked_poll
+        return 4.0 * self.tracked_poll
+
+    def _make_poller(self):
+        return CliTrackedPoller(self.gz, self.run, self.clock, self.tracked_poll, threaded=self.threaded,
+                                period_fn=self._poll_period).start()
 
     # ------------------------------------------------------------------ the director loop
     def _dispatch(self, d, ev):
@@ -519,8 +543,7 @@ class FollowCamera:
             except Exception:
                 self.link = None
         if self.link is None:
-            self.poller = CliTrackedPoller(self.gz, self.run, self.clock, self.tracked_poll,
-                                           threaded=self.threaded).start()
+            self.poller = self._make_poller()
         d = CameraDirector(self.target, self.offset, self.send, log=self.log, clock=self.clock, cfg=self.cam_cfg,
                            walls=self.walls, t0=self.clock(), fast=self.link is not None)
         self.director = d

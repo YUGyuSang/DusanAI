@@ -292,7 +292,8 @@ def generate_launch_description():
                               description="follow camera offset x,y,z in the robot frame, m (behind / above)"),
         DeclareLaunchArgument("follow_mouse", default_value="true",
                               description="keep a view set with the mouse in the 3D view (false = the GUI "
-                                          "pulls the camera back to follow_offset, as before)"),
+                                          "pulls the camera back to follow_offset, also after a fall; keys "
+                                          "c / z and the fall hold stay)"),
         DeclareLaunchArgument("follow_walls", default_value="true",
                               description="pull the default follow view in front of the building walls"),
     ]
