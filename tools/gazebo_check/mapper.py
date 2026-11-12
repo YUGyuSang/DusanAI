@@ -10,6 +10,7 @@ R_FLOAT32 depth image holds) then goes through the SAME, ROS-free code path as
 ``terrain_mapping_node`` (image fallback branch):
 
     depth_image_to_points -> camera_points_to_world (PointFilter, odometry pose)
+    -> MapFallGuard.accept (no fusion while the robot is down, set_upright)
     -> ElevationMap.recenter / integrate            (10 Hz, every depth frame)
     -> ElevationMap.recenter / predict / to_cloud_xyz + TerrainClassifier.update
                                                      (publish_rate 5 Hz)
@@ -35,7 +36,8 @@ from dusan_common import robot_model as rm
 from dusan_common.camera import sensor_extrinsic
 from dusan_common.geometry import pose_matrix
 
-from module1_locomotion.elevation_map import ElevationMap, ElevationMapParams
+from module1_locomotion.elevation_map import (FALL_LOOKBACK, FALL_SETTLE, FALL_SNAPSHOT_PERIOD, ElevationMap,
+                                              ElevationMapParams, MapFallGuard)
 from module1_locomotion.pointcloud_utils import (DepthIntrinsics, PointFilter, camera_points_to_world,
                                                  depth_image_to_points)
 from module1_locomotion.terrain_classifier import ClassifierParams, TerrainClassifier
@@ -108,6 +110,10 @@ class TerrainMapperSim:
         mp = {k: v for k, v in (p.get("map", {}) or {}).items() if k in {x.name for x in dc_fields(ElevationMapParams)}}
         cp = {k: v for k, v in (p.get("classifier", {}) or {}).items() if k in {x.name for x in dc_fields(ClassifierParams)}}
         self.emap = ElevationMap(params=ElevationMapParams.from_dict(mp))
+        self.fall_guard = MapFallGuard(self.emap, lookback=float(p.get("fall_lookback", FALL_LOOKBACK)),
+                                       settle=float(p.get("fall_settle", FALL_SETTLE)),
+                                       period=float(p.get("fall_snapshot_period", FALL_SNAPSHOT_PERIOD)),
+                                       enabled=bool(p.get("fall_guard", True)))
         self.classifier = TerrainClassifier(ClassifierParams.from_dict(cp))
         if layout and bool(p.get("friction_prior", True)):
             from module1_locomotion.friction_map import FrictionMap
@@ -120,12 +126,21 @@ class TerrainMapperSim:
         self.n_frames = 0
         self.info: Dict = {}
 
-    def integrate_depth(self, depth: np.ndarray, pose: Sequence[float], t: float) -> int:
-        """_on_image + _integrate: depth image [m] at the odometry pose (x, y, z, roll, pitch, yaw)."""
+    def set_upright(self, upright: bool, t: float):
+        """_on_loco_state: fall guard (robot_down of /locomotion/state)."""
+        return self.fall_guard.set_upright(upright, t)
+
+    def integrate_depth(self, depth: np.ndarray, pose: Sequence[float], t: float, extra_points=None) -> int:
+        """_on_image + _integrate: depth image [m] at the odometry pose (x, y, z, roll, pitch, yaw).
+        ``extra_points``: (N, 3) camera-link points added to the image's (test: phantom returns)."""
+        if not self.fall_guard.accept(t):
+            return 0
         d = np.asarray(depth, dtype=np.float64).copy()
         d[~np.isfinite(d)] = np.nan
         pts = depth_image_to_points(d, self.intr, stride=self.image_stride,
                                     min_depth=self.filter.min_range, max_depth=self.filter.max_range)
+        if extra_points is not None and len(extra_points):
+            pts = np.vstack([pts.reshape(-1, 3), np.asarray(extra_points, dtype=np.float64).reshape(-1, 3)])
         if pts.shape[0] == 0:
             return 0
         pw, rng, origin = camera_points_to_world(pts, pose, "link", self.sensor, self.filter)

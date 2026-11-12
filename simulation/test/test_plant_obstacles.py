@@ -736,3 +736,101 @@ def test_m21_obstacle_memory_fall_guard_unit():
     assert FALL_LOOKBACK >= 1.0
     assert robot_down("FALLEN") and robot_down("RECOVERING", "TUCK") and robot_down("ESTOP", "STAND_UP")
     assert not robot_down("STAND", "NORMAL") and not robot_down("WALK") and not robot_down("SIT", None)
+
+
+class _MapperSensor:
+    """terrain_mapper in the loop (review of fix/resume): a depth 'camera' (floor
+    points over the field of view of the static map's free cells, 0.5 .. 3 m from
+    base_link, +-0.75 rad) fused into the REAL module1 ElevationMap behind the REAL
+    MapFallGuard; the mission gets EvidenceFrame.from_elevation_cloud of the
+    published map, as mission_manager does from /elevation_map/points.  ``phantom``:
+    the tipping / lying camera sees a shank-high ring 0.42 .. 0.75 m east of the
+    robot (instead of the floor behind it)."""
+
+    def __init__(self, grid, guard=True):
+        from module1_locomotion.elevation_map import ElevationMap, MapFallGuard
+        self.grid = grid
+        self.emap = ElevationMap(length_x=6.0, length_y=6.0, resolution=0.04)
+        self.guard = MapFallGuard(self.emap, enabled=guard)
+        self.boxes = []
+        self.phantom = False
+        self.t = 0.0
+
+    def set_loco(self, mode, rs, t):
+        from dusan_common.obstacle_layer import robot_down
+        self.guard.set_upright(not robot_down(mode, rs), t)
+
+    def frame(self, pose, t=None):
+        x, y, yaw = (float(v) for v in pose)
+        t = self.t if t is None else float(t)
+        xs = np.arange(-3.0, 3.0, 0.02)
+        X, Y = np.meshgrid(x + xs, y + xs)
+        X, Y = X.ravel(), Y.ravel()
+        r = np.hypot(X - x, Y - y)
+        ang = np.abs((np.arctan2(Y - y, X - x) - yaw + np.pi) % (2.0 * np.pi) - np.pi)
+        ix, iy = self.grid.world_to_grid_array(np.stack([X, Y], -1))
+        free = (ix >= 0) & (ix < self.grid.width) & (iy >= 0) & (iy < self.grid.height)
+        free[free] = self.grid.occ[iy[free], ix[free]] < 50
+        Z = np.zeros_like(X)
+        sel = free & (r >= 0.5) & (r <= 3.0) & (ang <= 0.75)
+        if self.phantom:
+            ring = (r >= 0.42) & (r <= 0.75) & (np.abs(np.arctan2(Y - y, X - x)) <= 1.2)
+            Z = np.where(ring, 0.30, Z)
+            sel = (sel & ~ring) | (free & ring)
+        if self.guard.accept(t):
+            self.emap.recenter(x, y)
+            self.emap.integrate(np.column_stack([X[sel], Y[sel], Z[sel]]), (x, y, 0.6), t=t)
+        self.emap.recenter(x, y)
+        self.emap.predict(t)
+        return EvidenceFrame.from_elevation_cloud(self.emap.to_cloud_xyz())
+
+
+@pytest.mark.parametrize("guard", [True, False])
+def test_m22_phantoms_kept_in_the_elevation_map_do_not_block_the_robot_after_it_stands_up(guard):
+    """Review of fix/resume: the mission forgot the cells it first saw while falling,
+    but terrain_mapper's map keeps unobserved cells ~200 s and published the phantoms
+    again - re-confirmed ~1.5 s after the stand-up, 'PATROL · navigate', zero command
+    48 s, the viewpoint skipped.  With the map's fall guard (frames dropped while down,
+    map restored to its state 2 s before the fall) the robot walks on; without it
+    (fall_guard false = main's terrain_mapper) the stand-still comes back."""
+    g = corridor(24.0, 2.4)
+    m = make(g, [("G", 20.0, 0.0, 0.0)])
+    sens = _MapperSensor(g, guard=guard)
+    sim = ObstacleSim(m, g, sensor=sens)
+    m.command("patrol", 0.0)
+    loco = {"mode": "STAND", "rs": "NORMAL"}
+
+    def feed(s):
+        sens.t = s.t
+        m.on_locomotion_state({"mode": loco["mode"], "recovery_state": loco["rs"]}, s.t)
+        sens.set_loco(loco["mode"], loco["rs"], s.t)
+        return False
+
+    assert sim.run(30, until=lambda s: feed(s) or (s.m.phase == "navigate" and s.x > 4.0))
+    for falls in range(2):                                     # twice in a row (the field report)
+        sens.phantom, sim.frozen = True, True
+        for mode, rs, dur in (("WALK", "NORMAL", 1.0), ("FALLEN", "DAMP", 3.0), ("RECOVERING", "SLIDE", 6.0)):
+            loco.update(mode=mode, rs=rs)
+            sim.run(dur, until=feed)
+        sim.yaw = (sim.yaw + 1.3 + math.pi) % (2 * math.pi) - math.pi   # stood up turned: ring out of view
+        sens.phantom, sim.frozen = False, False
+        loco.update(mode="STAND", rs="NORMAL")
+        if falls == 0:
+            sim.run(1.0, until=feed)
+    t_up, x_up, y_up = sim.t, sim.x, sim.y
+    moved = {}
+
+    def watch(s):
+        feed(s)
+        if math.hypot(s.x - x_up, s.y - y_up) >= 1.0:
+            moved.setdefault("t", s.t)
+        return done(s) or (not guard and s.t - t_up > 30.0)
+
+    sim.run(150, until=watch)
+    if guard:
+        assert moved.get("t") is not None and moved["t"] - t_up <= 8.0, (moved, m.hold_reason(sim.t))
+        assert m.completed == ["G"] and m.missed == [] and len(sim.texts("stuck")) <= 1
+        assert sens.guard.restores == 2 and sens.guard.dropped_frames > 0
+    else:                                                      # main's terrain_mapper: phantoms re-confirmed
+        assert moved.get("t") is None, moved
+        assert m.hold_reason(sim.t).startswith("obstacle ahead") or sim.texts("stuck")

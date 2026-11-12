@@ -68,13 +68,27 @@ Derived layers (lazy, cached until the heights change)
 
 The organised cloud of ``to_cloud_xyz`` / ``from_cloud_xyz`` is the transport
 format of ``/elevation_map/points`` (DESIGN_SPEC section 4/5).
+
+Falls (``MapFallGuard``)
+------------------------
+A depth camera that tips over with the body (and, on Ubuntu, sees the robot's
+own shanks while it self-rights: SLIDE keyframes put leg points 0.27-0.31 m
+high 0.57-0.66 m from base_link into the image) writes phantom steps into
+the map.  The map keeps unobserved cells for ~(max_variance - v) /
+variance_growth_rate = 200 s, so after the stand-up they were published again
+and again and re-blocked the mission's route.  The guard drops every depth
+frame while the robot is down (fallen, self-righting, any recovery state)
+and, when it stands again, puts the map back to a rolling snapshot taken at
+least ``lookback`` s before the fall was reported (the camera tips before the
+controller calls it a fall), aged by the elapsed time; fusion resumes
+``settle`` s after the stand-up.
 """
 from __future__ import annotations
 
 import math
 import warnings
 from dataclasses import dataclass, fields as dc_fields, replace as dc_replace
-from typing import Dict, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -524,6 +538,46 @@ class ElevationMap:
         m._geo = None
         m._xy_cache = None
         return m
+
+    def restore(self, snap: "ElevationMap", age: float = 0.0) -> int:
+        """Replace the contents by an earlier ``copy()`` of this map, shifted
+        into the current window (cells the snapshot did not cover are
+        unknown).  The variance of its known cells grows by ``age`` seconds of
+        forgetting (``predict``); cells past ``max_variance`` become unknown.
+        Returns the number of cells whose height or known state changed."""
+        if (snap._shape != self._shape or abs(snap._res - self._res) > 1e-12
+                or tuple(snap._base) != tuple(self._base)):
+            raise ValueError("snapshot of another map geometry")
+        dc = self._off[0] - snap._off[0]
+        dr = self._off[1] - snap._off[1]
+        h = shifted(snap._h, dr, dc, np.nan)
+        var = shifted(snap._var, dr, dc, np.nan)
+        outl = shifted(snap._outliers, dr, dc, 0)
+        conf = shifted(snap._conf, dr, dc, False)
+        cand = shifted(snap._cand, dr, dc, np.nan)
+        vx = shifted(snap._vx, dr, dc, np.nan)
+        vy = shifted(snap._vy, dr, dc, np.nan)
+        p = self.params
+        known = np.isfinite(h)
+        if age > 0.0 and p.variance_growth_rate > 0.0:
+            var[known] += p.variance_growth_rate * float(age)
+        forget = known & (var > p.max_variance)
+        if forget.any():
+            h[forget] = np.nan
+            var[forget] = np.nan
+            outl[forget] = 0
+            conf[forget] = False
+            cand[forget] = np.nan
+            vx[forget] = np.nan
+            vy[forget] = np.nan
+        old_known = np.isfinite(self._h)
+        new_known = np.isfinite(h)
+        with np.errstate(invalid="ignore"):
+            changed = (old_known != new_known) | (old_known & new_known & (np.abs(h - self._h) > 1e-9))
+        self._h, self._var, self._outliers, self._conf, self._cand, self._vx, self._vy = (
+            h, var, outl, conf, cand, vx, vy)
+        self._geo = None
+        return int(np.count_nonzero(changed))
 
     def clear(self) -> None:
         self._h[:] = np.nan
@@ -982,6 +1036,110 @@ class ElevationMap:
         if compute_layers:
             m.update_layers()
         return m
+
+
+# =============================================================================
+#  Fall guard
+# =============================================================================
+FALL_LOOKBACK = 2.0          # [s] frames fused this long before the fall was reported are dropped too
+FALL_SETTLE = 1.0            # [s] after the stand-up: no fusion yet (body still settling)
+FALL_SNAPSHOT_PERIOD = 0.5   # [s] rolling snapshots of the map (restore resolution)
+
+
+class MapFallGuard:
+    """Keeps the depth frames of a falling / lying / self-righting robot out
+    of an :class:`ElevationMap` (see the module docstring, "Falls").
+
+    * ``accept(t)`` before every fusion: False while the robot is down or
+      settling (drop the frame); otherwise takes the rolling snapshot when due
+      and returns True.
+    * ``set_upright(upright, t)`` with every locomotion state: down -> the
+      snapshot taken at least ``lookback`` s before is kept; up again -> the
+      map goes back to it (``ElevationMap.restore``, aged), or is cleared when
+      no snapshot that old exists (everything in it was fused within the
+      lookback).  Returns the number of changed cells on the stand-up.
+
+    Memory: about ``lookback / period + 2`` map copies (~1 MB each for the
+    default 150 x 150 map)."""
+
+    def __init__(self, emap: ElevationMap, lookback: float = FALL_LOOKBACK, settle: float = FALL_SETTLE,
+                 period: float = FALL_SNAPSHOT_PERIOD, enabled: bool = True):
+        self.emap = emap
+        self.lookback = max(0.0, float(lookback))
+        self.settle = max(0.0, float(settle))
+        self.period = max(0.05, float(period))
+        self.enabled = bool(enabled)
+        self._snaps: List[Tuple[float, ElevationMap]] = []
+        self.down_since: Optional[float] = None
+        self._base: Optional[Tuple[float, ElevationMap]] = None
+        self._settle = (math.inf, -math.inf)
+        self.restores = 0             # stand-ups handled
+        self.restored_cells = 0       # cells changed by them
+        self.dropped_frames = 0       # frames not fused (down / settling)
+        self.last_restore: Optional[Dict] = None
+
+    @property
+    def down(self) -> bool:
+        return self.down_since is not None
+
+    def paused(self, t: float) -> bool:
+        """Robot down, or settling after the stand-up (a clock that jumped back
+        before the stand-up ends the settle window)."""
+        return self.enabled and (self.down_since is not None or self._settle[0] <= float(t) < self._settle[1])
+
+    def accept(self, t: float) -> bool:
+        """May a depth frame be fused now (node clock ``t``)?"""
+        if not self.enabled:
+            return True
+        t = float(t)
+        if self.paused(t):
+            self.dropped_frames += 1
+            return False
+        if self._snaps and t < self._snaps[-1][0] - 1.0:      # clock jumped back (simulation reset)
+            self._snaps = []
+        if not self._snaps or t - self._snaps[-1][0] >= self.period - 1e-9:
+            self._snaps.append((t, self.emap.copy()))
+            # keep the newest snapshot that is already lookback old, and the newer ones
+            while len(self._snaps) >= 2 and self._snaps[1][0] <= t - self.lookback:
+                self._snaps.pop(0)
+        return True
+
+    def set_upright(self, upright: bool, t: float) -> Optional[int]:
+        """Locomotion state of the robot carrying the camera (see the class
+        docstring).  Returns the number of changed cells when the robot stood
+        up again, else None."""
+        if not self.enabled:
+            return None
+        t = float(t)
+        if not upright:
+            if self.down_since is None:
+                self.down_since = t
+                base = None
+                for ts, snap in self._snaps:
+                    if ts <= t - self.lookback + 1e-9:
+                        base = (ts, snap)
+                self._base = base
+                self._snaps = []
+            return None
+        if self.down_since is None:
+            return None
+        t_down, self.down_since = self.down_since, None
+        self._settle = (t, t + self.settle)
+        base, self._base = self._base, None
+        if base is None:
+            n = int(np.count_nonzero(np.isfinite(self.emap._h)))
+            self.emap.clear()
+        else:
+            try:
+                n = self.emap.restore(base[1], age=max(0.0, t - base[0]))
+            except ValueError:               # geometry changed meanwhile: forget everything instead
+                n = int(np.count_nonzero(np.isfinite(self.emap._h)))
+                self.emap.clear()
+        self.restores += 1
+        self.restored_cells += n
+        self.last_restore = {"t": t, "t_down": t_down, "down_s": round(t - t_down, 2), "cells": n,
+                             "snapshot_age": None if base is None else round(t - base[0], 2)}
+        return n
 
 
 def _estimate_resolution(X: np.ndarray, Y: np.ndarray, default: float) -> float:

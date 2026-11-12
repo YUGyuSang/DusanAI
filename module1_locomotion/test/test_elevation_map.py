@@ -11,7 +11,8 @@ from dusan_common.camera import camera_world_pose
 from dusan_common.rclpy_logger_rules import CallSiteRules
 from dusan_common.geometry import pose_matrix
 
-from module1_locomotion.elevation_map import (ElevationMap, ElevationMapParams, binomial_weights,
+from module1_locomotion.elevation_map import (FALL_LOOKBACK, FALL_SETTLE, FALL_SNAPSHOT_PERIOD, ElevationMap,
+                                              ElevationMapParams, MapFallGuard, binomial_weights,
                                               correlate_1d, fill_holes, max_filter, min_filter,
                                               nanmedian_rows, plane_fit, shifted)
 from module1_locomotion.pointcloud_utils import (
@@ -520,6 +521,111 @@ def test_yaml_map_section_matches_params():
     fd = PointFilter()
     assert tuple(cfg["filter"]["body_box_min"]) == fd.body_box_min
     assert cfg["filter"]["max_range"] == fd.max_range
+    assert cfg["fall_guard"] is True and cfg["locomotion_state_topic"] == "/locomotion/state"
+    assert (cfg["fall_lookback"], cfg["fall_settle"], cfg["fall_snapshot_period"]) == (
+        FALL_LOOKBACK, FALL_SETTLE, FALL_SNAPSHOT_PERIOD)
+
+
+# ------------------------------------------------------------- fall guard
+def _floor_points(x0, x1, y0, y1, z=0.0, step=0.02):
+    xs, ys = np.meshgrid(np.arange(x0, x1, step), np.arange(y0, y1, step))
+    return np.column_stack([xs.ravel(), ys.ravel(), np.full(xs.size, z)])
+
+
+PHANTOM = _floor_points(1.0, 1.24, 0.4, 0.64, z=0.30)       # a shank 0.3 m high, ~0.6 m from base_link
+PHANTOM_BEHIND = _floor_points(-1.2, -0.96, -0.2, 0.04, z=0.30)   # where the upright camera never looked
+
+
+def _evidence_hits(emap):
+    from dusan_common.obstacle_layer import EvidenceFrame
+    fr = EvidenceFrame.from_elevation_cloud(emap.to_cloud_xyz())
+    return fr, int(np.count_nonzero(fr.hit))
+
+
+def test_fall_guard_keeps_the_phantoms_of_a_fall_out_of_the_published_map():
+    """Review of fix/resume: the mission forgot the obstacle cells it first saw while
+    falling, but terrain_mapper kept them (unobserved cells live ~200 s) and published
+    them again - re-confirmed 1.5 s after the stand-up (Gazebo h_long_s0: 83 -> 361 cells),
+    the robot stood with 'PATROL · navigate'.  The guard drops the frames while the robot
+    is down and restores the map of >= lookback s before the fall when it stands again."""
+    emap = ElevationMap(length_x=4.0, length_y=4.0, resolution=RES)
+    g = MapFallGuard(emap)
+    floor = _floor_points(0.4, 2.6, -1.0, 1.0)
+    t = 0.0
+    while t < 3.0 - 1e-9:                                  # standing, seeing the floor ahead
+        assert g.accept(t)
+        emap.integrate(floor, (0.3, 0.0, 0.5), t=t)
+        t = round(t + 0.1, 3)
+    clean = emap.copy()
+    _, hits0 = _evidence_hits(emap)
+    assert hits0 == 0
+    # the body tips (camera sees its legs / smeared points) BEFORE the controller reports the fall
+    while t < 4.0 - 1e-9:
+        assert g.accept(t)
+        emap.integrate(np.vstack([floor, PHANTOM, PHANTOM_BEHIND]), (0.3, 0.0, 0.5), t=t)
+        t = round(t + 0.1, 3)
+    _, hits_tip = _evidence_hits(emap)
+    assert hits_tip > 0                                     # without the guard these stay ~200 s
+    g.set_upright(False, 4.0)                               # FALLEN reported
+    assert g.down and g.set_upright(False, 4.5) is None
+    n_drop = 0
+    while t < 20.0 - 1e-9:                                  # lying / self-righting: SLIDE shows the shanks
+        if g.accept(t):
+            emap.integrate(np.vstack([PHANTOM, PHANTOM_BEHIND]), (0.3, 0.0, 0.2), t=t)
+        else:
+            n_drop += 1
+        emap.predict(t)
+        t = round(t + 0.1, 3)
+    assert n_drop == 160 and g.dropped_frames == 160
+    n = g.set_upright(True, 20.0)                           # STAND
+    assert n is not None and n > 0 and g.restores == 1
+    assert g.last_restore["snapshot_age"] >= FALL_LOOKBACK + 16.0 - 1e-6
+    # back to the floor of before the fall: phantom cells floor / unknown again, nothing to re-confirm
+    fr, hits = _evidence_hits(emap)
+    assert hits == 0
+    ph = emap.height_at(1.12, 0.52)
+    assert ph == pytest.approx(0.0, abs=0.02)
+    assert not np.isfinite(emap.height_at(-1.08, -0.08))
+    same = np.isfinite(clean._h) & np.isfinite(emap._h)
+    assert np.nanmax(np.abs(clean._h[same] - emap._h[same])) < 1e-9
+    assert np.all(emap._var[same] >= clean._var[same] + 1e-4 * 16.0 - 1e-9)    # aged like predict()
+    # settling: no fusion for FALL_SETTLE s, then normal again
+    assert not g.accept(20.5) and g.accept(20.0 + FALL_SETTLE)
+    # a second fall right away (no snapshot lookback old yet): everything since is dropped -> cleared
+    emap.integrate(PHANTOM, (0.3, 0.0, 0.5), t=21.2)
+    g.set_upright(False, 21.5)
+    assert g.set_upright(True, 30.0) > 0
+    assert _evidence_hits(emap)[1] == 0
+
+
+def test_fall_guard_restores_into_a_shifted_window_and_survives_a_clock_reset():
+    emap = ElevationMap(length_x=4.0, length_y=4.0, resolution=RES)
+    g = MapFallGuard(emap, lookback=1.0, settle=0.5, period=0.5)
+    floor = _floor_points(-1.5, 1.5, -1.5, 1.5)
+    for k in range(30):
+        t = 0.1 * k
+        assert g.accept(t)
+        emap.integrate(floor, (0.0, 0.0, 0.5), t=t)
+    h0 = emap.height_at(0.8, 0.0)
+    emap.recenter(0.6, 0.2)                                  # the robot slid while falling (SLIDE / BACK_OFF)
+    g.set_upright(False, 3.0)
+    for t in (3.1, 3.2, 3.3):                                # (fused behind the guard's back)
+        emap.integrate(_floor_points(0.6, 1.0, -0.2, 0.2, z=0.4), (0.6, 0.2, 0.2), t=t)
+    assert emap.height_at(0.8, 0.0) == pytest.approx(0.4, abs=0.05)
+    emap.recenter(1.0, 0.4)
+    assert g.set_upright(True, 4.0) > 0
+    assert emap.height_at(0.8, 0.0) == pytest.approx(h0, abs=1e-6)
+    assert not np.isfinite(emap.height_at(2.9, 2.3))        # outside the snapshot's window: unknown
+    # simulation reset: the clock jumps back - old snapshots are dropped, the settle window does not block
+    assert g.accept(0.2) and [ts for ts, _ in g._snaps] == [0.2]
+    g2 = MapFallGuard(ElevationMap(length_x=2.0, length_y=2.0, resolution=RES), lookback=1.0, period=0.5)
+    for t in (100.0, 100.5, 101.0, 101.5):
+        g2.accept(t)
+    assert len(g2._snaps) <= 3
+    g2.accept(5.0)                                          # reset
+    assert [ts for ts, _ in g2._snaps] == [5.0]
+    off = MapFallGuard(ElevationMap(length_x=2.0, length_y=2.0, resolution=RES), enabled=False)
+    assert off.set_upright(False, 1.0) is None and off.accept(1.1) and not off.down
 
 
 # --------------------------------------------------------- point clouds
@@ -908,7 +1014,7 @@ def test_terrain_mapper_node_with_fake_ros(monkeypatch):
         "/terrain/info": "String"}
     assert {t: s[0].__name__ for t, s in node.subs.items()} == {
         "/odom": "Odometry", "/depth_camera/points": "PointCloud2", "/depth_camera/image": "Image",
-        "/depth_camera/camera_info": "CameraInfo"}
+        "/depth_camera/camera_info": "CameraInfo", "/locomotion/state": "String"}
     assert len(node.timers) == 1 and node.timers[0][0] == pytest.approx(0.2)
     timer = node.timers[0][1]
     timer()                                             # no odometry yet -> nothing published
@@ -980,6 +1086,87 @@ def test_terrain_mapper_node_with_fake_ros(monkeypatch):
     node3.subs["/depth_camera/points"][1](_gazebo_cloud_msg(env, org, env.now))
     node3.subs["/depth_camera/image"][1](img)
     assert node3.n_images == 1
+
+
+def _world_cloud_msg(env, pts, t):
+    """(N, 3) world points as an 'odom'-frame cloud (one row)."""
+    rec = np.zeros((1, len(pts)), dtype=[("x", "<f4"), ("y", "<f4"), ("z", "<f4")])
+    rec["x"], rec["y"], rec["z"] = pts[:, 0], pts[:, 1], pts[:, 2]
+    PF = env.msg["sensor_msgs.msg"].PointField
+    msg = env.msg["sensor_msgs.msg"].PointCloud2()
+    msg.header.stamp = env.stamp(t)
+    msg.header.frame_id = "odom"
+    msg.height, msg.width = 1, len(pts)
+    msg.fields = [PF(name=n, offset=4 * k, datatype=FLOAT32, count=1) for k, n in enumerate(("x", "y", "z"))]
+    msg.is_bigendian, msg.point_step, msg.row_step, msg.is_dense = False, 12, 12 * len(pts), True
+    msg.data = rec.tobytes()
+    return msg
+
+
+@pytest.mark.parametrize("guard", [True, False])
+def test_terrain_mapper_node_drops_the_frames_of_a_fall(monkeypatch, guard):
+    """Node level: phantom returns while the body tips (before FALLEN is reported) and
+    while it lies there are not in /elevation_map/points after the stand-up (fall_guard
+    true); without the guard they are published long after it (what re-blocked the
+    mission's route after the stand-up)."""
+    import importlib
+    import json
+    from dusan_common.obstacle_layer import EvidenceFrame
+    env = FakeRosEnv(monkeypatch, overrides={"map.length_x": 4.0, "map.length_y": 4.0, "fall_guard": guard})
+    node_mod = importlib.import_module("module1_locomotion.terrain_mapping_node")
+    node = node_mod.TerrainMapperNode()
+    assert ("/locomotion/state" in node.subs) is guard
+    String = env.msg["std_msgs.msg"].String
+    z0 = -0.88
+    pose = (58.0, 0.2, z0 + 0.34, 0.0, 0.0, 0.0)
+    floor = _floor_points(58.6, 60.4, -0.6, 1.0, z=z0)
+    phantom = _floor_points(59.0, 59.24, 0.6, 0.84, z=z0 + 0.30)
+    # the shank occludes the floor behind it
+    behind = (floor[:, 0] >= 58.96) & (floor[:, 0] <= 59.28) & (floor[:, 1] >= 0.56) & (floor[:, 1] <= 0.88)
+
+    def frame(pts):
+        node.subs["/odom"][1](_odom_msg(env, pose, env.now))
+        node.subs["/depth_camera/points"][1](_world_cloud_msg(env, pts, env.now))
+
+    def loco(mode, rs="NORMAL"):
+        if guard:
+            node.subs["/locomotion/state"][1](String(data=json.dumps({"mode": mode, "recovery_state": rs})))
+
+    def hits():
+        node.timers[0][1]()
+        xyz = pointcloud2_to_xyz(node.pubs["/elevation_map/points"].msgs[-1], organised=True)
+        return int(np.count_nonzero(EvidenceFrame.from_elevation_cloud(xyz).hit))
+
+    for k in range(30):                                   # standing: floor only
+        env.now = 10.0 + 0.1 * k
+        loco("WALK")
+        frame(floor)
+    assert hits() == 0
+    for k in range(10):                                   # tipping over, not reported yet
+        env.now = 13.0 + 0.1 * k
+        loco("WALK")
+        frame(np.vstack([floor[~behind], phantom]))
+    assert hits() > 0
+    env.now = 14.0
+    loco("FALLEN", "DAMP")
+    for k in range(60):                                   # lying / SLIDE: the shanks in the image
+        env.now = 14.0 + 0.1 * k
+        loco("RECOVERING", "SLIDE")
+        frame(phantom)
+    env.now = 20.0
+    loco("STAND")
+    env.now = 20.2
+    if guard:
+        assert hits() == 0
+        assert any("elevation map to its state" in m for _lv, m in node.logger.lines)
+        assert any("robot down" in m for _lv, m in node.logger.lines)
+        for k in range(10):                               # standing again: the real floor is fused again
+            env.now = 21.2 + 0.1 * k
+            loco("STAND")
+            frame(floor)
+        assert hits() == 0 and node.emap.height_at(59.5, 0.0) == pytest.approx(z0, abs=0.02)
+    else:
+        assert hits() > 0                                  # kept ~200 s: what the mission re-confirmed
 
 
 def test_terrain_mapper_friction_prior_from_the_layout(monkeypatch, tmp_path):
