@@ -406,48 +406,67 @@ def test_level_offset_leaves_only_the_heading(r, p, y):
     assert world == pytest.approx(rot(0, 0, y) @ np.array(off), abs=1e-9)
 
 
-def test_fall_guard_hold_update_release():
-    g = fc.FallGuard((-2.5, 0, 1.6), 0.02, tilt_hold_deg=30, tilt_release_deg=20, release_hold=1.0,
-                     hold_pgain=0.0002, hold_update=1.0, hold_min_change=0.25)
+def test_fall_guard_hold_release():
+    g = fc.FallGuard(tilt_hold_deg=30, tilt_release_deg=20, release_hold=1.0)
     d = math.radians
     assert g.update(0.0, d(5), d(-8)) is None and g.update(0.1, d(15), 0.0) is None    # walking / ramp sway
-    kind, off, gain = g.update(0.2, d(40), 0.0)
-    assert kind == "hold" and gain == 0.0002 and off[2] < 1.6 and g.holding and g.holds == 1
-    assert g.update(0.5, d(90), 0.0) is None                                      # refresh at most every 1 s
-    kind, off, gain = g.update(1.3, d(178), 0.0)                                  # on its back
-    assert kind == "update" and off[2] == pytest.approx(-1.6, abs=0.1)            # GUI flips it back up
-    assert g.update(2.5, d(179), 0.0) is None                                     # no change worth a send
-    kind, off, gain = g.update(3.0, d(10), 0.0, down=True)                        # upright, still recovering:
-    assert kind == "update" and g.holding and off[2] == pytest.approx(1.6, abs=0.05)  # held, levelled again
+    assert g.update(0.2, d(40), 0.0) == "hold" and g.holding and g.holds == 1
+    assert g.update(0.5, d(178), 0.0) is None                                     # on its back: still held
+    assert g.update(3.0, d(10), 0.0, down=True) is None and g.holding             # upright, still recovering
     assert g.update(3.5, d(10), 0.0) is None and g.update(3.9, d(25), 0.0) is None   # 25 deg resets the timer
     assert g.update(4.2, d(5), 0.0) is None
-    assert g.update(5.21, d(4), 0.0) == ("follow", (-2.5, 0.0, 1.6), 0.02) and not g.holding
-    assert g.update(6.0, 0.0, 0.0, down=True)[0] == "hold"                         # reported fall alone
+    assert g.update(5.21, d(4), 0.0) == "release" and not g.holding
+    assert g.update(6.0, 0.0, 0.0, down=True) == "hold"                            # reported fall alone
     assert g.update(7.0, "x", None) is None and g.update(7.0, float("nan"), 0.0) is None
 
 
-def follow_sim(trace, guard, fps=60, pgain=0.02, latency=0.4):
-    """gz-rendering BaseCamera follow (local frame) + pgain per frame on a pose trace
-    [(t, pos, roll, pitch, yaw, down)]; guard commands arrive after `latency` s."""
-    D = np.array([-2.5, 0.0, 1.6])
-    off, gain = D.copy(), pgain
+def test_director_fall_hold_messages_levelled_and_refreshed():
+    sent = []
+    dr = fc.CameraDirector("spot", (-2.5, 0.0, 1.6), lambda req: sent.append(req) or "cli", log=lambda s: None,
+                           t0=-10.0)
+    d = math.radians
+    dr.on_loco(0.0, loco(roll=d(5)))
+    assert sent == []
+    dr.on_loco(0.2, loco(roll=d(40)))
+    hold = sent[-1]
+    assert hold.mode == "USE_LAST" and hold.pos == fc.HOLD_GAIN and hold.look == fc.LOOK_GAIN   # position frozen
+    assert hold.offset == pytest.approx(fc.level_offset((-2.5, 0.0, 1.6), d(40), 0.0))
+    dr.on_loco(0.5, loco("TUCK", "RECOVERING", roll=d(178)))
+    assert len(sent) == 1                                                         # refresh at most every 1 s
+    dr.on_loco(1.3, loco("TUCK", "RECOVERING", roll=d(178)))
+    assert len(sent) == 2 and sent[-1].offset[2] == pytest.approx(-1.6, abs=0.1)  # GUI flips it back up
+    dr.on_loco(2.5, loco("TUCK", "RECOVERING", roll=d(179)))
+    assert len(sent) == 2                                                         # no change worth a send
+    for k in range(12):
+        dr.on_loco(3.0 + 0.1 * k, loco(roll=d(3)))
+    assert sent[-1].pos == fc.POS_GAIN and sent[-1].offset == (-2.5, 0.0, 1.6) and dr.state == "FOLLOW"
+
+
+def follow_sim(trace, guard, fps=60, latency=0.4):
+    """gz-rendering BaseCamera follow (local frame) per rendered frame on a pose trace
+    [(t, pos, roll, pitch, yaw, down)], driven by the CameraDirector; /gui/track messages arrive after
+    `latency` s and set the offset and the POSITION gain (= the message's track_pgain)."""
+    D = (-2.5, 0.0, 1.6)
+    off, gain = np.array(D), fc.POS_GAIN
     t_end = trace[-1][0]
-    cam_pos = trace[0][1] + rot(0, 0, trace[0][4]) @ D
+    cam_pos = trace[0][1] + rot(0, 0, trace[0][4]) @ np.array(D)
     pend, k, minz = [], 0, 1e9
-    g = fc.FallGuard(D, pgain) if guard else None
+    now = {"t": 0.0}
+    dr = fc.CameraDirector("spot", D, lambda req: pend.append((now["t"] + latency, req)) or "cli",
+                           log=lambda s: None, cfg={"fall_guard": guard}, t0=-10.0)
     next_state = 0.0
     for i in range(int(t_end * fps)):
-        t = i / fps
+        t = now["t"] = i / fps
         while k + 1 < len(trace) and trace[k + 1][0] <= t:
             k += 1
         _, pos, r, p, y, down = trace[k]
-        if g is not None and t >= next_state:
+        if t >= next_state:
             next_state += 0.05
-            act = g.update(t, r, p, down)
-            if act:
-                pend.append((t + latency, np.array(act[1]), act[2]))
+            dr.on_loco(t, {"roll": r, "pitch": p, "mode": "RECOVERING" if down else "WALK",
+                           "recovery_state": "TUCK" if down else "NORMAL"})
         while pend and pend[0][0] <= t:
-            _, off, gain = pend.pop(0)
+            _, req = pend.pop(0)
+            off, gain = np.array(req.offset), req.pos
         target = pos + rot(r, p, y) @ off
         cam_pos = cam_pos + (target - cam_pos) * gain
         minz = min(minz, cam_pos[2])
@@ -476,20 +495,24 @@ def test_fall_guard_keeps_the_camera_above_the_floor_on_a_back_flip():
     plain, _ = follow_sim(trace, guard=False)
     guarded, end = follow_sim(trace, guard=True)
     assert plain < -0.5                                       # what the audit saw: under the floor
-    assert guarded > 0.3                                      # held above the ground
+    assert guarded > 0.9                                      # held where it was (position gain ~0)
     behind = trace[-1][1] + rot(0, 0, 0.2) @ np.array([-2.5, 0.0, 1.6])
     assert np.linalg.norm(end - behind) < 0.6                 # following again afterwards
 
 
-class FakeMonitor:
-    def __init__(self, samples):
-        self.samples, self.closed = list(samples), False
+class FakeInputs:
+    """inputs_factory() stand-in: one list of (kind, data) per poll; the clock advances 0.1 s per poll."""
+
+    def __init__(self, script, clock):
+        self.script, self.clock, self.closed = list(script), clock, False
 
     def ok(self):
-        return bool(self.samples)
+        return bool(self.script)
 
     def poll(self, timeout):
-        return self.samples.pop(0) if self.samples else None
+        self.clock["t"] += 0.1
+        item = self.script.pop(0)
+        return [(k, self.clock["t"], d) for k, d in item] if item else []
 
     def close(self):
         self.closed = True
@@ -499,24 +522,23 @@ def test_follow_camera_guard_loop_sends_hold_and_follow():
     import test_plant_demo as tp
     g = tp.FakeGz(ready_after=1)
     clock = {"t": 0.0}
-
-    def tick():
-        clock["t"] += 0.1
-        return clock["t"]
-    samples = [loco()] * 3 + [loco(roll=1.2)] + [loco("TUCK", "RECOVERING", roll=3.0)] * 12 \
-        + [None] + [loco("NORMAL", "STAND", roll=0.05)] * 15
-    mon = FakeMonitor(samples)
+    script = ([[("loco", loco())]] * 3 + [[("loco", loco(roll=1.2))]]
+              + [[("loco", loco("TUCK", "RECOVERING", roll=3.0))]] * 12 + [[]]
+              + [[("loco", loco("NORMAL", "STAND", roll=0.05))]] * 15)
+    inp = FakeInputs(script, clock)
     lines = []
-    f = fc.FollowCamera("gz", "spot", "plant", (-2.5, 0.0, 1.6), 0.02, runner=g.run, clock=tick,
-                        sleep=lambda dt: None, log=lines.append, monitor_factory=lambda: mon,
-                        guard_cfg={"tilt_hold_deg": 30.0, "bogus": 1})
-    assert f.main() == 0 and mon.closed
+    f = fc.FollowCamera("gz", "spot", "plant", (-2.5, 0.0, 1.6), 0.02, runner=g.run, clock=lambda: clock["t"],
+                        sleep=lambda dt: None, log=lines.append, inputs_factory=lambda: inp,
+                        cam_cfg={"tilt_hold_deg": 30.0, "bogus": 1}, threaded=False)
+    assert f.main() == 0 and inp.closed
     sent = [c[7] for c in g.calls if c[1:3] == ["topic", "-t"]]
     assert len(sent) >= 4                                   # engage, hold, >= 1 update, follow
-    assert sent[0].endswith("follow_pgain: 0.02") and "follow_pgain: 0.0002" in sent[1]
-    assert sent[-1] == fc.track_message("spot", (-2.5, 0.0, 1.6), 0.02)
+    assert sent[0] == fc.follow_request("spot", (-2.5, 0.0, 1.6)).text()
+    assert sent[1].startswith("track_mode: USE_LAST") and "track_pgain: 2e-05" in sent[1]
+    assert "follow_pgain: 0.05" in sent[1]                  # still looking at the robot
+    assert sent[-1] == fc.track_message("spot", (-2.5, 0.0, 1.6), mode="USE_LAST")
     assert any("camera held" in x for x in lines) and any("upright again" in x for x in lines)
-    assert any("fall guard on" in x for x in lines)
+    assert any("camera control on" in x and "fall guard on" in x for x in lines)
 
 
 def test_follow_camera_guard_without_ros_or_with_errors():
@@ -527,21 +549,22 @@ def test_follow_camera_guard_without_ros_or_with_errors():
     def no_ros():
         raise ImportError("No module named 'rclpy'")
     f = fc.FollowCamera("gz", "spot", "plant", (-2.5, 0.0, 1.6), 0.02, runner=g.run, clock=lambda: 0.0,
-                        sleep=lambda dt: None, log=lines.append, monitor_factory=no_ros)
-    assert f.main() == 0 and "fall guard off" in lines[-1]
+                        sleep=lambda dt: None, log=lines.append, inputs_factory=no_ros)
+    assert f.main() == 0 and "camera control off" in lines[-1]
 
-    class Broken(FakeMonitor):
+    class Broken(FakeInputs):
         def poll(self, timeout):
             raise RuntimeError("context invalid")
     f2 = fc.FollowCamera("gz", "spot", "plant", (-2.5, 0.0, 1.6), 0.02, runner=g.run, clock=lambda: 0.0,
-                         sleep=lambda dt: None, log=lines.append, monitor_factory=lambda: Broken([1]))
-    assert f2.main() == 0 and "fall guard stopped" in lines[-1]
-    # no guard when the follow mode could not be confirmed (nothing to protect)
+                         sleep=lambda dt: None, log=lines.append, inputs_factory=lambda: Broken([1], {"t": 0.0}),
+                         threaded=False)
+    assert f2.main() == 0 and any("camera control stopped" in x for x in lines)
+    # no camera control when the follow mode could not be confirmed (nothing to protect)
     g3 = tp.FakeGz(ready_after=1, confirm=False, services=())
     called = []
     f3 = fc.FollowCamera("gz", "spot", "plant", (-2.5, 0.0, 1.6), 0.02, runner=g3.run, clock=lambda: 0.0,
                          sleep=lambda dt: None, log=lines.append, attempts=1,
-                         monitor_factory=lambda: called.append(1))
+                         inputs_factory=lambda: called.append(1))
     assert f3.main() == 0 and not called
 
 
@@ -550,97 +573,16 @@ def test_follow_camera_cli_guard_options(monkeypatch):
 
     class Rec(fc.FollowCamera):
         def main(self):
-            seen.update(cfg=self.guard_cfg, factory=self.monitor_factory)
+            seen.update(cfg=dict(self.cam_cfg), factory=self.inputs_factory)
             return 0
     monkeypatch.setattr(fc, "FollowCamera", Rec)
     assert fc.main(["--gz", "gz", "--tilt-hold", "35", "--release-hold", "2", "--ros-args", "-r",
                     "__node:=follow_camera"]) == 0
     assert seen["cfg"]["tilt_hold_deg"] == 35.0 and seen["cfg"]["release_hold"] == 2.0 and seen["factory"]
-    assert fc.main(["--gz", "gz", "--no-fall-guard"]) == 0 and seen["factory"] is None
+    assert fc.main(["--gz", "gz", "--no-fall-guard"]) == 0 and seen["cfg"]["fall_guard"] is False
+    assert seen["factory"]                                   # mouse view and keys still on
     assert fc.robot_down({"recovery_state": "TUCK"}) and fc.robot_down({"mode": "FALLEN"})
     assert not fc.robot_down({"recovery_state": "NORMAL", "mode": "WALK"}) and not fc.robot_down({})
-
-
-class FakeTrack:
-    """Stand-in of gz.msgs CameraTrack (protobuf message)."""
-    FOLLOW = 2
-
-    def __init__(self):
-        import types
-        self.track_mode = 0
-        self.follow_target = types.SimpleNamespace(name="")
-        self.follow_offset = types.SimpleNamespace(x=0.0, y=0.0, z=0.0)
-        self.follow_pgain = 0.0
-
-
-def fake_gz_modules(published, versions=("gz.transport14", "gz.msgs11.cameratrack_pb2"), ok=True):
-    import types
-
-    class Pub:
-        def publish(self, m):
-            published.append(m)
-            return ok
-
-    class Node:
-        def advertise(self, topic, typ):
-            assert topic == fc.TRACK_TOPIC and typ is FakeTrack
-            return Pub()
-    mods = {versions[0]: types.SimpleNamespace(Node=Node),
-            versions[1]: types.SimpleNamespace(CameraTrack=FakeTrack)}
-
-    def load(name):
-        if name in mods:
-            return mods[name]
-        raise ImportError(f"No module named '{name}'")
-    return load
-
-
-def test_gz_transport_publisher_builds_the_camera_track():
-    published = []
-    p = fc.GzTransportPublisher(modules=fake_gz_modules(published))
-    assert p.version == (14, 11)                                   # Ionic bindings when Jetty's are missing
-    assert p.publish("spot", (-2.5, 0.0, 1.6), 0.0002)
-    m = published[-1]
-    assert m.track_mode == FakeTrack.FOLLOW and m.follow_target.name == "spot" and m.follow_pgain == 0.0002
-    assert (m.follow_offset.x, m.follow_offset.y, m.follow_offset.z) == (-2.5, 0.0, 1.6)
-
-    def nothing(name):
-        raise ImportError(name)
-    with pytest.raises(ImportError):
-        fc.GzTransportPublisher(modules=nothing)
-
-
-def test_follow_camera_guard_uses_the_bindings_and_falls_back_to_the_cli():
-    import test_plant_demo as tp
-    published = []
-    g = tp.FakeGz(ready_after=1)
-    samples = [loco()] * 2 + [loco("DAMP", "FALLEN", roll=1.4)] * 3 + [loco("NORMAL", "STAND")] * 20
-    lines = []
-    clock = {"t": 0.0}
-
-    def tick():
-        clock["t"] += 0.1
-        return clock["t"]
-    f = fc.FollowCamera("gz", "spot", "plant", (-2.5, 0.0, 1.6), 0.02, runner=g.run, clock=tick,
-                        sleep=lambda dt: None, log=lines.append, monitor_factory=lambda: FakeMonitor(samples),
-                        publisher_factory=lambda: fc.GzTransportPublisher(modules=fake_gz_modules(published)))
-    assert f.main() == 0
-    cli = [c for c in g.calls if c[1:3] == ["topic", "-t"]]
-    assert len(cli) == 1                                           # only the engagement went through the CLI
-    gains = [m.follow_pgain for m in published]
-    assert gains[0] == 0.0002 and gains[-1] == 0.02 and set(gains[:-1]) == {0.0002}   # hold (+ refresh), follow
-    assert "via gz-transport python 14" in next(x for x in lines if "fall guard on" in x)
-    # bindings that fail at run time: the CLI takes over
-    g2 = tp.FakeGz(ready_after=1)
-    published2 = []
-    f2 = fc.FollowCamera("gz", "spot", "plant", (-2.5, 0.0, 1.6), 0.02, runner=g2.run, clock=tick,
-                         sleep=lambda dt: None, log=lines.append, monitor_factory=lambda: FakeMonitor(samples),
-                         publisher_factory=lambda: fc.GzTransportPublisher(
-                             modules=fake_gz_modules(published2, ok=False)))
-    assert f2.main() == 0
-    assert published2                                              # tried first ...
-    assert len([c for c in g2.calls if c[1:3] == ["topic", "-t"]]) == 1 + len(gains)   # ... then the CLI
-    assert any("gz-transport publish" in x for x in lines) is False   # a False return is not an exception
 
 
 # ============================================================================
@@ -671,22 +613,3 @@ def test_i18n_recovery_and_new_messages():
     assert out["ev"][0] == "전체 임무 접수 - 순찰 계획 대기 (최대 30초, 경로 계산 중)"
     assert "자가 복구 실패" in out["ev"][4]
     assert all(not any("A" <= c <= "Z" for c in k) for k in out["rec"]), out["rec"]
-
-
-def test_ros_locomotion_monitor_against_the_stand_ins(ros, monkeypatch):
-    import json
-    rclpy = sys.modules["rclpy"]
-    queue = [stub.String(data=json.dumps({"mode": "WALK", "roll": 0.1})), stub.String(data="not json"),
-             stub.String(data="[1, 2]")]
-
-    def spin_once(node, timeout_sec=None):
-        if queue:
-            ros.deliver("/locomotion/state", queue.pop(0))
-    monkeypatch.setattr(rclpy, "spin_once", spin_once, raising=False)
-    m = fc.RosLocomotionMonitor(["--ros-args", "-r", "__node:=follow_camera"])
-    sub = [s for s in ros.subs if s.topic == "/locomotion/state"]
-    assert len(sub) == 1 and sub[0].qos.reliability == "be"          # matches reliable + best-effort publishers
-    assert m.ok() and m.poll(0.1) == {"mode": "WALK", "roll": 0.1}
-    assert m.poll(0.1) is None and m.poll(0.1) is None and m.poll(0.1) is None
-    m.close()
-    assert not rclpy.ok()                                            # it initialised rclpy, so it shuts it down

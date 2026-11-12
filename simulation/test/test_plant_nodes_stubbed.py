@@ -280,7 +280,7 @@ def _modules():
     mod("std_msgs.msg", String=String, Bool=Bool, Float32=Float32, Float64=Float64, Int32=Int32)
     mod("geometry_msgs")
     mod("geometry_msgs.msg", Twist=Twist, TransformStamped=TransformStamped, Point=Point, PointStamped=PointStamped,
-        PoseStamped=PoseStamped, Quaternion=Quaternion, Vector3=Vector3)
+        Pose=Pose, PoseStamped=PoseStamped, Quaternion=Quaternion, Vector3=Vector3)
     mod("nav_msgs")
     mod("nav_msgs.msg", Odometry=Odometry, OccupancyGrid=OccupancyGrid, Path=Path)
     mod("sensor_msgs")

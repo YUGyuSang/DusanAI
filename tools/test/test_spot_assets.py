@@ -587,6 +587,7 @@ BRIDGE_TABLE = [
      "gz.msgs.CameraInfo", "GZ_TO_ROS"),
     ("/thermal_camera/image", "sensor_msgs/msg/Image", "/thermal_camera/image", "gz.msgs.Image", "GZ_TO_ROS"),
     ("/keyboard/keypress", "std_msgs/msg/Int32", "/keyboard/keypress", "gz.msgs.Int32", "GZ_TO_ROS"),
+    ("/gui/camera/pose", "geometry_msgs/msg/Pose", "/gui/camera/pose", "gz.msgs.Pose", "GZ_TO_ROS"),
 ] + [(rm.joint_command_topic(j), "std_msgs/msg/Float64", rm.joint_command_topic(j), "gz.msgs.Double",
       "ROS_TO_GZ") for j in rm.JOINT_NAMES]
 
@@ -595,7 +596,7 @@ KNOWN_PAIRS = {
     ("nav_msgs/msg/Odometry", "gz.msgs.Odometry"), ("sensor_msgs/msg/JointState", "gz.msgs.Model"),
     ("sensor_msgs/msg/Image", "gz.msgs.Image"), ("sensor_msgs/msg/PointCloud2", "gz.msgs.PointCloudPacked"),
     ("sensor_msgs/msg/CameraInfo", "gz.msgs.CameraInfo"), ("std_msgs/msg/Float64", "gz.msgs.Double"),
-    ("std_msgs/msg/Int32", "gz.msgs.Int32"),
+    ("std_msgs/msg/Int32", "gz.msgs.Int32"), ("geometry_msgs/msg/Pose", "gz.msgs.Pose"),
 }
 
 

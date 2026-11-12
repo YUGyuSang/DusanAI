@@ -241,7 +241,7 @@ venv/bin/python -m pytest -q         # pytest.ini + conftest.py가 sys.path 설�
 | 로봇이 출발 직후 1 m 안에서 제자리걸음하며 비틀거리다 넘어짐 | 예전 빌드일 수 있음: [USAGE '업데이트'](USAGE.md#update)대로 최신 코드를 받아 다시 빌드. 원인은 [module1 README §4.7 ①](../module1_locomotion/README.md#47-실제-plant-월드-검증-시나리오-js-수정과-남은-문제). |
 | 배관·잔해 근처나 도는 중에 넘어짐 | 기본 보행 trot 유지(`5`를 눌렀다면 `3`), 속도 배율 0.5 이하, 도크 앞 0.10 m 배관은 북쪽 끝(벽 쪽)으로, 복도 위층 잔해(x 37–39)는 북쪽 벽 쪽 통로(y ≈ +1.1)로 돌아가기. [USAGE FAQ Q8](USAGE.md#faq-fall). |
 | 데모 HUD 글자가 영어(`GAS: X ppm`)로 나옴 | Pillow나 한글 글꼴이 없음: `sudo apt install python3-pil fonts-noto-cjk` 후 다시 실행(빌드는 필요 없음). `check_install.sh`가 WARN으로 알려 줌. |
-| 데모에서 Gazebo 화면이 로봇을 따라가지 않음 | `follow_camera` 로그 확인. Gazebo·로봇·GUI를 240 s까지 기다린 뒤 조용히 끝나므로, 그 뒤에 GUI가 떴으면 `ros2 run plant_simulation follow_camera`를 다시 실행. 3D 화면을 클릭하고 Esc를 누르면 자유 시점으로 돌아감. |
+| 데모에서 Gazebo 화면이 로봇을 따라가지 않음 | `follow_camera` 로그 확인. Gazebo·로봇·GUI를 240 s까지 기다린 뒤 조용히 끝나므로, 그 뒤에 GUI가 떴으면 `ros2 run plant_simulation follow_camera`를 다시 실행. Gazebo 창에서 `c`는 카메라 고정 / 다시 따라가기, `z`는 기본 시점. 마우스로 바꾼 시점이 유지되지 않으면 [USAGE FAQ Q12](USAGE.md#faq-camera). |
 | 넘어진 로봇이 일어나지 않음 | 순간이동 없이 일어설 때까지 다시 시도함(3회 실패하면 5 s 쉬고 반복). 배관 위나 경사로 턱에서는 30–80 s 걸릴 수 있음. 기다려도 안 되면 `/locomotion/command`에 `recover` 또는 `reset_pose`(텔레옵 `0`). 자동 순간이동을 쓰려면 `locomotion.yaml`의 `assisted_reset: true`. [USAGE FAQ Q8](USAGE.md#faq-fall). |
 | 철판 근처나 평지에서 로봇이 갑자기 느려짐 | 슬립 모드(미끄러운 바닥 대응). `/locomotion/state`의 `slip_mode`, `slip_source`, `slip_events`를 확인. 평지에서 켜지면 [USAGE FAQ Q10](USAGE.md#faq-slip) 참고. |
 | MPC 풀이 시간이 30 ms를 크게 넘음 (`/locomotion/state`의 `mpc_solve_ms`) | `libopenblas0-pthread` 설치, 다른 무거운 프로그램 종료. 그래도 느리면 `locomotion.yaml`의 `mpc_rate`(20.0 → 10.0), `mpc_qp_max_iter`를 낮춤. |
