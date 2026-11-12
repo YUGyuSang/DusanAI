@@ -33,6 +33,8 @@ Usage (needs the gz python bindings, e.g. conda-forge gz-sim8 / Harmonic)::
     python tools/mission_check.py --seeds 0 1 --leg 2 --legs 3 --out <file>.json
     python tools/mission_check.py --seeds 0 1 2 3 4 --save               # docs/results/mission_check.json
     python tools/mission_check.py --seeds 0 1 --spawn 23.6,0.45,3.14 --goal 20.0,0.25 --out <file>.json
+    python tools/mission_check.py --seeds 0 1 2 3 4 --spawn 29.2,0.2,3.14 --goal 26.0,-0.45 --goal 23.4,0.0 \
+        --push nav:2.5 --push after_stand:1.0 --out <file>.json       # knocked over twice in a row
     python tools/mission_check.py --summary <file>.json                  # print a saved result
 
 ``--leg K`` starts at the viewpoint of leg K - 1 (leg 1 = dock -> first viewpoint;
@@ -41,6 +43,14 @@ stops after N legs.  ``--spawn x,y,yaw --goal x,y[,yaw] ...`` runs a route segme
 instead: spawn there, a patrol (``patrol``) over the goal points, done when the last
 one is reached (segment runs pass with every goal reached and no fall).  ``--save-npz`` keeps the per-step logs (100 Hz robot, 10 Hz
 mission trace) of every run in ``--work-dir``.
+
+``--push TRIGGER:DELAY`` (repeatable, applied in order) knocks the robot over on
+purpose (a world force on base_link, 0.2 s, 0.3 m above its origin, a few hundred N,
+stronger again when it did not fall): ``nav`` DELAY s into a patrol leg with the
+robot walking, ``after_stand`` DELAY s after it stood up again (two in a row),
+``inspect`` DELAY s into an inspection.  A segment run with pushes passes when
+every goal is reached, every fall was recovered without a teleport and the
+mission did not stand still (stall) - "does the patrol carry on after falls".
 """
 from __future__ import annotations
 
@@ -130,6 +140,113 @@ def nearest_debris(x: float, y: float, layout, within: float = NEAR_DEBRIS):
 
 def _wrap(a: float) -> float:
     return (a + math.pi) % (2.0 * math.pi) - math.pi
+
+
+# ---------------------------------------------------------------------------
+# knocks (--push, pure python bookkeeping; the force goes through GzHarness.wrenches)
+# ---------------------------------------------------------------------------
+PUSH_TRIGGERS = ("nav", "after_stand", "inspect")
+PUSH_FORCE = (260.0, 320.0)    # [N] x 0.2 s (random in this range, side by the seed)
+PUSH_STEP = 60.0               # [N] added per retry when the knock did not topple the robot
+PUSH_RETRIES = 5
+PUSH_VERIFY = 2.5              # [s] a knock that did not topple the robot within this is retried
+
+
+def parse_push(spec: str) -> dict:
+    """'nav:2.5' -> {'trig': 'nav', 'delay': 2.5}."""
+    trig, _, delay = str(spec).partition(":")
+    trig = trig.strip().lower()
+    if trig not in PUSH_TRIGGERS:
+        raise ValueError(f"push trigger must be one of {PUSH_TRIGGERS}, got {spec!r}")
+    return {"trig": trig, "delay": float(delay) if delay.strip() else 0.0}
+
+
+class Pusher:
+    """Knocks the robot over at mission events, in order (see the module docstring)."""
+
+    def __init__(self, specs, seed: int = 0):
+        self.specs = [parse_push(s) if isinstance(s, str) else dict(s) for s in specs]
+        self.rng = np.random.default_rng(7000 + 17 * int(seed))
+        self.sign = 1.0 if int(seed) % 2 == 0 else -1.0
+        self.i = 0
+        self.log: list = []
+        self.waiting = True            # False: a knock was given, waiting for the fall
+        self.since: Optional[float] = None
+        self.t_push = None
+        self.fc0 = 0
+        self.succ0 = 0
+        self.retry = 0
+        self.t_stood = None            # last time the recovery succeeded
+
+    @property
+    def done(self) -> bool:
+        return self.i >= len(self.specs) and self.waiting
+
+    def _ready(self, spec, t, mission, ctrl) -> bool:
+        rec = ctrl.recovery
+        if rec.state != "NORMAL":
+            return False
+        if spec["trig"] == "nav":
+            return mission.base == "PATROL" and mission.phase == "navigate" and ctrl.mode == "WALK"
+        if spec["trig"] == "inspect":
+            return mission.base == "INSPECTING"
+        # after_stand: up again after the previous knock's fall
+        return (self.t_stood is not None and rec.successes > self.succ0 and ctrl.mode in ("STAND", "WALK")
+                and t - self.t_stood >= spec["delay"])
+
+    def step(self, t: float, yaw: float, mission, ctrl, wrenches: list):
+        """Call every control tick with the TRUE yaw; appends (t0, t1, force, offset) to ``wrenches``."""
+        rec = ctrl.recovery
+        if rec.successes > getattr(self, "_succ_seen", 0):
+            self._succ_seen = rec.successes
+            self.t_stood = t
+        if not self.waiting:
+            if rec.fall_count > self.fc0:
+                self.log[-1]["fell"] = True
+                self.log[-1]["t_fall"] = round(float(t), 2)
+                self._next()
+            elif t - self.t_push > PUSH_VERIFY:
+                if self.retry < PUSH_RETRIES and ctrl.mode in ("STAND", "WALK"):
+                    self.retry += 1
+                    self._push(t, yaw, mission, ctrl, wrenches)
+                else:
+                    self.log[-1]["fell"] = False
+                    self._next()
+            return
+        if self.i >= len(self.specs):
+            return
+        spec = self.specs[self.i]
+        if not self._ready(spec, t, mission, ctrl):
+            self.since = None
+            return
+        if spec["trig"] == "after_stand":
+            self._push(t, yaw, mission, ctrl, wrenches)
+            return
+        if self.since is None:
+            self.since = t
+        if t - self.since >= spec["delay"]:
+            self._push(t, yaw, mission, ctrl, wrenches)
+
+    def _push(self, t, yaw, mission, ctrl, wrenches):
+        F = float(self.rng.uniform(*PUSH_FORCE)) + PUSH_STEP * self.retry
+        f = (-math.sin(yaw) * F * self.sign, math.cos(yaw) * F * self.sign, 0.0)      # sideways
+        wrenches.append((t + 0.001, t + 0.201, f, (0.0, 0.0, 0.3)))
+        self.fc0 = ctrl.recovery.fall_count
+        self.succ0 = ctrl.recovery.successes
+        self.t_push = t
+        self.waiting = False
+        entry = {"i": self.i, "trig": self.specs[self.i]["trig"], "t": round(float(t), 2), "force": round(F, 1),
+                 "retry": self.retry, "mission": f"{mission.base}/{mission.phase}", "fell": None}
+        if self.retry:
+            self.log[-1] = entry
+        else:
+            self.log.append(entry)
+
+    def _next(self):
+        self.i += 1
+        self.waiting = True
+        self.since = None
+        self.retry = 0
 
 
 # ---------------------------------------------------------------------------
@@ -335,7 +452,19 @@ def run_one(a) -> dict:
     h = GzHarness(cfg)
     op = MissionStackOperator(S, t_start=T_START + SC.CMD_SHIFT * seed, start_cmd=start_cmd,
                               phase=(0.037 * seed) % 0.1)
-    h.cmd_fn = op
+    pusher = Pusher(a.push or [], seed) if a.push else None
+    if pusher is not None:
+        def cmd_fn(t, gt=None, _op=op):
+            out = _op(t, gt)
+            if gt is not None and _op.started:
+                pusher.step(t, float(gt[1][2]), S.m, h.ctrl, h.wrenches)
+            return out
+        cmd_fn.needs_pose = True
+        cmd_fn.bind, cmd_fn.bound = op.bind, True
+        h.cmd_fn = cmd_fn
+        op.bind(h)
+    else:
+        h.cmd_fn = op
     err = None
     t_setup = time.time() - t0w
     stop_reason = "duration"
@@ -394,13 +523,18 @@ def run_one(a) -> dict:
         "timeline": S.state_log, "rth_transitions": S.rth.transitions,
         "events": [e for e in S.events if e[1] != "loco_cmd"][:300],
         "gauge_log": S.gauge_log, "seek_track": S.seek_log[::10], "frames": op.frames,
-        "wait_timeouts": h.wait_timeouts,
+        "wait_timeouts": h.wait_timeouts, "pushes": pusher.log if pusher is not None else [],
+        "resumed": resumed_after_falls(op.trace, rec_events),
     }
     if a.spawn:
         arrived = [g for g in full_order if g in m.completed or
                    (m.results.get(g) or {}).get("reason") == "no reading"]
-        res["segment"] = {"goals": list(a.goal or []), "reached": arrived,
-                          "ok": len(arrived) == len(full_order) and not falls}
+        ok = len(arrived) == len(full_order)
+        if pusher is not None:     # falls on purpose: every one recovered, no teleport, no stall
+            ok = ok and int(rec.successes) >= len(falls) and int(rec.assisted_resets) == 0 and not stalls
+        else:
+            ok = ok and not falls
+        res["segment"] = {"goals": list(a.goal or []), "reached": arrived, "ok": ok}
         res["complete"] = None
         res["checks"] = None
     elif not (int(a.leg or 1) <= 1 and not a.legs):
@@ -416,6 +550,26 @@ def run_one(a) -> dict:
         np.savez_compressed(a.npz, **arrs)
     h.close()
     return res
+
+
+def resumed_after_falls(trace, rec_events, moved: float = 0.5, window: float = 30.0) -> list:
+    """Per recovery: seconds from standing up again until the robot was ``moved`` m
+    away from where it stood up with the mission driving (None = not within
+    ``window`` s) - 'does the patrol carry on after the fall'."""
+    out = []
+    rows = list(trace)
+    for e in rec_events:
+        if e.get("event") != "recovered":
+            continue
+        t0 = float(e["t"])
+        start = next((r for r in rows if r[0] >= t0), None)
+        if start is None:
+            continue
+        hit = next((r for r in rows if t0 <= r[0] <= t0 + window and
+                    math.hypot(r[1] - start[1], r[2] - start[2]) >= moved), None)
+        out.append({"t": round(t0, 2), "resume_s": None if hit is None else round(float(hit[0]) - t0, 2),
+                    "mission": f"{start[7]}/{start[8]}"})
+    return out
 
 
 def _down_for(h, dur: float) -> bool:
@@ -466,6 +620,7 @@ def run_all(a) -> dict:
                    "--rth-params", a.rth_params, "--seeker-params", a.seeker_params, "--patrol-params",
                    a.patrol_params, "--map", a.map, "--stop-down-s", str(a.stop_down_s), "--result", res_path,
                    "--leg", str(a.leg or 1), "--legs", str(a.legs or 0), "--progress"]
+            cmd += [f"--push={p}" for p in (a.push or [])]
             if a.spawn:
                 cmd += [f"--spawn={a.spawn}"] + [f"--goal={g}" for g in (a.goal or [])]
             if a.save_npz:
@@ -490,7 +645,7 @@ def run_all(a) -> dict:
             print(f"[{time.time() - t0:6.0f}s] {tag}: " + one_line(r), flush=True)
     rs = [runs[k] for k in sorted(runs, key=int)]
     return {"config": {"seeds": [int(s) for s in a.seeds], "leg": int(a.leg or 1), "legs": int(a.legs or 0),
-                       "spawn": a.spawn or None, "goals": list(a.goal or []) or None,
+                       "spawn": a.spawn or None, "goals": list(a.goal or []) or None, "push": a.push or None,
                        "params": json.loads(a.params or "{}"), "mission_params": json.loads(a.mission_params or "{}"),
                        "map": a.map, "duration": a.duration},
             "summary": summarize(rs), "runs": runs, "created": time.strftime("%Y-%m-%d %H:%M:%S")}
@@ -534,6 +689,8 @@ def main(argv=None) -> int:
     ap.add_argument("--legs", type=int, default=0, help="stop after N legs (0 = the whole mission)")
     ap.add_argument("--spawn", default="", help="route segment: spawn x,y,yaw (with --goal)")
     ap.add_argument("--goal", action="append", default=None, help="route segment goal x,y[,yaw] (repeatable)")
+    ap.add_argument("--push", action="append", default=None,
+                    help="knock the robot over: nav:DELAY | after_stand:DELAY | inspect:DELAY (repeatable, in order)")
     ap.add_argument("--params", default="{}", help="JSON locomotion controller parameter overrides")
     ap.add_argument("--mission-params", default="{}", help="JSON mission_manager parameter overrides")
     ap.add_argument("--rth-params", default="{}")

@@ -6,7 +6,9 @@
 * with the gz python bindings (``GZ_PYTHON`` = path of a python with
   gz.sim8 + gz.transport13, e.g. ``C:\\gzmamba\\envs\\gz\\python.exe``; skipped
   otherwise): a SHORT route segment in the plant world (spawn next to the
-  dock, one goal 1.5 m away) with the whole mission stack in the loop.
+  dock, one goal 1.5 m away) with the whole mission stack in the loop, and a
+  corridor segment on which the robot is knocked over twice in a row
+  (``--push``): it gets up by itself and the patrol carries on to the goals.
 """
 import json
 import math
@@ -125,6 +127,58 @@ def test_sub_plans_and_segments():
     assert seg["viewpoints"][1]["x"] == -1.5 and seg["viewpoints"][1]["yaw"] == pytest.approx(3.14)
 
 
+class _Rec:
+    def __init__(self):
+        self.state, self.fall_count, self.successes = "NORMAL", 0, 0
+
+
+class _Ctrl:
+    def __init__(self):
+        self.mode, self.recovery = "WALK", _Rec()
+
+
+class _Mission:
+    def __init__(self, base="PATROL", phase="navigate"):
+        self.base, self.phase = base, phase
+
+
+def test_pusher_knocks_in_order_and_retries():
+    with pytest.raises(ValueError):
+        MC.parse_push("jump:1")
+    assert MC.parse_push("after_stand:1.5") == {"trig": "after_stand", "delay": 1.5}
+    p = MC.Pusher(["nav:2.0", "after_stand:1.0"], seed=1)
+    c, m, w = _Ctrl(), _Mission(), []
+    for k in range(19):                                    # 1.9 s of walking: not yet
+        p.step(0.1 * k, 0.0, m, c, w)
+    assert w == []
+    p.step(2.0, 0.0, m, c, w)
+    assert len(w) == 1 and w[0][2][1] < 0.0 and abs(w[0][2][0]) < 1e-9     # sideways (seed 1: -y)
+    p.step(3.0, 0.0, m, c, w)                              # no fall within 2.5 s -> retried, stronger
+    p.step(4.6, 0.0, m, c, w)
+    assert len(w) == 2 and abs(w[1][2][1]) > abs(w[0][2][1]) and p.log[-1]["retry"] == 1
+    c.recovery.fall_count, c.mode, c.recovery.state = 1, "FALLEN", "DAMP"
+    p.step(4.8, 0.0, m, c, w)
+    assert p.log[0]["fell"] is True and p.i == 1
+    c.recovery.successes, c.mode, c.recovery.state = 1, "STAND", "NORMAL"
+    p.step(20.0, 0.0, m, c, w)                             # stood up: the second knock 1 s later
+    p.step(20.5, 0.0, m, c, w)
+    assert len(w) == 2
+    p.step(21.05, 0.0, m, c, w)
+    assert len(w) == 3 and p.log[-1]["trig"] == "after_stand"
+    c.recovery.fall_count = 2
+    p.step(21.3, 0.0, m, c, w)
+    assert p.done and [e["fell"] for e in p.log] == [True, True]
+
+
+def test_resume_after_falls_from_the_trace():
+    tr = [(0.1 * k, 0.0 if k < 30 else 0.05 * (k - 30), 0.0, 0, 0, 0, 0, "PATROL", "navigate", "patrol",
+           0, 0, 0, "STAND", "NORMAL") for k in range(100)]
+    ev = [{"event": "fall", "t": 1.0}, {"event": "recovered", "t": 2.0}, {"event": "recovered", "t": 9.5}]
+    out = MC.resumed_after_falls(tr, ev)
+    assert out[0]["resume_s"] == pytest.approx(1.0 + 1.0, abs=0.11) and out[0]["mission"] == "PATROL/navigate"
+    assert out[1]["resume_s"] is None                      # the trace ends 0.4 m later
+
+
 GZ_PYTHON = os.environ.get("GZ_PYTHON", "")
 
 
@@ -149,3 +203,30 @@ def test_route_segment_in_gazebo(tmp_path):
     assert r["falls"] == 0 and r["teleports"] == 0 and r["stop_reason"] in ("finished", "leg end (P1)")
     assert r["timeline"][0][1] == "IDLE" and any(s[1] == "INSPECTING" for s in r["timeline"])
     assert r["sim_time"] < 40.0 and r["wall_time"] > 0
+
+
+@pytest.mark.skipif(not (GZ_PYTHON and os.path.exists(GZ_PYTHON)),
+                    reason="set GZ_PYTHON to a python with the gz-sim 8 bindings (gz.sim8, gz.transport13)")
+def test_patrol_carries_on_after_two_falls_in_a_row_in_gazebo(tmp_path):
+    """Field report: 'up again after falling (twice in a row) the robot did not patrol on'.
+    Knocked over while walking the upper corridor, again 1 s after it stood up: it gets
+    up by itself (no teleport) and the patrol walks on to both goals."""
+    env = dict(os.environ)
+    if os.name == "nt":
+        base = os.path.dirname(GZ_PYTHON)
+        extra = [base, os.path.join(base, "Library", "mingw-w64", "bin"), os.path.join(base, "Library", "usr", "bin"),
+                 os.path.join(base, "Library", "bin"), os.path.join(base, "Scripts")]
+        env["PATH"] = os.pathsep.join(extra + [env.get("PATH", "")])
+        env["CONDA_PREFIX"] = base
+    out = tmp_path / "mission.json"
+    cmd = [GZ_PYTHON, CLI, "--seeds", "0", "--jobs", "1", "--duration", "180", "--label", "pytest",
+           "--spawn=46.3,0.72,3.14159", "--goal=43.0,0.8", "--goal=40.8,0.9", "--push=nav:2.5",
+           "--push=after_stand:1.0", "--out", str(out), "--work-dir", str(tmp_path)]
+    p = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=1500)
+    assert p.returncode == 0, p.stdout + p.stderr
+    r = json.loads(out.read_text(encoding="utf-8"))["runs"]["pytest"]["runs"]["0"]
+    assert r["error"] is None, r["error"]
+    assert [e["fell"] for e in r["pushes"]] == [True, True], r["pushes"]
+    assert r["teleports"] == 0 and r["recoveries"] >= 2
+    assert r["segment"]["ok"], (r["segment"], r["fall_info"], r["stalls"], r["resumed"])
+    assert all(x["resume_s"] is not None and x["resume_s"] < 15.0 for x in r["resumed"]), r["resumed"]
