@@ -31,15 +31,15 @@ from std_msgs.msg import Bool, Float32, Float32MultiArray, String
 
 from dusan_common.debris_crossing import CrossingParams
 from dusan_common.grid_map import OccupancyGridMap
-from dusan_common.obstacle_layer import EvidenceFrame, frame_accepted, organised_cloud_to_xyz
+from dusan_common.obstacle_layer import EvidenceFrame, frame_accepted, organised_cloud_to_xyz, robot_down
 from dusan_common.planning import path_to_msg
 from dusan_common.ros_helpers import json_msg
 from dusan_common.terrain_cost import debris_blocked_grid
 
 from .layout_map import map_fingerprint
-from .node_common import (best_effort_qos, declare, finite_or_none, guarded, latched_qos, load_layout_and_map,
-                          now_sec, odom_pose_twist_finite, reliable_qos, run_node, stamp, subscribe_latched,
-                          twist_msg, warn_throttled)
+from .node_common import (best_effort_qos, declare, finite_or_none, guarded, json_dict, latched_qos,
+                          load_layout_and_map, now_sec, odom_pose_twist_finite, reliable_qos, run_node, stamp,
+                          subscribe_latched, twist_msg, warn_throttled)
 from .params import SEEKER_PARAMS, seeker_config
 from .source_seeking import IDLE, SourceSeeker
 
@@ -84,6 +84,8 @@ class SourceSeekerNode(Node):
         self.create_subscription(Float32MultiArray, "/gas/sensor_array", g(self._on_array), best_effort_qos(10))
         self.create_subscription(Vector3Stamped, "/gas/wind", g(self._on_wind), best_effort_qos(10))
         self.create_subscription(Bool, "/safety/rth_active", g(self._on_rth), best_effort_qos(10))
+        # fallen / self-righting: the obstacle memory fuses nothing (phantoms of the tipped camera)
+        self.create_subscription(String, "/locomotion/state", g(self._on_loco), best_effort_qos(5))
         if p["use_map_topic"]:
             subscribe_latched(self, OccupancyGrid, "/map", g(self._on_map))
         # novel obstacles from terrain_mapper (best effort depth 1 = latest frame of a reliable publisher)
@@ -103,6 +105,11 @@ class SourceSeekerNode(Node):
         self.create_timer(1.0 / max(p["path_rate"], 0.1), g(self._on_path))
 
     # ------------------------------------------------------------ callbacks
+    def _on_loco(self, msg: String) -> None:
+        d = json_dict(msg)
+        if isinstance(d.get("mode"), str) and d["mode"]:
+            self.seeker.obstacles.set_upright(not robot_down(d["mode"], d.get("recovery_state")), now_sec(self))
+
     def _on_enable(self, msg: Bool) -> None:
         if msg.data and not self.enabled:
             self.enabled = True

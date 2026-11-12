@@ -25,7 +25,15 @@ pipe):
   ``align_tol``), then walks over it at a constant ``speed`` with no
   sideways command and the yaw rate clipped to ``wz`` (default 0: the
   locomotion controller's heading hold keeps the heading) until its centre
-  is ``zone`` m past the pipe axis (hind feet clear).
+  is ``zone`` m past the pipe axis (hind feet clear).  A robot that stands
+  in the zone turned away from the crossing (it got up there after a fall:
+  the self-righting turns the body, SLIDE ~80 deg along the pipe) first
+  turns in place onto the crossing heading: |heading error| >
+  ``realign_tol``, or > ``align_tol`` for the first crossing after
+  :meth:`CrossingGovernor.reset` with ``realign`` (the mission calls it when
+  the robot stands up again).  Walking straight on 80 deg off the crossing
+  took the robot along the pipe (Gazebo: fell on it again in 4 of 4 runs)
+  or into the corridor wall (stuck, viewpoints skipped).
   Passing next to a pipe that is not crossed (its end, e.g. the north gap at
   C-OBS1 or the partition door end of F-OBS3): speed / yaw rate limited to
   ``near_vx`` / ``near_wz``, no strafing, within ``near_dist`` of the pipe.
@@ -61,6 +69,8 @@ CROSSING_DEFAULTS: Dict[str, object] = {
     "crossing_speed": 0.25,        # [m/s] constant pace over the pipe
     "crossing_wz": 0.0,            # [rad/s] yaw rate limit while over the pipe (0: module1's heading hold
                                    #   keeps the heading; corrections twisted the body with a foot held at the pipe)
+    "crossing_realign_tol": 0.6,   # [rad] in the zone turned this far off the crossing (up again after a
+                                   #   fall): turn in place first (0 = never)
     "crossing_near_dist": 0.45,    # [m] centre to a pipe that is passed, not crossed
     "crossing_near_vx": 0.25,      # [m/s]
     "crossing_near_wz": 0.35,      # [rad/s]
@@ -81,6 +91,7 @@ class CrossingParams:
     align_wz: float = 0.4
     speed: float = 0.25
     wz: float = 0.0
+    realign_tol: float = 0.6
     near_dist: float = 0.45
     near_vx: float = 0.25
     near_wz: float = 0.35
@@ -269,16 +280,21 @@ class CrossingGovernor:
         self.p = params or CrossingParams()
         self.pipes = layout_pipes(source) if source is not None else []
         self.active: Optional[Crossing] = None     # crossing in progress
-        self.state = ""                            # "" | approach | align | cross | near
+        self.state = ""                            # "" | approach | align | cross | realign | near
         self.n_crossings = 0
+        self._realign = False                      # reset(realign=True): strict heading check once
 
     @property
     def enabled(self) -> bool:
         return bool(self.p.enabled) and bool(self.pipes)
 
-    def reset(self) -> None:
+    def reset(self, realign: bool = False) -> None:
+        """Forget the crossing in progress.  ``realign``: the robot was moved
+        (stood up after a fall) - a crossing it now stands in is only walked
+        once the heading is within ``align_tol`` (not ``realign_tol``)."""
         self.active = None
         self.state = ""
+        self._realign = bool(realign)
 
     def _next_crossing(self, x: float, y: float, remaining) -> Optional[Crossing]:
         if remaining is None or len(remaining) < 1:
@@ -298,6 +314,12 @@ class CrossingGovernor:
         if not self.enabled:
             self.state = ""
             return vx, vy, wz
+        out = self._govern(x, y, yaw, vx, vy, wz, remaining, recheck)
+        if self.state != "realign":
+            self._realign = False             # the strict check holds for the turn after a reset only
+        return out
+
+    def _govern(self, x, y, yaw, vx, vy, wz, remaining, recheck):
         p = self.p
         cr = self.active
         if cr is not None:
@@ -323,6 +345,12 @@ class CrossingGovernor:
                 self.state = "approach"
                 return min(vx, max(p.speed, 0.0)) if vx > 0.0 else max(p.speed, 0.0), 0.0, \
                     float(np.clip(wz, -p.wz, p.wz))
+            tol = p.align_tol if self._realign else p.realign_tol
+            if tol > 0.0 and abs(err) > tol:
+                # standing in the zone turned away from the crossing (up again after a fall, SLIDE turns
+                # the body along the pipe): walking on would follow the pipe / run into a wall
+                self.state = "realign"
+                return 0.0, 0.0, float(np.clip(1.5 * err, -p.align_wz, p.align_wz))
             self.state = "cross"                  # a foot can reach the pipe: steady, straight
             return float(p.speed), 0.0, float(np.clip(wz, -p.wz, p.wz))
         d = min((pp.distance(x, y) for pp in self.pipes), default=math.inf)

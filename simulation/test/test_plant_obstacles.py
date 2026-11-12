@@ -621,3 +621,118 @@ def _box_view(g, cx, cy, hx, hy, x_seen, res=0.04, n=150, centre=(2.6, 0.0)):
     known = X < x_seen
     hit = (np.abs(X - cx) <= hx) & (np.abs(Y - cy) <= hy) & known
     return hit, known, oi * res, oj * res, res
+
+
+# ----------------------------------------------------------------------------
+# falls: phantom evidence of the tipped camera (field report: up again, standing still in PATROL)
+# ----------------------------------------------------------------------------
+def _phantom_ring(x, y, r0=0.42, r1=0.75, bearing=0.0, width=1.2, res=0.05, half=1.5):
+    """What a camera tipping over with the body reports: steps next to the robot (floor at
+    a grazing angle, its own legs), 0.42 .. 0.75 m from base_link within +-``width`` rad of
+    the world ``bearing`` (Gazebo dump: 0.46 .. 0.67 m, on the re-planned path)."""
+    n = int(round(2.0 * half / res))
+    xs = x - half + (np.arange(n) + 0.5) * res
+    ys = y - half + (np.arange(n) + 0.5) * res
+    X, Y = np.meshgrid(xs, ys)
+    r = np.hypot(X - x, Y - y)
+    ang = np.abs((np.arctan2(Y - y, X - x) - bearing + np.pi) % (2.0 * np.pi) - np.pi)
+    hit = (r >= r0) & (r <= r1) & (ang <= width)
+    return EvidenceFrame(hit, np.ones((n, n), dtype=bool), float(xs[0]), float(ys[0]), res)
+
+
+def _fall_with_phantoms(sim, tip=1.0, fallen=3.0, recovering=6.0, turn=1.3, falls=1, between=1.0):
+    """The robot tips over (``tip`` s of phantom frames before module1 reports FALLEN), lies,
+    self-rights and stands up again turned by ``turn`` rad - ``falls`` times in a row
+    (``between`` s standing in between).  The phantoms lie on the way on (east); turned
+    by 1.3 rad they are outside the camera's field of view (+-0.75 rad) after the
+    stand-up.  Returns the time it last stood up."""
+    m = sim.m
+    t_up = None
+    for k in range(falls):
+        seq = [("WALK", tip), ("FALLEN", fallen), ("RECOVERING", recovering)]
+        sim.frozen, sim.feed = True, False
+        for mode, dur in seq:
+            t_end = sim.t + dur
+            while sim.t < t_end - 1e-9:
+                m.on_locomotion_state({"mode": mode, "recovery_state": "NORMAL" if mode == "WALK" else "STAND_UP"},
+                                      sim.t)
+                if sim.k % 2 == 0:
+                    m.set_pose(sim.x, sim.y, sim.yaw, sim.t)
+                    m.on_obstacle_frame(_phantom_ring(sim.x, sim.y), sim.t)
+                sim.step()
+        sim.yaw = (sim.yaw + turn + math.pi) % (2 * math.pi) - math.pi
+        sim.frozen, sim.feed = False, True
+        t_up = sim.t
+        if k + 1 < falls:
+            t_end = sim.t + between
+            while sim.t < t_end - 1e-9:
+                m.on_locomotion_state({"mode": "STAND", "recovery_state": "NORMAL"}, sim.t)
+                sim.step()
+    return t_up
+
+
+@pytest.mark.parametrize("falls", [1, 2])
+def test_m20_phantoms_seen_while_falling_do_not_block_the_robot_after_it_stands_up(falls):
+    """Headless Gazebo (current main, fall on the ramp): 7-10 phantom cells 0.46-0.67 m
+    from the robot, confirmed while it fell, blocked the re-planned path after the
+    stand-up - zero command (no turn, so the camera never looked at them; inside the
+    ignore radius they are never seen free), 'PATROL' on the dashboard, ~50 s
+    standing per stop until obstacle_forget_time.  The memory now fuses nothing
+    while the robot is down and forgets what the tipping camera saw.  (A 2.4 m
+    corridor and a sensor that only reports its field of view, like the step test
+    next to the stairs: the phantom cells are neither hit nor seen free again;
+    main: 46 s zero command, 13 stuck re-plans, the viewpoint skipped.)"""
+    g = corridor(24.0, 2.4)
+    m = make(g, [("G", 20.0, 0.0, 0.0)])
+    sim = ObstacleSim(m, g, sensor=FakeElevationSensor([], static_grid=g, render_static=True, persist=False))
+    m.command("patrol", 0.0)
+
+    def stand(s):
+        m.on_locomotion_state({"mode": "STAND", "recovery_state": "NORMAL"}, s.t)
+        return False
+
+    assert sim.run(30, until=lambda s: stand(s) or (s.m.phase == "navigate" and s.x > 4.0))
+    t_up = _fall_with_phantoms(sim, falls=falls)
+    x_up, y_up = sim.x, sim.y
+    moved = {}
+
+    def watch(s):
+        stand(s)
+        if math.hypot(s.x - x_up, s.y - y_up) >= 1.0:
+            moved.setdefault("t", s.t)
+        return done(s)
+
+    assert sim.run(150, until=watch), (m.base, m.phase, m.hold_reason(sim.t), sim.events[-5:])
+    assert moved["t"] - t_up <= 8.0, moved["t"] - t_up          # main: never (skipped after 46 s)
+    assert m.completed == ["G"] and m.missed == []
+    assert len(sim.texts("stuck")) <= 1
+    st = m.state_dict(sim.t)["obstacle"]
+    assert st["fall_forgotten"] > 0 and not st["suspended"]
+    assert sim.texts("obstacle cells seen while falling forgotten")
+
+
+def test_m21_obstacle_memory_fall_guard_unit():
+    """set_upright: frames are not fused while down; evidence first seen within
+    FALL_LOOKBACK s before the fall is forgotten at the stand-up, older evidence
+    (a real obstacle seen before) is kept; fusion resumes after FALL_SETTLE s."""
+    from dusan_common.obstacle_layer import FALL_LOOKBACK, FALL_SETTLE, ObstacleMemory, robot_down
+    mem = ObstacleMemory({"obstacle_confirm_hits": 2})
+    real = EvidenceFrame(*_box_view(corridor(), 4.5, 0.0, 0.3, 0.3, 9.0))
+    for k in range(3):                                           # a real box, seen long before the fall
+        mem.update(real, (2.6, 0.0), 1.0 + 0.2 * k)
+    n_real = mem.confirmed_count
+    assert n_real > 0
+    t_fall = 20.0
+    for k in range(4):                                           # tipping: phantoms, not yet reported down
+        mem.update(_phantom_ring(2.6, 0.0), (2.6, 0.0), t_fall - 0.8 + 0.2 * k)
+    assert mem.confirmed_count > n_real
+    assert mem.set_upright(False, t_fall) == 0 and mem.suspended
+    assert not mem.frame_due(t_fall + 1.0)
+    assert mem.update(_phantom_ring(2.6, 0.0), (2.6, 0.0), t_fall + 1.0) is False
+    assert mem.set_upright(True, t_fall + 8.0) > 0 and not mem.suspended
+    assert mem.confirmed_count == n_real                         # phantoms gone, the real box kept
+    assert not mem.frame_due(t_fall + 8.0 + 0.5 * FALL_SETTLE)   # still settling
+    assert mem.frame_due(t_fall + 8.0 + FALL_SETTLE + 0.01)
+    assert FALL_LOOKBACK >= 1.0
+    assert robot_down("FALLEN") and robot_down("RECOVERING", "TUCK") and robot_down("ESTOP", "STAND_UP")
+    assert not robot_down("STAND", "NORMAL") and not robot_down("WALK") and not robot_down("SIT", None)

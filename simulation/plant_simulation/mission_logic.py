@@ -40,6 +40,17 @@ fuses every frame while the mission drives and one per
 ``obstacle_idle_period`` otherwise (:meth:`obstacle_frame_due`).  A hold
 caused only by a stale pose (a long tick on a busy CPU lets the overdue timer
 run before the queued /odom) resumes the current path without re-planning.
+
+Falls: while /locomotion/state is not WALK / STAND the mission holds (phase
+'hold', zero /cmd_vel/patrol) - also in the middle of an inspection, which is
+then repeated (re-approach, align, dwell) - and defers a gas alarm; when the
+robot stands again it re-plans from where it is.  The obstacle memory fuses
+no frame while the robot is down and forgets what it first saw while falling
+(a tipped camera reports phantom obstacles around the robot that could block
+the re-planned path for ``obstacle_forget_time``), the pipe-crossing governor
+turns the robot back onto a crossing it stands in.  Why the mission does not
+drive is reported in /mission/state ``hold_reason`` (e-stop, fallen, getting
+up, no /locomotion/state, waiting for /odom, obstacle ahead, paused, manual).
 """
 import json
 import math
@@ -49,7 +60,7 @@ import numpy as np
 
 from dusan_common.debris_crossing import CROSSING_DEFAULTS, CrossingGovernor, CrossingParams, straighten_crossings
 from dusan_common.geometry import wrap_angle
-from dusan_common.obstacle_layer import OBSTACLE_DEFAULTS, ObstacleAvoider
+from dusan_common.obstacle_layer import OBSTACLE_DEFAULTS, ObstacleAvoider, robot_down
 from dusan_common.planning import densify, plan as plan_path
 from dusan_common.pure_pursuit import PurePursuit
 from dusan_common.terrain_cost import TERRAIN_COST_DEFAULTS, TerrainCostCache
@@ -119,6 +130,8 @@ MISSION_DEFAULTS = {
     "send_walk_after_stand": False,  # module1 auto-walks on non-zero /cmd_vel; 'walk' = trot in place
     "restand_period": 5.0,         # s between repeated 'stand' while SIT during a mission
     "recover_after": 20.0,         # s FALLEN without getting up during a mission -> 'recover' (repeated), 0 = off
+    "loco_state_timeout": 3.0,     # s without /locomotion/state (20 Hz) -> reported as missing (hold_reason,
+                                   #   one warning; a stale FALLEN sends no 'recover'), 0 = off
     # gas
     "gas_alarm_ppm": 25.0,
     "gas_alarm_hold": 1.0,         # s above threshold before the alarm fires
@@ -338,7 +351,12 @@ class MissionLogic:
         self._teleop_t = None          # time of the last /teleop/active true (heartbeat)
         self.loco_mode = None
         self.loco_recovery = None      # /locomotion/state recovery_state (FAILED: module1 gave up)
+        self.loco_t = None             # time of the last /locomotion/state
+        self._loco_streaming = False   # two messages within loco_state_timeout seen (a stream, not a one-off)
+        self._loco_stale_warned = False
         self._loco_was_ready = True
+        self._loco_hold_mode = None    # reason announced by the last 'locomotion not ready' event
+        self._rth_loco_hold = False    # self-RTH held for the locomotion: re-plan when it is ready again
         self._stale_hold = False       # 'hold' entered only for a stale pose with a valid path
         self._tick_lead = None         # pure-pursuit look-ahead the obstacle governor asked for this tick
         self._fallen_since = None
@@ -487,9 +505,21 @@ class MissionLogic:
 
     def on_locomotion_state(self, d, t):
         if isinstance(d, dict) and d.get("mode"):
+            t = float(t)
             self.loco_mode = str(d["mode"]).upper()
             rs = d.get("recovery_state")
             self.loco_recovery = str(rs).upper() if rs else None
+            timeout = float(self.p.get("loco_state_timeout", 0.0) or 0.0)
+            if self.loco_t is not None and 0.0 <= t - self.loco_t <= timeout:
+                self._loco_streaming = True
+            self.loco_t = t
+            if self._loco_stale_warned:
+                self._loco_stale_warned = False
+                self._emit("info", "/locomotion/state received again")
+            # fall guard of the obstacle memory: no fusion while down, forget what the tipping camera saw
+            n = self.obstacles.set_upright(not robot_down(self.loco_mode, self.loco_recovery), t)
+            if n:
+                self._emit("info", f"stood up again - {n} obstacle cells seen while falling forgotten")
 
     def on_gauge_readings(self, d, t):
         if not isinstance(d, dict):
@@ -629,6 +659,7 @@ class MissionLogic:
             self._begin_mission(mode, t)
         self._update_gas(t)
         self._check_rth(t)
+        self._watch_loco_stream(t)
         self._watch_fallen(t)
 
         if self._active():
@@ -688,6 +719,7 @@ class MissionLogic:
             "results": self.results,
             "path_remaining": round(float(remaining), 2),
             "obstacle": self.obstacles.status(),
+            "hold_reason": self.hold_reason(t),
             "mission_elapsed": (round((self.mission_t_end if self.mission_t_end is not None else t)
                                       - self.mission_t0, 1)
                                 if (t is not None and self.mission_t0 is not None) else None),
@@ -695,6 +727,70 @@ class MissionLogic:
             "recent_commands": list(self.recent_commands),
             "t": t,
         }
+
+    def hold_reason(self, t=None):
+        """Why the mission is not driving the robot right now ('' = it is, or
+        nothing to drive): short English text for /mission/state
+        ``hold_reason`` (the dashboard / HUD show it)."""
+        t = self._last_t if t is None else float(t)
+        if self.teleop_active:
+            return "manual override (teleop)"
+        if self.paused:
+            return "paused"
+        own = self.base in ("PATROL", "INSPECTING") or (self.base == "RTH" and self.phase in ("self", "self_wait"))
+        if not own or t is None:
+            return ""
+        if self.base == "PATROL" and self.phase == "starting":
+            return "" if self._loco_ready() else f"waiting for the robot to stand ({self.loco_mode})"
+        if not self._pose_fresh(t):
+            return "waiting for /odom"
+        age = self._loco_age(t)
+        if age is not None:
+            return f"no /locomotion/state for {age:.0f} s (locomotion_controller down?)"
+        why = self._loco_block()
+        if why:
+            return why
+        if self.phase in ("navigate", "self") and self.pp.active and self.obstacles.enabled \
+                and self.obstacles.scale <= 0.0:
+            ft = self.obstacles.free_travel
+            return "obstacle ahead" + (f" ({ft:.1f} m)" if math.isfinite(ft) else "")
+        return ""
+
+    def _loco_age(self, t):
+        """Seconds since the last /locomotion/state when that stream stopped
+        (loco_state_timeout), else None."""
+        timeout = float(self.p.get("loco_state_timeout", 0.0) or 0.0)
+        if timeout <= 0.0 or not self._loco_streaming or self.loco_t is None or t is None:
+            return None
+        age = float(t) - self.loco_t
+        return age if age > timeout else None
+
+    def _loco_block(self):
+        """'' when the locomotion lets the mission drive, else the reason."""
+        if self._loco_ready():
+            return ""
+        mode, rs = self.loco_mode, self.loco_recovery
+        sub = f" ({rs})" if rs and rs != "NORMAL" else ""
+        if mode == "ESTOP":
+            return "e-stop engaged - 'release' needed (SPACE in the teleop terminal / dashboard)"
+        if mode == "FALLEN":
+            return "robot fallen" + sub
+        if mode == "RECOVERING":
+            return "getting up" + sub
+        if mode == "SIT":
+            return "sitting - 'stand' sent"
+        if mode == "STANDING_UP":
+            return "standing up"
+        return f"locomotion {mode}"
+
+    def _watch_loco_stream(self, t):
+        """One warning when /locomotion/state stops during a mission."""
+        age = self._loco_age(t)
+        if age is None or self._loco_stale_warned or self.base not in ("PATROL", "INSPECTING", "SEEK", "RTH"):
+            return
+        self._loco_stale_warned = True
+        self._emit("warn", f"no /locomotion/state for {age:.0f} s - is locomotion_controller running? "
+                           f"(last mode {self.loco_mode})")
 
     # ============================================================ internals
     def _expire_teleop(self, t):
@@ -822,7 +918,7 @@ class MissionLogic:
             self._gas_rearm_t = None
             self._emit("info", "gas alarm re-armed")
         if alarm and self.gas_armed and self.base in ("PATROL", "INSPECTING") and self._active() \
-                and self.phase != "starting":
+                and self.phase != "starting" and self._loco_ready():    # fallen: seek once it stands again
             self._enter_seek(t, resume=True, reason=f"gas {self.gas_ppm:.1f} ppm")
 
     # ------------------------------------------------------------------ RTH
@@ -933,6 +1029,16 @@ class MissionLogic:
             if not self._pose_fresh(t) or not self._loco_ready():
                 # never steer on a stale pose / while fallen: hold, keep the path
                 self._out.cmd_vel = (0.0, 0.0, 0.0)
+                if not self._loco_ready():
+                    self._rth_loco_hold = True
+                return
+            if self._rth_loco_hold:
+                # stood up again somewhere else, maybe turned: plan home from here
+                self._rth_loco_hold = False
+                self.crossing.reset(realign=True)
+                self.obstacles.new_goal()
+                self._emit("info", f"locomotion ready again ({self.loco_mode}) - re-planning the way home")
+                self._enter_self_rth(t)
                 return
             self._follow_path(t, dt, on_arrival=self._on_self_dock_arrival, on_fail=self._on_self_rth_fail)
 
@@ -1319,10 +1425,15 @@ class MissionLogic:
         if self._loco_ready():
             if not self._loco_was_ready:
                 self._loco_was_ready = True
+                self._loco_hold_mode = None
                 self._stale_hold = False
                 self._emit("info", f"locomotion ready again ({self.loco_mode}) - re-planning")
                 if self.p["send_walk_after_stand"]:
                     self._out.locomotion.append("walk")
+                # the robot stands somewhere else now, maybe turned: a crossing in progress before the
+                # fall is re-detected on the new path (turning onto it first), obstacle detours restart
+                self.crossing.reset(realign=True)
+                self.obstacles.new_goal()
                 self._navigate_to_current(t)
                 return False
             if self.phase == "hold":
@@ -1336,8 +1447,12 @@ class MissionLogic:
                 return False
             return True
         self._stale_hold = False
-        if self._loco_was_ready:
+        kind = "down" if self.loco_mode in ("FALLEN", "RECOVERING") else self.loco_mode
+        if self._loco_was_ready or kind != self._loco_hold_mode:
+            # announced again when the reason changes while holding (fallen -> ESTOP, SIT ...); the
+            # FALLEN <-> RECOVERING cycles of a recovery are one reason (hold_reason has the detail)
             self._loco_was_ready = False
+            self._loco_hold_mode = kind
             self._emit("warn", f"locomotion not ready ({self.loco_mode}) - holding")
         self.pp.clear()
         self._out.cmd_vel = (0.0, 0.0, 0.0)
@@ -1354,8 +1469,10 @@ class MissionLogic:
         mission-level backstop - FALLEN for recover_after s in any mission
         phase (also INSPECTING / SEEK / RTH) -> 'recover', repeated."""
         after = float(self.p["recover_after"])
+        # (a FALLEN that is only the last message of a stopped /locomotion/state stream is no reason:
+        # 'recover' would make a robot that stands re-run the stand-up)
         if after <= 0.0 or self.loco_mode != "FALLEN" or not self._active() \
-                or self.base not in ("PATROL", "INSPECTING", "SEEK", "RTH"):
+                or self.base not in ("PATROL", "INSPECTING", "SEEK", "RTH") or self._loco_age(t) is not None:
             self._fallen_since = None
             return
         if self._fallen_since is None:
@@ -1493,6 +1610,15 @@ class MissionLogic:
         vp = self.current
         if vp is None:
             self._set_base("PATROL")
+            return
+        if not self._loco_ready():
+            # fell (or e-stop / sit) in front of the gauge: the dwell / scan timers must not run out while
+            # it lies there (the gauge would be skipped) and no scan turn goes to a fallen robot - hold
+            # like a patrol leg; up again: re-approach the viewpoint, align and dwell again
+            self.n_readings = 0
+            self._send_target("")
+            self._set_base("PATROL", "hold")
+            self._loco_gate(t)
             return
         enough = self.n_readings >= int(self.p["min_readings"])
         if self.phase == "dwell":

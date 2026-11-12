@@ -472,6 +472,101 @@ def test_fall_and_self_righting_in_any_phase_resumes_the_mission(when):
     assert "recover" not in sim.loco
 
 
+@pytest.mark.parametrize("falls", [1, 2])
+def test_fall_during_the_inspection_repeats_it_instead_of_skipping_the_gauge(falls):
+    """Gazebo (bug_gz d_inspect): knocked over during the INSPECTING dwell, the
+    dwell / scan timers ran out while the robot lay there - 'G07: no reading
+    obtained - skipped' 0.4 s after it stood up - and the scan turned a fallen
+    robot.  Now the inspection is held like a patrol leg and repeated (re-approach,
+    align, dwell) once the robot stands again - also after two falls in a row."""
+    m = make({"scan_time": 1.0})
+    sim = Sim(m)
+    m.command("patrol", 0.0)
+    feed = {"mode": "STAND"}
+    hook = lambda s: s.m.on_locomotion_state(dict(feed), s.t)                    # noqa: E731
+    assert sim.run(80, hook=hook, until=lambda s: s.m.base == "INSPECTING")
+    gid = m.current.gauge_id
+    sim.auto_read = False                                       # no readings until it stands there again
+    sim.run(1.0, hook=hook)
+    cmds_down = []
+    for k in range(falls):
+        sim.frozen = True
+        for mode, dur in (("FALLEN", 3.0), ("RECOVERING", 8.0)):
+            feed["mode"] = mode
+            for _ in range(int(round(dur / DT))):
+                sim.step(hook)
+                cmds_down.append(sim.last_cmd)
+        sim.x, sim.y, sim.yaw = sim.x + 0.4, sim.y - 0.3, sim.yaw + 1.2           # got up off the viewpoint
+        sim.frozen = False
+        feed["mode"] = "STAND"
+        if k + 1 < falls:
+            sim.run(1.5, hook=hook)
+    assert gid not in m.missed
+    assert all(c is None or c == (0.0, 0.0, 0.0) for c in cmds_down)           # no scan turn while down
+    sim.auto_read = True
+    assert sim.run(150, hook=hook, until=lambda s: s.m.base == "DONE")
+    assert gid in m.completed and m.missed == []
+    assert any("locomotion not ready" in e[1] for e in sim.events)
+
+
+def test_hold_reason_says_why_the_robot_stands_still():
+    """Field report: up again, the robot stood still while the dashboard said PATROL -
+    /mission/state hold_reason now names the cause (e-stop, fallen / getting up, a
+    stopped /locomotion/state stream, paused, manual), a new reason while holding is
+    announced again (fallen -> ESTOP; FALLEN <-> RECOVERING is one), and a FALLEN that is only the last
+    message of a stopped stream sends no 'recover' (bug_loco: a standing robot whose
+    state did not arrive re-ran the stand-up every 20 s)."""
+    m = make()
+    sim = Sim(m)
+    m.command("patrol", 0.0)
+    feed = {"mode": "STAND", "recovery_state": "NORMAL"}
+    hook = lambda s: s.m.on_locomotion_state(dict(feed), s.t) if feed else None   # noqa: E731
+    assert sim.run(30, hook=hook, until=lambda s: s.m.phase == "navigate")
+    sim.run(1.0, hook=hook)
+    assert m.state_dict(sim.t)["hold_reason"] == ""
+    feed.update(mode="FALLEN", recovery_state="DAMP")
+    sim.run(1.0, hook=hook)
+    assert m.phase == "hold" and m.state_dict(sim.t)["hold_reason"] == "robot fallen (DAMP)"
+    feed.update(mode="RECOVERING", recovery_state="STAND_UP")
+    sim.run(1.0, hook=hook)
+    assert m.hold_reason() == "getting up (STAND_UP)"
+    feed.update(mode="ESTOP")                                    # SPACE / dashboard e-stop during the recovery
+    sim.run(1.0, hook=hook)
+    assert m.hold_reason().startswith("e-stop engaged") and "release" in m.hold_reason()
+    held = [e[1] for e in sim.events if e[1].startswith("locomotion not ready")]
+    assert held == ["locomotion not ready (FALLEN) - holding", "locomotion not ready (ESTOP) - holding"]
+    assert m.message == "locomotion not ready (ESTOP) - holding"
+    # the /locomotion/state stream stops with a FALLEN (controller died / stopped)
+    feed.update(mode="FALLEN", recovery_state="FAILED")
+    sim.run(0.5, hook=hook)
+    feed.clear()
+    sim.run(30.0, hook=hook)
+    assert m.hold_reason().startswith("no /locomotion/state for ") and "locomotion_controller" in m.hold_reason()
+    assert sum("no /locomotion/state" in e[1] for e in sim.events) == 1
+    assert "recover" not in sim.loco and m.phase == "hold"
+    # back: ready again, driving, nothing to report
+    feed.update(mode="STAND", recovery_state="NORMAL")
+    assert sim.run(5.0, hook=hook, until=lambda s: s.m.phase == "navigate")
+    assert any(e[1] == "/locomotion/state received again" for e in sim.events)
+    sim.run(1.0, hook=hook)
+    assert m.hold_reason() == ""
+    m.command("pause", sim.t)
+    assert m.state_dict(sim.t)["hold_reason"] == "paused"
+    m.command("resume", sim.t)
+    m.on_teleop_active(True, sim.t)
+    assert m.hold_reason() == "manual override (teleop)"
+    m.on_teleop_active(False, sim.t)
+    m.set_pose(sim.x, sim.y, sim.yaw, sim.t - 5.0)               # /odom stale
+    assert m.hold_reason(sim.t) == "waiting for /odom"
+    # a one-off state (tests, a single message) is no stream: never reported missing
+    m2 = make()
+    m2.on_locomotion_state({"mode": "STAND"}, 0.0)
+    m2.command("patrol", 0.0)
+    sim2 = Sim(m2)
+    sim2.run(20.0)
+    assert m2.hold_reason() in ("", "obstacle ahead") and not any("no /locomotion" in e[1] for e in sim2.events)
+
+
 def test_robot_staying_down_gets_recover_requests():
     m = make()
     sim = Sim(m)
@@ -763,6 +858,51 @@ def test_pipe_crossing_planned_straight_and_walked_steadily():
     assert "cross" in states and m.crossing.n_crossings == 1
     assert cmds and all(v[0] == pytest.approx(MISSION_DEFAULTS["crossing_speed"]) and v[1] == 0.0
                         and abs(v[2]) <= MISSION_DEFAULTS["crossing_wz"] + 1e-9 for v in cmds)
+
+
+@pytest.mark.skipif(not os.path.exists(PLANT_MAP), reason="simulation/maps/plant_map.yaml not generated")
+@pytest.mark.parametrize("turn", [80.0, -80.0, 28.0])
+def test_fall_on_the_pipe_crossing_turns_back_onto_it_before_walking(turn):
+    """Field report 'fell twice in a row': down on the C-OBS5 crossing, up again turned
+    along the pipe (SLIDE).  The crossing kept from before the fall walked straight on
+    at 0.25 m/s with no turn - along the pipe (Gazebo: fell on it again, 4 of 4 runs) or
+    against the corridor wall (stuck, viewpoints skipped), the dashboard showing PATROL.
+    Now the robot turns onto the crossing first and walks over it."""
+    lay = Layout.load()
+    grid = OccupancyGridMap.load(PLANT_MAP)
+    plan = {"viewpoints": [{"gauge_id": "P1", "x": 19.8, "y": 0.3, "yaw": math.pi}], "order": ["P1"], "legs": []}
+    m = MissionLogic({"min_start_time": 0.5}, layout=lay)
+    m.set_map(grid)
+    m.set_plan(plan)
+    sim = Sim(m, x=24.2, y=0.5, yaw=math.pi)
+    m.command("patrol", 0.0)
+    feed = {"mode": "STAND"}
+    hook = lambda s: s.m.on_locomotion_state(dict(feed), s.t)                    # noqa: E731
+    assert sim.run(60, hook=hook, until=lambda s: s.m.crossing.state == "cross" and s.x < 22.45)
+    cr = m.crossing.active
+    feed["mode"] = "FALLEN"
+    sim.run(3.0, hook=hook)
+    feed["mode"] = "RECOVERING"
+    sim.run(4.0, hook=hook)
+    sim.yaw += math.radians(turn)                                                # stood up turned
+    feed["mode"] = "STAND"
+    x0, y0, a0 = sim.x, sim.y, cr.pipe.along(sim.x, sim.y)
+    trace = []
+
+    def watch(s):
+        hook(s)
+        trace.append((s.x, s.y, s.yaw, s.last_cmd, s.m.crossing.state))
+    assert sim.run(80, hook=watch, until=lambda s: s.m.base in ("INSPECTING", "DONE"))
+    zone = MISSION_DEFAULTS["crossing_zone"]
+    along = max(abs(cr.pipe.along(x, y) - a0) for x, y, *_ in trace if abs(cr.pipe.side(x, y)) <= zone)
+    assert along < 0.35, along                                 # walked along the pipe while over it?
+    # no forward step while turned away from the crossing (> align_tol)
+    for x, y, yaw, cmd, st in trace:
+        if cmd is not None and cmd[0] > 0.0 and abs(cr.pipe.side(x, y)) <= MISSION_DEFAULTS["crossing_zone"]:
+            err = abs((cr.heading - yaw + math.pi) % (2 * math.pi) - math.pi)
+            assert err <= MISSION_DEFAULTS["crossing_realign_tol"] + 0.05, (x, y, math.degrees(err), st)
+    assert m.missed == [] and not any("stuck" in e[1] for e in sim.events)
+    assert any("locomotion ready again" in e[1] for e in sim.events)
 
 
 def test_respawned_mission_manager_does_not_autostart():

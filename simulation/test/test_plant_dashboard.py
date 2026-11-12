@@ -785,3 +785,47 @@ def test_web_ui_shows_thumbnails_and_the_report_link():
     assert 'target="_blank"' in tag and 'rel="noopener"' in tag and "hidden" in tag and "보고서 열기" in tag
     assert "safeHref(r.url)" in js and "renderReportLink" in js
     assert "safeImg(g.image_url)" in js and "safeHref(g.image_full_url)" in js
+
+
+# ----------------------------------------------------------------------------
+# 'why does the robot not move' (/mission/state hold_reason) on the dashboard and the HUD
+# ----------------------------------------------------------------------------
+HOLD_REASONS = ["e-stop engaged - 'release' needed (SPACE in the teleop terminal / dashboard)",
+                "robot fallen (DAMP)", "getting up (STAND_UP)", "robot fallen", "standing up",
+                "sitting - 'stand' sent", "locomotion SIT",
+                "no /locomotion/state for 12 s (locomotion_controller down?)",
+                "waiting for /odom", "waiting for the robot to stand (SIT)", "obstacle ahead (0.1 m)", "obstacle ahead",
+                "paused", "manual override (teleop)"]
+FALL_EVENTS = ["no /locomotion/state for 3 s - is locomotion_controller running? (last mode FALLEN)",
+               "/locomotion/state received again",
+               "stood up again - 12 obstacle cells seen while falling forgotten",
+               "locomotion ready again (STAND) - re-planning the way home",
+               "locomotion not ready (ESTOP) - holding"]
+
+
+@pytest.mark.skipif(__import__("shutil").which("node") is None, reason="node.js not installed")
+def test_i18n_hold_reasons_and_fall_events():
+    import subprocess
+    texts = HOLD_REASONS + FALL_EVENTS
+    js = ("const KO = require(process.argv[1]); const t = JSON.parse(process.argv[2]);"
+          "console.log(JSON.stringify(t.map((x) => KO.event(x, 'mission'))));")
+    r = subprocess.run(["node", "-e", js, os.path.join(WEB_DIR, "i18n_ko.js"), json.dumps(texts)],
+                       capture_output=True, text=True, encoding="utf-8")
+    assert r.returncode == 0, r.stderr
+    for src, ko in zip(texts, json.loads(r.stdout)):
+        assert ko != src and not any(w in ko for w in ("fallen", "getting", "waiting", "obstacle", "e-stop",
+                                                        "received", "forgotten", "holding", "teleop)")), (src, ko)
+    app = open(os.path.join(WEB_DIR, "app.js"), encoding="utf-8").read()
+    assert "m.hold_reason" in app and "정지 사유" in app
+
+
+def test_hud_names_the_hold_reason():
+    from plant_simulation.demo_hud import EMPTY_STATUS, hold_text, mission_step_text  # noqa: F401
+    for r in HOLD_REASONS:
+        ko = hold_text(r, True)
+        assert ko and ko != r and not any("a" <= c <= "z" for c in ko), (r, ko)
+        assert hold_text(r, False)
+    assert hold_text("", True) == "" and hold_text("something new", True) == "something new"
+    assert "hold_reason" in EMPTY_STATUS
+    src = open(os.path.join(os.path.dirname(WEB_DIR), "plant_simulation", "demo_hud_node.py"), encoding="utf-8").read()
+    assert 'st["hold_reason"]' in src
