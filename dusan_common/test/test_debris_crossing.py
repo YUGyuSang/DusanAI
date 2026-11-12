@@ -212,6 +212,11 @@ def test_governor_turns_a_robot_that_stands_up_in_the_zone_turned_away():
     # fell there, stood up turned 80 deg (no reset: the crossing in progress is kept)
     vx, vy, wz = g.govern(0.3, 0.0, head + math.radians(80.0), (0.4, 0.0, 0.0), remaining(0.3))
     assert g.state == "realign" and vx == 0.0 and vy == 0.0 and wz == pytest.approx(-g.p.align_wz)
+    # the turn goes on to align_tol, not just below realign_tol (Gazebo: 31 deg off square fell on the pipe)
+    vx, vy, wz = g.govern(0.3, 0.0, head + 0.5, (0.4, 0.0, 0.0), remaining(0.3))
+    assert g.state == "realign" and vx == 0.0 and wz < 0.0
+    vx, vy, wz = g.govern(0.3, 0.0, head + 0.15, (0.4, 0.0, 0.0), remaining(0.3))
+    assert g.state == "cross" and vx == pytest.approx(0.25)
     # after reset(realign=True) (the mission: 'locomotion ready again'): 28 deg is turned too
     g.reset(realign=True)
     vx, vy, wz = g.govern(0.3, 0.0, head + 0.49, (0.4, 0.0, 0.0), remaining(0.3))

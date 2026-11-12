@@ -31,7 +31,8 @@ pipe):
   turns in place onto the crossing heading: |heading error| >
   ``realign_tol``, or > ``align_tol`` for the first crossing after
   :meth:`CrossingGovernor.reset` with ``realign`` (the mission calls it when
-  the robot stands up again).  Walking straight on 80 deg off the crossing
+  the robot stands up again); a turn once started goes on until the error is
+  within ``align_tol``.  Walking straight on 80 deg off the crossing
   took the robot along the pipe (Gazebo: fell on it again in 4 of 4 runs)
   or into the corridor wall (stuck, viewpoints skipped).
   Passing next to a pipe that is not crossed (its end, e.g. the north gap at
@@ -345,8 +346,10 @@ class CrossingGovernor:
                 self.state = "approach"
                 return min(vx, max(p.speed, 0.0)) if vx > 0.0 else max(p.speed, 0.0), 0.0, \
                     float(np.clip(wz, -p.wz, p.wz))
-            tol = p.align_tol if self._realign else p.realign_tol
-            if tol > 0.0 and abs(err) > tol:
+            # a turn once started goes on to align_tol (hysteresis: Gazebo, stopped at 0.6 rad -> walked
+            # 31 deg off square over the pipe and fell); realign_tol <= 0 disables the turn altogether
+            tol = p.align_tol if (self._realign or self.state == "realign") else p.realign_tol
+            if p.realign_tol > 0.0 and tol > 0.0 and abs(err) > tol:
                 # standing in the zone turned away from the crossing (up again after a fall, SLIDE turns
                 # the body along the pipe): walking on would follow the pipe / run into a wall
                 self.state = "realign"
