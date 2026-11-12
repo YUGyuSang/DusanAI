@@ -233,6 +233,9 @@ class GzHarness:
             self.mapper = TerrainMapperSim(layout=W.LAYOUT if cfg.terrain == W.PLANT else None)
         self._t_depth = -1e9
         self._t_depth_pub = -1e9
+        # optional extra depth returns (camera-link (N, 3) points, or None) per frame: fn(t, harness) - e.g.
+        # the robot's own legs in the image while it self-rights (Gazebo renders them, this ray cast does not)
+        self.depth_extra = None
         self.terrain_info: Optional[Dict] = None
         self.pre_log: List[Tuple[float, float, float, float]] = []    # (t, height above ground, roll, pitch) before the node starts
         self._Double = Double
@@ -502,9 +505,13 @@ class GzHarness:
         if odom is None:
             return
         pose = [float(v) for v in odom[1]] + [float(v) for v in odom[2]]
+        # terrain_mapper fall guard (/locomotion/state): no fusion while the robot is down, map restored after
+        from dusan_common.obstacle_layer import robot_down
+        self.mapper.set_upright(not robot_down(self.ctrl.mode, self.ctrl.recovery.state), t)
         if gt is not None and t - self._t_depth >= 1.0 / self.depth_cam.rate - 1e-9:
             self._t_depth = t
-            self.mapper.integrate_depth(self.depth_cam.render(gt[0], gt[1]), pose, t)
+            extra = self.depth_extra(t, self) if self.depth_extra is not None else None
+            self.mapper.integrate_depth(self.depth_cam.render(gt[0], gt[1]), pose, t, extra_points=extra)
         if t - self._t_depth_pub >= 1.0 / self.mapper.publish_rate - 1e-9 and self.mapper.n_frames > 0:
             from dusan_common.grid_map import OccupancyGridMap
             self._t_depth_pub = t

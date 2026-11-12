@@ -34,7 +34,7 @@ from std_msgs.msg import Bool, Float32, String
 from geometry_msgs.msg import Twist
 
 from dusan_common.grid_map import OccupancyGridMap
-from dusan_common.obstacle_layer import EvidenceFrame, frame_accepted, organised_cloud_to_xyz
+from dusan_common.obstacle_layer import EvidenceFrame, frame_accepted, organised_cloud_to_xyz, robot_down
 from dusan_common.planning import path_to_msg
 from dusan_common.ros_helpers import json_msg
 
@@ -199,8 +199,13 @@ class ReturnToHomeNode(Node):
             self.commands.append(cmd)
 
     def _on_loco(self, msg: String) -> None:
-        mode = json_dict(msg).get("mode")
+        d = json_dict(msg)
+        mode = d.get("mode")
         self.loco_mode = mode.upper() if isinstance(mode, str) else ""   # malformed JSON -> ''
+        if self.loco_mode:
+            # obstacle memory fall guard: no fusion while down, forget what the tipping camera saw
+            self.logic.obstacles.set_upright(not robot_down(self.loco_mode, d.get("recovery_state")),
+                                             now_sec(self))
 
     def _obstacle_frame(self, msg, convert) -> None:
         """Frame check + conversion; a malformed message is logged, never raised."""

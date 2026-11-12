@@ -30,6 +30,17 @@ terrain_mapper:
     max_pose_extrapolation: 0.3                  # [s]
     log_period: 10.0                             # [s] diagnostics line
 
+    # ------------------------------------------------- fall guard (MapFallGuard)
+    # a camera that tips over with the body / sees its own legs while self-righting writes phantom
+    # steps that the map would keep ~200 s and publish again after the stand-up (they re-blocked
+    # the mission's route): no fusion while /locomotion/state says the robot is down, then back to
+    # the map of fall_lookback s before the fall
+    fall_guard: true
+    locomotion_state_topic: /locomotion/state
+    fall_lookback: 2.0                           # [s] frames fused this long before the fall report are dropped
+    fall_settle: 1.0                             # [s] no fusion right after the stand-up
+    fall_snapshot_period: 0.5                    # [s] rolling map snapshots (~1 MB each, ~6 kept)
+
     # ----------------------------------------------- friction prior (slippery plates)
     # low-friction zones of world_layout.yaml (obstacles of type plate: rect + mu, optional
     # friction_zones list) -> /terrain/info class 'slippery', slippery, friction_mu (classifier.*)

@@ -7,6 +7,12 @@ Subscribes
                                                         used when no cloud for 1 s)
   /depth_camera/camera_info  sensor_msgs/CameraInfo    (optional intrinsics override)
   /odom                      nav_msgs/Odometry         (world-frame robot pose)
+  /locomotion/state          std_msgs/String (JSON)    fall guard: no fusion while the robot is
+                                                        down (mode FALLEN / RECOVERING or a
+                                                        recovery_state other than NORMAL); up
+                                                        again -> the map goes back to its state
+                                                        fall_lookback s before the fall
+                                                        (elevation_map.MapFallGuard)
 Publishes (at ``publish_rate``, default 5 Hz)
   /elevation_map/points          sensor_msgs/PointCloud2  organised x,y,z float32, frame 'odom'
   /elevation_map/traversability  nav_msgs/OccupancyGrid   0 easy .. 100 untraversable, -1 unknown
@@ -39,9 +45,11 @@ from std_msgs.msg import String
 
 from dusan_common.geometry import odom_to_pose
 from dusan_common.image_utils import image_msg_to_numpy
-from dusan_common.ros_helpers import json_msg, sensor_qos, stamp_to_sec
+from dusan_common.obstacle_layer import robot_down
+from dusan_common.ros_helpers import json_msg, parse_json_msg, sensor_qos, stamp_to_sec
 
-from .elevation_map import ElevationMap, ElevationMapParams
+from .elevation_map import (FALL_LOOKBACK, FALL_SETTLE, FALL_SNAPSHOT_PERIOD, ElevationMap, ElevationMapParams,
+                            MapFallGuard)
 from .friction_map import FrictionMap
 from .terrain_classifier import TerrainClassifier, ClassifierParams
 from .pointcloud_utils import (ConventionDetector, DepthIntrinsics, PointFilter, PoseBuffer,
@@ -81,6 +89,7 @@ class TerrainMapperNode(Node):
         self.image_topic = P("image_topic", "/depth_camera/image")
         self.info_topic_cam = P("camera_info_topic", "/depth_camera/camera_info")
         self.odom_topic = P("odom_topic", "/odom")
+        self.loco_topic = P("locomotion_state_topic", "/locomotion/state")
         map_cloud_topic = P("map_cloud_topic", "/elevation_map/points")
         trav_topic = P("traversability_topic", "/elevation_map/traversability")
         info_topic = P("info_topic", "/terrain/info")
@@ -116,6 +125,10 @@ class TerrainMapperNode(Node):
             stride=max(1, int(P("filter.point_stride", fd.stride))))
 
         self.emap = ElevationMap(params=map_params)
+        self.fall_guard = MapFallGuard(self.emap, lookback=float(P("fall_lookback", FALL_LOOKBACK)),
+                                       settle=float(P("fall_settle", FALL_SETTLE)),
+                                       period=float(P("fall_snapshot_period", FALL_SNAPSHOT_PERIOD)),
+                                       enabled=bool(P("fall_guard", True)))
         self.classifier = TerrainClassifier(cls_params)
         self.friction_map = self._load_friction_map(str(P("layout_file", "")), bool(P("friction_prior", True)),
                                                     float(P("friction_zone_max_mu", 0.6)))
@@ -143,6 +156,8 @@ class TerrainMapperNode(Node):
         # ------------------------------------------------------------ ROS io
         qos_in = sensor_qos()
         self.create_subscription(Odometry, self.odom_topic, self._on_odom, qos_in)
+        if self.fall_guard.enabled:
+            self.create_subscription(String, self.loco_topic, self._on_loco_state, _reliable_qos(10))
         self.create_subscription(PointCloud2, self.cloud_topic, self._on_cloud, qos_in)
         if self.use_image_fallback:
             self.create_subscription(Image, self.image_topic, self._on_image, qos_in)
@@ -228,6 +243,23 @@ class TerrainMapperNode(Node):
         self.latest_pose = pose
         self.poses.add(self._stamp(msg.header), pose)
 
+    def _on_loco_state(self, msg: String):
+        d = parse_json_msg(msg)
+        if not isinstance(d, dict) or not d.get("mode"):
+            return
+        g = self.fall_guard
+        was_down = g.down
+        n = g.set_upright(not robot_down(d.get("mode"), d.get("recovery_state")), self._now())
+        if g.down and not was_down:
+            self.get_logger().info(f"robot down ({d.get('mode')}/{d.get('recovery_state')}) - depth frames are "
+                                   "not fused until it stands again")
+        elif n is not None:
+            r = g.last_restore or {}
+            back = (f"to its state {r['snapshot_age']:.1f} s ago" if r.get("snapshot_age") is not None
+                    else "cleared (no older state)")
+            self.get_logger().info(f"robot up again after {r.get('down_s', 0.0):.1f} s - elevation map {back}, "
+                                   f"{n} cells changed; fusion resumes in {g.settle:.1f} s")
+
     def _on_camera_info(self, msg: CameraInfo):
         intr = DepthIntrinsics.from_camera_info(msg)
         if intr is not None:
@@ -294,6 +326,8 @@ class TerrainMapperNode(Node):
         pose = self._pose_at(t)
         if pose is None:
             return
+        if not self.fall_guard.accept(self._now()):
+            return                      # robot down / settling: the tipped camera's frame is not fused
         self.last_source = source
         t0 = time.perf_counter()
         pw, rng, origin = camera_points_to_world(pts_cam, pose, convention, self.sensor_name, self.filter)
@@ -333,6 +367,7 @@ class TerrainMapperNode(Node):
                 f"convention {self.convention.current}, integrate {mean_ms:.1f} ms, publish {layer_ms:.1f} ms, "
                 f"known {self.emap.known_fraction():.2f}, class {info.get('class')} "
                 f"-> {info.get('recommended_gait')}"
+                + (f", robot down: {self.fall_guard.dropped_frames} frames dropped" if self.fall_guard.down else "")
                 + (f", slippery (mu {info.get('friction_mu')})" if info.get("slippery") else ""))
             self.n_points = 0
 

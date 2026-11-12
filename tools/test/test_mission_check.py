@@ -6,7 +6,9 @@
 * with the gz python bindings (``GZ_PYTHON`` = path of a python with
   gz.sim8 + gz.transport13, e.g. ``C:\\gzmamba\\envs\\gz\\python.exe``; skipped
   otherwise): a SHORT route segment in the plant world (spawn next to the
-  dock, one goal 1.5 m away) with the whole mission stack in the loop.
+  dock, one goal 1.5 m away) with the whole mission stack in the loop, and a
+  corridor segment on which the robot is knocked over twice in a row
+  (``--push``): it gets up by itself and the patrol carries on to the goals.
 """
 import json
 import math
@@ -125,6 +127,102 @@ def test_sub_plans_and_segments():
     assert seg["viewpoints"][1]["x"] == -1.5 and seg["viewpoints"][1]["yaw"] == pytest.approx(3.14)
 
 
+class _Rec:
+    def __init__(self):
+        self.state, self.fall_count, self.successes = "NORMAL", 0, 0
+
+
+class _Ctrl:
+    def __init__(self):
+        self.mode, self.recovery = "WALK", _Rec()
+
+
+class _Mission:
+    def __init__(self, base="PATROL", phase="navigate"):
+        self.base, self.phase = base, phase
+
+
+def test_pusher_knocks_in_order_and_retries():
+    with pytest.raises(ValueError):
+        MC.parse_push("jump:1")
+    assert MC.parse_push("after_stand:1.5") == {"trig": "after_stand", "delay": 1.5}
+    p = MC.Pusher(["nav:2.0", "after_stand:1.0"], seed=1)
+    c, m, w = _Ctrl(), _Mission(), []
+    for k in range(19):                                    # 1.9 s of walking: not yet
+        p.step(0.1 * k, 0.0, m, c, w)
+    assert w == []
+    p.step(2.0, 0.0, m, c, w)
+    assert len(w) == 1 and w[0][2][1] < 0.0 and abs(w[0][2][0]) < 1e-9     # sideways (seed 1: -y)
+    p.step(3.0, 0.0, m, c, w)                              # no fall within 2.5 s -> retried, stronger
+    p.step(4.6, 0.0, m, c, w)
+    assert len(w) == 2 and abs(w[1][2][1]) > abs(w[0][2][1]) and p.log[-1]["retry"] == 1
+    c.recovery.fall_count, c.mode, c.recovery.state = 1, "FALLEN", "DAMP"
+    p.step(4.8, 0.0, m, c, w)
+    assert p.log[0]["fell"] is True and p.i == 1
+    c.recovery.successes, c.mode, c.recovery.state = 1, "STAND", "NORMAL"
+    p.step(20.0, 0.0, m, c, w)                             # stood up: the second knock 1 s later
+    p.step(20.5, 0.0, m, c, w)
+    assert len(w) == 2
+    p.step(21.05, 0.0, m, c, w)
+    assert len(w) == 3 and p.log[-1]["trig"] == "after_stand"
+    c.recovery.fall_count = 2
+    p.step(21.3, 0.0, m, c, w)
+    assert p.done and [e["fell"] for e in p.log] == [True, True]
+
+
+def test_resume_after_falls_from_the_trace():
+    tr = [(0.1 * k, 0.0 if k < 30 else 0.05 * (k - 30), 0.0, 0, 0, 0, 0, "PATROL", "navigate", "patrol",
+           0, 0, 0, "STAND", "NORMAL") for k in range(100)]
+    ev = [{"event": "fall", "t": 1.0}, {"event": "recovered", "t": 2.0}, {"event": "recovered", "t": 9.5}]
+    out = MC.resumed_after_falls(tr, ev)
+    assert out[0]["resume_s"] == pytest.approx(1.0 + 1.0, abs=0.11) and out[0]["mission"] == "PATROL/navigate"
+    assert out[1]["resume_s"] is None                      # the trace ends 0.4 m later
+
+
+def test_standup_obstacles_from_the_trace():
+    """Per stand-up: the mission's confirmed obstacle cells around it and the zero-command
+    time after it (do the phantoms of the fall come back from terrain_mapper's map?)."""
+    tr = []
+    for k in range(400):
+        t = round(0.1 * k, 2)
+        mode, rec = ("FALLEN", "DAMP") if 50 <= k < 100 else ("RECOVERING", "SLIDE") if 100 <= k < 150 else (
+            "STAND", "NORMAL")
+        conf = 40 if 40 <= k < 152 else 5 if k < 40 else 60      # forgotten at the stand-up, back 1.5 s later
+        phase, v = ("hold", 0.0) if 50 <= k < 150 else ("navigate", 0.0 if 165 <= k < 285 else 0.3)
+        if k >= 300:
+            phase, v = "dwell", 0.0                                # (an inspection is no standstill)
+        tr.append((t, 0, 0, 0, 0, 0, 0, "PATROL" if k < 300 else "INSPECTING", phase, "patrol", v, 0.0, 0.0,
+                   mode, rec, conf))
+    out = MC.standup_obstacles(tr)
+    assert len(out) == 1 and out[0]["t"] == pytest.approx(15.0)
+    c = out[0]["confirmed"]
+    assert c["-0.2"] == 40 and c["+0.1"] == 40 and c["+3"] == 60 and out[0]["max_after"] == 60
+    assert out[0]["zero_cmd_s"] == pytest.approx(12.0, abs=0.11)
+    assert MC.standup_obstacles([r[:15] for r in tr]) == []          # old traces without the column
+
+
+def test_phantom_legs_only_while_down_or_tilted():
+    import threading
+    from types import SimpleNamespace as NS
+    lay = NS(floor_z=lambda x, y: -0.88)
+    fn = MC.phantom_legs(lay)
+    h = NS(_lock=threading.Lock(), _odom=None, ctrl=NS(mode="WALK", recovery=NS(state="NORMAL")))
+    assert fn(0.0, h) is None
+    h._odom = (0.0, np.array([10.0, 2.0, -0.54]), np.array([0.0, 0.05, 0.3]))
+    assert fn(0.1, h) is None                                         # upright, walking: nothing
+    h._odom = (0.2, np.array([10.0, 2.0, -0.7]), np.array([1.4, 0.1, 0.3]))   # tipped over (not yet FALLEN)
+    pc = fn(0.2, h)
+    from module1_locomotion.pointcloud_utils import CONVENTION_LINK, PointFilter, camera_points_to_world
+    pw, _rng, _o = camera_points_to_world(pc, (10.0, 2.0, -0.7, 1.4, 0.1, 0.3), CONVENTION_LINK,
+                                          filt=PointFilter(min_range=0.0, max_range=10.0, body_box_min=(0, 0, 0),
+                                                           body_box_max=(0, 0, 0), max_height_above_base=10.0))
+    r = np.hypot(pw[:, 0] - 10.0, pw[:, 1] - 2.0)
+    assert len(pw) == len(pc) and np.all((r > 0.43) & (r < 0.75)) and np.allclose(pw[:, 2], -0.58)
+    h._odom = (0.3, np.array([10.0, 2.0, -0.54]), np.array([0.0, 0.0, 0.3]))
+    h.ctrl.mode, h.ctrl.recovery.state = "STAND", "STAND_UP"         # upright, still in the recovery
+    assert fn(0.3, h) is not None
+
+
 GZ_PYTHON = os.environ.get("GZ_PYTHON", "")
 
 
@@ -149,3 +247,39 @@ def test_route_segment_in_gazebo(tmp_path):
     assert r["falls"] == 0 and r["teleports"] == 0 and r["stop_reason"] in ("finished", "leg end (P1)")
     assert r["timeline"][0][1] == "IDLE" and any(s[1] == "INSPECTING" for s in r["timeline"])
     assert r["sim_time"] < 40.0 and r["wall_time"] > 0
+
+
+@pytest.mark.skipif(not (GZ_PYTHON and os.path.exists(GZ_PYTHON)),
+                    reason="set GZ_PYTHON to a python with the gz-sim 8 bindings (gz.sim8, gz.transport13)")
+def test_patrol_carries_on_after_two_falls_in_a_row_in_gazebo(tmp_path):
+    """Field report: 'up again after falling (twice in a row) the robot did not patrol on'.
+    Knocked over while walking the upper corridor, again 1 s after it stood up: it gets
+    up by itself (no teleport) and the patrol walks on to both goals.  With
+    --phantom-legs the depth frames of the tipped / lying robot show a shank-high ring
+    around it (what Ubuntu's rendered camera sees of its own legs): terrain_mapper's fall
+    guard keeps it out of the map, so the obstacle cells forgotten at the stand-up do not
+    come back (review of fix/resume: they were re-confirmed 1.5 s later)."""
+    env = dict(os.environ)
+    if os.name == "nt":
+        base = os.path.dirname(GZ_PYTHON)
+        extra = [base, os.path.join(base, "Library", "mingw-w64", "bin"), os.path.join(base, "Library", "usr", "bin"),
+                 os.path.join(base, "Library", "bin"), os.path.join(base, "Scripts")]
+        env["PATH"] = os.pathsep.join(extra + [env.get("PATH", "")])
+        env["CONDA_PREFIX"] = base
+    out = tmp_path / "mission.json"
+    cmd = [GZ_PYTHON, CLI, "--seeds", "0", "--jobs", "1", "--duration", "180", "--label", "pytest",
+           "--spawn=46.3,0.72,3.14159", "--goal=43.0,0.8", "--goal=40.8,0.9", "--push=nav:2.5",
+           "--push=after_stand:1.0", "--phantom-legs", "--out", str(out), "--work-dir", str(tmp_path)]
+    p = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=1500)
+    assert p.returncode == 0, p.stdout + p.stderr
+    r = json.loads(out.read_text(encoding="utf-8"))["runs"]["pytest"]["runs"]["0"]
+    assert r["error"] is None, r["error"]
+    assert [e["fell"] for e in r["pushes"]] == [True, True], r["pushes"]
+    assert r["teleports"] == 0 and r["recoveries"] >= 2
+    assert r["segment"]["ok"], (r["segment"], r["fall_info"], r["stalls"], r["resumed"])
+    assert all(x["resume_s"] is not None and x["resume_s"] < 15.0 for x in r["resumed"]), r["resumed"]
+    assert r["phantom_legs"] and r["map_fall_guard"]["enabled"] and r["map_fall_guard"]["restores"] >= 2
+    last = r["standups"][-1]                         # (the first one is followed by the second knock)
+    assert len(r["standups"]) >= 2 and last["max_after"] is not None, r["standups"]
+    assert last["max_after"] <= max(5, last["confirmed"]["+0.1"] or 0), r["standups"]
+    assert last["zero_cmd_s"] < 8.0, r["standups"]

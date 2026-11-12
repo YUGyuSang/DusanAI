@@ -86,6 +86,7 @@ mission_manager:
     crossing_align_wz: 0.4        # rad/s
     crossing_speed: 0.25          # m/s steady pace over the pipe
     crossing_wz: 0.0              # rad/s yaw rate limit over the pipe (0: module1's heading hold keeps the heading)
+    crossing_realign_tol: 0.6     # rad in the zone turned this far off the crossing (up after a fall): turn first
     crossing_near_dist: 0.45      # m centre to a pipe that is passed (its end), not crossed: ...
     crossing_near_vx: 0.25        # m/s ... slow
     crossing_near_wz: 0.35        # rad/s
@@ -114,6 +115,7 @@ mission_manager:
     send_walk_after_stand: false  # true: also send 'walk' (module1 then trots in place, even while dwelling)
     restand_period: 5.0           # s between repeated 'stand' while SIT in a mission
     recover_after: 20.0           # s FALLEN (module1 recovery not getting up) -> 'recover', repeated; 0 = off
+    loco_state_timeout: 3.0       # s without /locomotion/state (20 Hz) -> reported missing (hold_reason); 0 = off
     # ------------------------------------------------------------------ gas
     gas_alarm_ppm: 25.0           # ppm ...
     gas_alarm_hold: 1.0           # ... sustained for this long -> SEEK
@@ -126,6 +128,9 @@ mission_manager:
     rth_ack_timeout: 8.0          # s without /safety/rth_active after our 'rth' -> drive home ourselves
     rth_release_grace: 2.0        # s
     teleop_active_timeout: 1.5    # s without /teleop/active (2 Hz heartbeat) -> MANUAL released (0 = latched)
+    mux_active_timeout: 2.0       # s: /cmd_vel_mux/active older than this is not trusted; 'teleop' selected while the
+                                  #   mission drives -> hold_reason 'teleop has priority', no stuck count (0 = ignore)
+    mux_blocked_warn: 3.0         # s of 'teleop' on the mux while the mission drives before one warning
     safety_timeout: 3.0           # s, older /safety/status is not trusted for the docked flag
     self_rth_fallback: true
     dock_tolerance: 0.35          # m

@@ -149,6 +149,7 @@ class DemoHudNode(Node):
             st["mission_state"] = str(m.get("state") or "")
             st["mission_target"] = str(m.get("target") or "")
             st["mission_progress"] = m.get("progress")
+            st["hold_reason"] = str(m.get("hold_reason") or "")
             st["gas_alarm"] = bool(m.get("gas_alarm"))
         with self._lock:
             st.update(self.story.status(now, mission=m is not None, loco=loco is not None))

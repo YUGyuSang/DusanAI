@@ -194,3 +194,39 @@ def test_governor_recheck_drops_a_crossing_the_goal_no_longer_needs():
     g.govern(0.8, 0.0, head, (0.3, 0.0, 0.0), [(-1.5, 0.0)], recheck=True)
     vx, vy, wz = g.govern(0.2, 0.0, head, (0.0, 0.0, 0.0), None, recheck=True)            # dwell on the pipe?
     assert g.state == "cross" and vx == pytest.approx(0.25) and vy == 0.0 and wz == 0.0
+
+
+def test_governor_turns_a_robot_that_stands_up_in_the_zone_turned_away():
+    """Field report (up again next to the C-OBS5 pipe after a fall, SLIDE turned the body
+    ~80 deg along it): 'cross' walked straight on at crossing_speed with no turn - along
+    the pipe / into the corridor wall (Gazebo: fell on the pipe again in 4 of 4 runs).
+    A robot in the zone turned more than realign_tol (or align_tol for the first crossing
+    after reset(realign=True)) turns in place first; an ordinary crossing is unchanged."""
+    path = np.array([(x, 0.0) for x in np.arange(3.0, -3.01, -0.1)])
+    remaining = lambda x: path[path[:, 0] < x]                              # noqa: E731
+    head = math.radians(-160.0)
+    g = CrossingGovernor([PIPE], CrossingParams())
+    g.govern(0.8, 0.0, head, (0.4, 0.0, 0.0), remaining(0.8))
+    assert g.govern(0.3, 0.0, head, (0.4, 0.0, 0.0), remaining(0.3))[0] == pytest.approx(0.25)
+    assert g.state == "cross"
+    # fell there, stood up turned 80 deg (no reset: the crossing in progress is kept)
+    vx, vy, wz = g.govern(0.3, 0.0, head + math.radians(80.0), (0.4, 0.0, 0.0), remaining(0.3))
+    assert g.state == "realign" and vx == 0.0 and vy == 0.0 and wz == pytest.approx(-g.p.align_wz)
+    # the turn goes on to align_tol, not just below realign_tol (Gazebo: 31 deg off square fell on the pipe)
+    vx, vy, wz = g.govern(0.3, 0.0, head + 0.5, (0.4, 0.0, 0.0), remaining(0.3))
+    assert g.state == "realign" and vx == 0.0 and wz < 0.0
+    vx, vy, wz = g.govern(0.3, 0.0, head + 0.15, (0.4, 0.0, 0.0), remaining(0.3))
+    assert g.state == "cross" and vx == pytest.approx(0.25)
+    # after reset(realign=True) (the mission: 'locomotion ready again'): 28 deg is turned too
+    g.reset(realign=True)
+    vx, vy, wz = g.govern(0.3, 0.0, head + 0.49, (0.4, 0.0, 0.0), remaining(0.3))
+    assert g.state == "realign" and vx == 0.0 and wz < 0.0
+    vx, vy, wz = g.govern(0.3, 0.0, head + 0.1, (0.4, 0.0, 0.0), remaining(0.3))   # aligned: walk over
+    assert g.state == "cross" and vx == pytest.approx(0.25) and wz == 0.0
+    # then the ordinary rule again: 0.3 rad of drift over the pipe is no reason to turn on it
+    vx, vy, wz = g.govern(0.0, 0.0, head + 0.3, (0.0, 0.0, 0.6), remaining(0.0))
+    assert g.state == "cross" and vx == pytest.approx(0.25)
+    # realign_tol 0 = the old behaviour
+    g = CrossingGovernor([PIPE], CrossingParams(realign_tol=0.0))
+    g.govern(0.3, 0.0, head, (0.4, 0.0, 0.0), remaining(0.3))
+    assert g.govern(0.3, 0.0, head + 1.4, (0.4, 0.0, 0.0), remaining(0.3))[0] == pytest.approx(0.25)

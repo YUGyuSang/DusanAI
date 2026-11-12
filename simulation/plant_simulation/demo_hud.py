@@ -155,6 +155,7 @@ EMPTY_STATUS = {
     "mission_target": "",     # gauge id
     "mission_progress": None,  # [done, total]
     "rth_reason": "",         # /mission/state rth_reason
+    "hold_reason": "",        # /mission/state hold_reason: why the mission does not drive ('' = it does)
     "mission_finished": False,  # docked / done after every gauge was handled
     "sim_time": None,         # s
     # HudStory.status(): None = nothing to show
@@ -305,6 +306,35 @@ def mission_step_text(state, target="", progress=None, rth_reason="", finished=F
         return "순찰 완료" if korean else "PATROL DONE"
     ko, en = MISSION_LABELS.get(st, (st, st))
     return f"임무: {ko}" if korean else f"MISSION: {en}"
+
+
+# /mission/state hold_reason (mission_logic.MissionLogic.hold_reason) -> (ko, en) by prefix
+HOLD_REASONS = (
+    ("e-stop", ("비상정지 - 해제 필요", "E-STOP - release needed")),
+    ("robot fallen", ("넘어짐", "fallen")),
+    ("getting up", ("일어서는 중", "getting up")),
+    ("standing up", ("일어서는 중", "standing up")),
+    ("sitting", ("앉아 있음", "sitting")),
+    ("no /locomotion/state", ("보행 제어기 응답 없음", "no locomotion state")),
+    ("waiting for /odom", ("위치 정보 대기", "waiting for odometry")),
+    ("waiting for the robot", ("일어서기 대기", "waiting to stand")),
+    ("obstacle ahead", ("앞에 장애물", "obstacle ahead")),
+    ("teleop has priority", ("텔레옵이 제어 중 (비상정지?)", "teleop has priority")),
+    ("paused", ("일시정지", "paused")),
+    ("manual override", ("수동 조작", "manual override")),
+    ("locomotion", ("보행 준비 안 됨", "locomotion not ready")),
+)
+
+
+def hold_text(reason, korean=True):
+    """Short label of a /mission/state hold_reason ('' -> '')."""
+    r = str(reason or "").strip()
+    if not r:
+        return ""
+    for prefix, (ko, en) in HOLD_REASONS:
+        if r.startswith(prefix):
+            return ko if korean else en
+    return r
 
 
 def format_value(value, unit=""):
@@ -928,6 +958,10 @@ def compose_hud(camera_bgr, status=None, cfg=None, renderer=None, t=None):
     step = mission_step_text(st["mission_state"], st["mission_target"], st["mission_progress"], st["rth_reason"],
                              fin, ko)
     mstate = str(st["mission_state"] or "").upper()
+    hold = hold_text(st.get("hold_reason"), ko) if (mstate in ("PATROL", "INSPECTING", "RTH")
+                                                    and not st.get("recovery")) else ""
+    if hold:                       # the robot stands although the step says 'going to ...': say why
+        step += (" · 정지: " if ko else " - HOLD: ") + hold
     mcol = (COLORS["normal"] if fin else COLORS["warning"] if (mstate == "RTH" and st["rth_reason"] not in
                                                                  ("", "mission_complete")) else WHITE)
     size = _fit_size(r, step, S(24), W - S(36) - tw_title, S(15))

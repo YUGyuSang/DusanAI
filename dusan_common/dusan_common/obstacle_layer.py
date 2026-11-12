@@ -33,7 +33,10 @@ ObstacleMemory   world-fixed rolling lattice around the robot: multi-frame
                  confirmation (hysteresis), clearing when seen free again,
                  forgetting, robot-footprint exclusion, novelty filter against
                  the static map (mapped walls are not "new"), speckle filter
-                 (also for the unconfirmed layer of the governor) and the
+                 (also for the unconfirmed layer of the governor), a fall
+                 guard (``set_upright``: no fusion while the robot is down,
+                 the evidence first seen while it fell is forgotten when it
+                 stands again) and the
                  occlusion shadow (planning only).  Layers: ``output``
                  (confirmed), ``raw`` (latest frame), ``planning`` (output +
                  the unseen back of each obstacle assumed ``shadow_depth``
@@ -147,6 +150,23 @@ LEAVE_LEN = 0.5            # [m] a robot inside the clearance zone must leave it
 MIN_LEAD = 0.15            # [m] the governor never asks the pure-pursuit follower for a shorter look-ahead
 DEBRIS_CUT = 1.0           # [cost x m] a chord this much costlier than the path it cuts = cutting across debris
 LEFT, RIGHT = "left", "right"
+# fall guard (ObstacleMemory.set_upright): a camera that tips over with the body sees the floor, the
+# robot's own legs and the sky at odd angles - phantom evidence around the robot (headless Gazebo, a
+# fall on the ramp: 7-10 cells 0.46-0.67 m from the robot, true step 0.03-0.18 m, kept the path
+# blocked after the stand-up; inside the ignore radius / outside the field of view they are never seen
+# free again and lasted until forget_time = 60 s)
+FALL_LOOKBACK = 2.0        # [s] evidence first seen this long before the fall was reported is forgotten too
+FALL_SETTLE = 1.0          # [s] after standing up again: no fusion yet (body still settling)
+DOWN_MODES = ("FALLEN", "RECOVERING")
+
+
+def robot_down(mode, recovery_state=None) -> bool:
+    """/locomotion/state ``mode`` / ``recovery_state`` -> True while the robot is
+    down: fallen, self-righting, or any recovery state other than NORMAL (an
+    E-STOP engaged in the middle of a recovery keeps it, FAILED = lying)."""
+    m = str(mode or "").strip().upper()
+    rs = str(recovery_state or "").strip().upper()
+    return m in DOWN_MODES or rs not in ("", "NORMAL")
 
 
 def _coerce(value, default):
@@ -548,6 +568,7 @@ class ObstacleMemory:
         self.hits = np.zeros((n, n), dtype=np.int8)
         self.confirmed = np.zeros((n, n), dtype=bool)
         self.last_hit_t = np.full((n, n), -np.inf)
+        self.first_hit_t = np.full((n, n), np.nan)      # first evidence since the cell was clear
         self.seen_free_t = np.full((n, n), np.nan)
         # robot position of the first evidence of each cell (line of sight of the occlusion shadow)
         self.view_x = np.full((n, n), np.nan, dtype=np.float32)
@@ -557,6 +578,9 @@ class ObstacleMemory:
         self._output = np.zeros((n, n), dtype=bool)
         self.t_last: Optional[float] = None
         self._t_frame = -math.inf               # last accepted frame (frame_due)
+        self.down_since: Optional[float] = None    # set_upright(False): robot down, fusion suspended
+        self._settle = (math.inf, -math.inf)       # set_upright(True): no fusion in [t_up, t_up + settle)
+        self.fall_forgotten = 0                    # cells forgotten after falls (status / tests)
         self._novel = None
         self._novel_key = None
         self.revision += 1
@@ -595,6 +619,7 @@ class ObstacleMemory:
         self.hits = _shifted(self.hits, dr, dc, 0)
         self.confirmed = _shifted(self.confirmed, dr, dc, False)
         self.last_hit_t = _shifted(self.last_hit_t, dr, dc, -np.inf)
+        self.first_hit_t = _shifted(self.first_hit_t, dr, dc, np.nan)
         self.seen_free_t = _shifted(self.seen_free_t, dr, dc, np.nan)
         self.view_x = _shifted(self.view_x, dr, dc, np.nan)
         self.view_y = _shifted(self.view_y, dr, dc, np.nan)
@@ -631,6 +656,58 @@ class ObstacleMemory:
         self._novel, self._novel_key = nov, key
         return nov
 
+    # ---------------------------------------------------------- fall guard
+    @property
+    def suspended(self) -> bool:
+        """True while the robot is down (``set_upright(False)``): frames are not fused."""
+        return self.down_since is not None
+
+    def set_upright(self, upright: bool, t: float, lookback: float = FALL_LOOKBACK,
+                    settle: float = FALL_SETTLE) -> int:
+        """Locomotion state of the robot carrying the camera.  Down (fallen,
+        self-righting): the frames are not fused.  Up again: the evidence
+        first seen since ``lookback`` s before the robot was reported down is
+        forgotten (the camera tipped over with the body before the fall was
+        detected) and fusion resumes ``settle`` s later.  Returns the number
+        of forgotten cells (0 when nothing changed)."""
+        t = float(t)
+        if not upright:
+            if self.down_since is None:
+                self.down_since = t
+            return 0
+        if self.down_since is None:
+            return 0
+        t_down, self.down_since = self.down_since, None
+        self._settle = (t, t + max(0.0, float(settle)))
+        return self.forget_since(t_down - max(0.0, float(lookback)))
+
+    def _paused(self, t: float) -> bool:
+        """Robot down or still settling after the stand-up (a clock that jumped
+        back before the stand-up ends the settle window)."""
+        return self.down_since is not None or self._settle[0] <= t < self._settle[1]
+
+    def forget_since(self, t0: float) -> int:
+        """Forget every cell whose first evidence (since it was last clear) is
+        at or after ``t0``.  Returns the number of cells forgotten."""
+        new = (self.hits > 0) & (self.first_hit_t >= float(t0))
+        k = int(np.count_nonzero(new))
+        if not k:
+            return 0
+        self.hits[new] = 0
+        self.confirmed[new] = False
+        self.first_hit_t[new] = np.nan
+        self.view_x[new] = np.nan
+        self.view_y[new] = np.nan
+        self.raw[:] = False
+        self.raw_t = -np.inf
+        self.fall_forgotten += k
+        out = self._compute_output(self._novelty())
+        if not np.array_equal(out, self._output):
+            self._output = out
+            self.revision += 1
+        self._invalidate()
+        return k
+
     # ------------------------------------------------------------- update
     def frame_due(self, t: float, driving: bool = True) -> bool:
         """Should a frame arriving at time ``t`` be converted and fused?  Every
@@ -644,6 +721,8 @@ class ObstacleMemory:
         t = float(t)
         if t < self._t_frame - 1.0:                  # clock jumped back (sim reset)
             self._t_frame = -math.inf
+        if self._paused(t):
+            return False                             # robot down / settling: the frame is not fused
         if driving or self.p.idle_period <= 0.0 or t - self._t_frame >= self.p.idle_period - 1e-6:
             self._t_frame = t
             return True
@@ -656,6 +735,8 @@ class ObstacleMemory:
         if not p.enabled or frame is None:
             return False
         t = float(t)
+        if self._paused(t):
+            return False                             # robot down / settling (set_upright)
         x, y = float(pose[0]), float(pose[1])
         if not (math.isfinite(x) and math.isfinite(y) and math.isfinite(t)):
             return False
@@ -698,6 +779,7 @@ class ObstacleMemory:
         # towards the detour and refine it again and again)
         self.view_x[first] = x
         self.view_y[first] = y
+        self.first_hit_t[first] = t
         self.seen_free_t[FREE] = t
         self.confirmed |= self.hits >= p.confirm_hits
         self.confirmed &= self.hits > 0
@@ -706,6 +788,7 @@ class ObstacleMemory:
             if stale.any():
                 self.hits[stale] = 0
                 self.confirmed[stale] = False
+                self.first_hit_t[stale] = np.nan
         nov = self._novelty()
         out = self._compute_output(nov)
         raw = HIT & nov
@@ -1531,6 +1614,24 @@ class ObstacleAvoider:
         """See :meth:`ObstacleMemory.frame_due` (thinned fusion while not driving)."""
         return self.memory.frame_due(t, driving)
 
+    def set_upright(self, upright: bool, t: float) -> int:
+        """Fall guard, see :meth:`ObstacleMemory.set_upright`.  Standing up
+        again also drops the detour / blockage state of the route (the robot
+        is somewhere else now, the caller re-plans).  Returns the number of
+        forgotten cells."""
+        was_down = self.memory.suspended
+        k = self.memory.set_upright(upright, t)
+        if upright and was_down:
+            self.detour_side = None
+            self._rejoin_xy = None
+            self._head_layer = "planning"
+            self.holding = False
+            self._last_attempt = -math.inf
+            self._failed_key = None
+            if k:
+                self.last = f"fall: {k} obstacle cells seen while falling forgotten"
+        return k
+
     def note_rejected(self) -> None:
         self.memory.note_rejected()
 
@@ -1819,4 +1920,5 @@ class ObstacleAvoider:
                 "free_travel": round(float(ft), 2) if math.isfinite(ft) else None,
                 "speed_scale": round(float(self.scale), 2), "detour": self.detour_side,
                 "detours": int(self.detours), "replans": int(self.replans), "holding": bool(self.holding),
-                "last": self.last, "errors": int(self.errors)}
+                "last": self.last, "errors": int(self.errors), "suspended": bool(m.suspended),
+                "fall_forgotten": int(m.fall_forgotten)}

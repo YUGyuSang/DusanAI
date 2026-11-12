@@ -4,6 +4,7 @@ mission_manager node: thin ROS wrapper around plant_simulation.mission_logic.
 Subscribes  /patrol/plan_json (latched), /map (latched), /odom, /gas/sensor,
             /gas/seek_status, /inspection/gauge_readings, /safety/status,
             /safety/rth_active, /teleop/active, /locomotion/state,
+            /cmd_vel_mux/active (who drives: teleop priority -> hold_reason),
             /mission/command, and (obstacle_enabled) the elevation map of
             terrain_mapper: obstacle_elevation_topic (/elevation_map/points,
             PointCloud2) or, with obstacle_source traversability,
@@ -90,6 +91,8 @@ class MissionManagerNode(Node):
         if self.p["gazebo_mission_keys"]:
             self.create_subscription(Int32, "/keyboard/keypress", g("_on_gz_key"), reliable_qos(20))
         subscribe_any(self, String, "/locomotion/state", g("_on_loco"))
+        subscribe_any(self, String, "/cmd_vel_mux/active",
+                      g("_on_mux_active", lambda m: self.logic.on_mux_active(m.data, now_sec(self))))
         self.create_subscription(String, "/mission/command", g("_on_command"), reliable_qos(10))
         # novel obstacles from terrain_mapper's elevation map (RELIABLE depth-1 publisher: a
         # BEST_EFFORT depth-1 subscription matches and always hands over the latest frame)

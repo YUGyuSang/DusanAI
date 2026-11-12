@@ -248,6 +248,11 @@ class MissionStack:
         m.set_pose(x, y, yaw, t)
         lm = str(loco_mode).upper()
         m.on_locomotion_state({"mode": lm, "recovery_state": rec_state}, t)
+        # return_to_home / source_seeker nodes: the same obstacle-memory fall guard (/locomotion/state)
+        from dusan_common.obstacle_layer import robot_down
+        down = robot_down(lm, rec_state)
+        self.rth.obstacles.set_upright(not down, t)
+        self.seeker.obstacles.set_upright(not down, t)
         # ---- gas_dispersion_sim (10 Hz)
         if dt > 0:
             self.gas.step(dt)
@@ -484,4 +489,5 @@ class MissionStackOperator:
             c = S.select(t)
             self.trace.append((round(t, 2), round(gtp[0], 3), round(gtp[1], 3), round(float(gt[0][2]), 3),
                                round(gtp[2], 3), round(float(gt[1][0]), 3), round(float(gt[1][1]), 3), S.m.base,
-                               S.m.phase, S.mux_src, round(c[0], 3), round(c[1], 3), round(c[2], 3), mode, rec))
+                               S.m.phase, S.mux_src, round(c[0], 3), round(c[1], 3), round(c[2], 3), mode, rec,
+                               int(S.m.obstacles.memory.confirmed_count)))
