@@ -7,6 +7,12 @@ Spot형 4족 로봇 `spot`(15 kg, 다리 0.2256 m + 0.2997 m)의 기구학, 보�
 
 알고리즘은 모두 ROS 없이 numpy로 작성했고(Windows에서 단위 테스트), ROS 노드는 얇은 래퍼입니다.
 
+**넘어짐 보호** (2026-11): `terrain_mapper`는 `/locomotion/state`를 구독해 로봇이 넘어져 있는 동안(mode FALLEN / RECOVERING,
+또는 recovery_state가 NORMAL이 아님) 깊이 영상을 지도에 넣지 않고, 일어서면 지도를 넘어지기 2 s 전 상태로 되돌립니다
+(`elevation_map.MapFallGuard`, `terrain.yaml`의 `fall_guard`, `fall_lookback` 2 s, `fall_settle` 1 s, `fall_snapshot_period` 0.5 s).
+일어서며 보이는 자기 다리(SLIDE 자세에서 높이 0.27–0.31 m, 몸 중심에서 0.57–0.66 m)나 기울며 번진 점이 가짜 단차로 약 200 s 남아
+미션 경로를 막던 문제를 막습니다.
+
 **`terrain_mapper` 출력의 다른 사용처** (2026-10-26): `/elevation_map/points`는 보행 제어기 말고도 `mission_manager`,
 `return_to_home`, `source_seeker`가 구독합니다. 내비 맵에 없는 장애물을 찾아 피하는 데 씁니다
 (`dusan_common/dusan_common/obstacle_layer.py`, [USAGE §8.3](../docs/USAGE.md#obstacle-avoidance), [REPORT §7.8](../docs/REPORT.md#obstacle-avoidance)).

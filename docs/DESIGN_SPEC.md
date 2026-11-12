@@ -184,7 +184,7 @@ All JSON payloads are `std_msgs/String` produced with `dusan_common.ros_helpers.
 | /odom | nav_msgs/Odometry | plant_simulation/odom_tf | everyone | world-frame ground truth (frame `odom`, child `base_link`), twist in base frame |
 | /cmd_vel | geometry_msgs/Twist | cmd_vel_mux | locomotion_controller | body velocity (vx, vy, wz) |
 | /locomotion/command | std_msgs/String | teleop, mission, safety | locomotion_controller | `stand` `sit` `walk` `gait:trot` `gait:crawl` (alias `gait:walk`) `gait:auto` `mode:stable` `mode:mpc` `mode:toggle` (locomotion mode, applied while standing; a walking robot first stops at a safe gait boundary and resumes) `recover` `estop` `release` `push` `push:<fx>,<fy>` `reset_pose` |
-| /locomotion/state | String JSON | locomotion_controller | dashboard, mission, metrics, demo_hud, follow_camera | `{mode: WALK|STAND|SIT|STANDING_UP|FALLEN|RECOVERING|ESTOP, locomotion_mode: stable|mpc, locomotion_mode_pending: stable|mpc|null, gait, gait_auto, phase, contacts[4], body_height, roll, pitch, fall_count, recovery_attempts, recovery_success, assisted_resets, recovery_state (fall_recovery phase, NORMAL when upright), mpc_solve_ms, mpc_status, stability_margin, terrain, cmd[3]}` + slippery-ground fields `slip` (detection flag), `slip_mode`, `slip_source` (`detected`/`terrain`/`both`/`none`), `slip_speed` [m/s], `slip_legs[4]`, `slip_events`, `mu_est`, `mpc_mu`, `friction_prior` (μ of /terrain/info or null), `torque_ff` (module1 README §3.8; further extra keys listed in module1 README §2) |
+| /locomotion/state | String JSON | locomotion_controller | dashboard, mission, metrics, demo_hud, follow_camera, terrain_mapper (fall guard), keyboard_teleop (status, E-STOP sync) | `{mode: WALK|STAND|SIT|STANDING_UP|FALLEN|RECOVERING|ESTOP, locomotion_mode: stable|mpc, locomotion_mode_pending: stable|mpc|null, gait, gait_auto, phase, contacts[4], body_height, roll, pitch, fall_count, recovery_attempts, recovery_success, assisted_resets, recovery_state (fall_recovery phase, NORMAL when upright), mpc_solve_ms, mpc_status, stability_margin, terrain, cmd[3]}` + slippery-ground fields `slip` (detection flag), `slip_mode`, `slip_source` (`detected`/`terrain`/`both`/`none`), `slip_speed` [m/s], `slip_legs[4]`, `slip_events`, `mu_est`, `mpc_mu`, `friction_prior` (μ of /terrain/info or null), `torque_ff` (module1 README §3.8; further extra keys listed in module1 README §2) |
 | /locomotion/fall_event | String JSON | locomotion_controller | metrics | `{event: fall|recovered|recovery_failed|recovery_retry|assisted_reset, t, x, y, roll, pitch}` |
 | /mpc/predicted_trajectory | nav_msgs/Path | locomotion_controller | rviz, dashboard | 5 s CoM prediction (the four /mpc/* topics carry data only in `locomotion_mode` = mpc; `mpc_status` = `none` in the stable mode) |
 | /mpc/footholds | visualization_msgs/MarkerArray | locomotion_controller | rviz | predicted footholds over the horizon |
@@ -242,9 +242,9 @@ All JSON payloads are `std_msgs/String` produced with `dusan_common.ros_helpers.
 | /map | OccupancyGrid (latched) | map_server_lite | all planners, dashboard | from plant_map.yaml |
 | /cmd_vel/patrol | Twist | mission_manager | mux | |
 | /nav/plan | nav_msgs/Path | mission_manager & return_to_home | rth (comm prediction), dashboard | path currently being followed |
-| /cmd_vel_mux/active | String | cmd_vel_mux | dashboard | name of the selected source |
+| /cmd_vel_mux/active | String | cmd_vel_mux | dashboard, mission_manager | name of the selected source (mission_manager: `teleop` while the mission drives -> `hold_reason`, no stuck count) |
 | /mission/command | String | teleop, dashboard | mission_manager, return_to_home | `start` `patrol` `seek` `rth` `pause` `resume` `abort` `dock` |
-| /mission/state | String JSON | mission_manager | dashboard, metrics, demo_hud | `{state: IDLE|PATROL|INSPECTING|SEEK|RTH|DOCKED|MANUAL|PAUSED|DONE, target, completed:[ids], pending:[ids], gas_alarm, message}` + `results` (`{<gauge id>: confirmed reading {value, unit, status, confidence, t, n_readings} or {status: missed, reason}}`), `cmd_seq` (number of `/mission/command` messages received), `recent_commands` (last 5 `{seq, cmd, accepted, message}`: keyboard_teleop acknowledgement) + `obstacle` object (see below) + `hold_reason` (why the mission does not drive the robot, '' = it does: e-stop, robot fallen / getting up, no /locomotion/state, waiting for /odom, obstacle ahead, paused, manual override) |
+| /mission/state | String JSON | mission_manager | dashboard, metrics, demo_hud | `{state: IDLE|PATROL|INSPECTING|SEEK|RTH|DOCKED|MANUAL|PAUSED|DONE, target, completed:[ids], pending:[ids], gas_alarm, message}` + `results` (`{<gauge id>: confirmed reading {value, unit, status, confidence, t, n_readings} or {status: missed, reason}}`), `cmd_seq` (number of `/mission/command` messages received), `recent_commands` (last 5 `{seq, cmd, accepted, message}`: keyboard_teleop acknowledgement) + `obstacle` object (see below) + `hold_reason` (why the mission does not drive the robot, '' = it does: e-stop, robot fallen / getting up, no /locomotion/state, waiting for /odom, teleop has priority on /cmd_vel (`/cmd_vel_mux/active` teleop), obstacle ahead, paused, manual override) |
 | /twin/markers | MarkerArray | monitor_dashboard | rviz | gauge status labels, hot spots, leak estimate |
 | /metrics/session | String JSON (latched) | metrics_logger | dashboard, demo_hud | `{session_dir, session, report, report_json, report_final, report_written, gauges:{<id>:{image, image_full, stamp, value, unit, status, wall}}}`: metrics session directory and its files relative to it (`gauges/<id>_<t>.jpg`, `inspection_report.html`); republished after every photo / report write. The dashboard serves them same-origin under `/session/<file>` (only for a `session_dir` inside its `metrics_root`, default `~/dusan_metrics`) and adds `image_url` / `image_full_url` per gauge and a `report` link (+ `dir`: the session directory with the home directory as `~`) to its snapshot |
 | /demo/hud | Image (bgr8) | demo_hud | rqt_image_view, ros2 bag | robot camera (`/inspection_camera/image`) + gas ppm bar (10 / 25 ppm colours, blinking alarm frame), battery, current mission step in words (target gauge, step n/8, RTH reason), locomotion state, sim time; banners for a few seconds after a gauge result (value, status, inspection photo of `/inspection/gauge_snapshot`), a skipped gauge, the gas source found, an RTH start; robot-down panel from `/locomotion/state` `recovery_state` (4 steps: fall detected, self-righting, standing up, recovered); result panel at the dock (gauges, mean error vs. layout truth, gas, falls / self-recoveries, duration, `/metrics/session` directory); 640×480 at `rate` 5 Hz |
@@ -337,7 +337,15 @@ re-plans stay in its own counters). No new topic exists for novel obstacles: the
   search around the nominal foothold minimising slope, roughness, edge proximity and
   displacement. Point cloud may be in camera link (x fwd) or optical (z fwd) convention —
   auto-detect; if no points, compute them from `/depth_camera/image` + intrinsics.
-* `keyboard_teleop.py`: terminal raw-mode teleop (see §7) + optional `/keyboard/keypress`. The status line shows
+  Fall guard (`elevation_map.MapFallGuard`, terrain.yaml `fall_guard` / `fall_lookback` 2 s / `fall_settle` 1 s /
+  `fall_snapshot_period` 0.5 s): no fusion while `/locomotion/state` says the robot is down (mode FALLEN / RECOVERING
+  or recovery_state not NORMAL); when it stands again the map goes back to a rolling snapshot taken >= 2 s before
+  the fall (aged by the elapsed time) and fusion resumes 1 s later - the tipped camera's phantom steps (own shanks
+  while self-righting, smeared returns) would otherwise be published for ~200 s and re-block the mission's route.
+* `keyboard_teleop.py`: terminal raw-mode teleop (see §7) + optional `/keyboard/keypress`. E-STOP follows the
+  controller (`TeleopState.on_loco_mode`): an E-STOP released elsewhere (dashboard, `ros2 topic pub`) clears the
+  teleop's own flag (and its 20 Hz zero stream that keeps the mux on `teleop`) once the controller had confirmed
+  ESTOP; SPACE while the controller is in ESTOP sends `release`. The status line shows
   `mission <state>(stale Ns)` when no `/mission/state` arrived for 5 s (it is republished every 0.5 s), and a mission
   key (`t p g h o`) pressed then prints a warning that mission_manager is not answering.
   Mission keys are delivered reliably (`teleop_keys.MissionCommandTracker`): a key is kept until `/mission/state`
@@ -552,7 +560,7 @@ the memory / input keys (`OBSTACLE_MEMORY_KEYS`) + `obstacle_rebuild_period`; va
 
 ```
  w/s : forward / backward        a/d : turn left / right       q/e : strafe left / right
- x   : stop (zero velocity)      space: E-STOP toggle           +/- : speed scale
+ x   : stop (zero velocity)      space: E-STOP toggle (of the controller's E-STOP, wherever engaged)  +/- : speed scale
  1 stand  2 sit  3 trot (default)  4 crawl  5 auto-gait   r recover   f push test (fall)  0 reset pose
  v   : locomotion mode stable <-> MPC (/locomotion/command mode:toggle, switches while standing)
  m   : manual override toggle (teleop keeps priority until pressed again)
