@@ -1168,4 +1168,3 @@ def tracked_from_msg(m):
     return {"mode": TRACK_MODES.get(int(m.track_mode), str(m.track_mode)),
             "follow_target": str(m.follow_target.name), "track_target": str(m.track_target.name),
             "follow_offset": off, "follow_pgain": float(m.follow_pgain) or None}
-
